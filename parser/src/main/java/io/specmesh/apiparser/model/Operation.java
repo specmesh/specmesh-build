@@ -24,8 +24,10 @@ public class Operation {
     private String description;
     private List<String> tags;
 
+    @SuppressWarnings("rawtypes")
     private Map bindings;
-//    https://www.asyncapi.com/docs/reference/specification/v2.4.0#operationTraitObject
+    //    https://www.asyncapi.com/docs/reference/specification/v2.4.0#operationTraitObject
+    @SuppressWarnings("rawtypes")
     private Map traits;
 
     private Message message;
@@ -46,10 +48,12 @@ public class Operation {
         return tags;
     }
 
+    @SuppressWarnings("rawtypes")
     public Map bindings() {
         return bindings;
     }
 
+    @SuppressWarnings("rawtypes")
     public Map traits() {
         return traits;
     }
@@ -72,10 +76,15 @@ public class Operation {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Operation)) return false;
-        Operation operation = (Operation) o;
+    @SuppressWarnings("LineLength")
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Operation)) {
+            return false;
+        }
+        final Operation operation = (Operation) o;
         return Objects.equals(operationId(), operation.operationId()) && Objects.equals(summary(), operation.summary()) && Objects.equals(description(), operation.description()) && Objects.equals(tags(), operation.tags()) && Objects.equals(bindings(), operation.bindings()) && Objects.equals(traits(), operation.traits()) && Objects.equals(message(), operation.message());
     }
 

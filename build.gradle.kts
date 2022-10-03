@@ -23,7 +23,7 @@ allprojects {
     apply(plugin = "java")
     apply(plugin = "checkstyle")
     apply(plugin = "com.diffplug.spotless")
-    apply(plugin = "com.github.spotbugs")
+//    apply(plugin = "com.github.spotbugs")
 
     group = "com.specmesh.common"
 
@@ -130,20 +130,20 @@ subprojects {
         dependsOn("checkstyle", "spotbugs")
     }
 
-    spotbugs {
-        tasks.spotbugsMain {
-            reports.create("html") {
-                isEnabled = true
-                setStylesheet("fancy-hist.xsl")
-            }
-        }
-        tasks.spotbugsTest {
-            reports.create("html") {
-                isEnabled = true
-                setStylesheet("fancy-hist.xsl")
-            }
-        }
-    }
+//    spotbugs {
+//        tasks.spotbugsMain {
+//            reports.create("html") {
+//                isEnabled = true
+//                setStylesheet("fancy-hist.xsl")
+//            }
+//        }
+//        tasks.spotbugsTest {
+//            reports.create("html") {
+//                isEnabled = true
+//                setStylesheet("fancy-hist.xsl")
+//            }
+//        }
+//    }
 
     tasks.jar {
         archiveBaseName.set("specmesh-${project.name}")

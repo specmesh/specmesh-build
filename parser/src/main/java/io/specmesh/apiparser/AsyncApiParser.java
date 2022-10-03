@@ -9,10 +9,11 @@ import java.io.InputStream;
 
 public class AsyncApiParser {
 
-    final public ApiSpec loadResource(final InputStream inputStream) throws IOException {
-        if (inputStream == null || inputStream.available() == 0) throw new RuntimeException("Not found");
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        return mapper.readValue(inputStream, ApiSpec.class);
+    public final ApiSpec loadResource(final InputStream inputStream) throws IOException {
+        if (inputStream == null || inputStream.available() == 0) {
+            throw new RuntimeException("Not found");
+        }
+        return new ObjectMapper(new YAMLFactory()).readValue(inputStream, ApiSpec.class);
     }
 
 }
