@@ -6,8 +6,8 @@ tasks.wrapper {
 }
 plugins {
     java
-    id("com.github.spotbugs") version "4.6.0"
-    id("com.diffplug.spotless") version "5.8.2"
+    id("com.github.spotbugs") version "4.7.2"
+    id("com.diffplug.spotless") version "6.11.0"
     id("pl.allegro.tech.build.axion-release") version "1.11.0"
 }
 
@@ -23,7 +23,7 @@ allprojects {
     apply(plugin = "java")
     apply(plugin = "checkstyle")
     apply(plugin = "com.diffplug.spotless")
-//    apply(plugin = "com.github.spotbugs")
+    apply(plugin = "com.github.spotbugs")
 
     group = "com.specmesh.common"
 
@@ -130,20 +130,20 @@ subprojects {
         dependsOn("checkstyle", "spotbugs")
     }
 
-//    spotbugs {
-//        tasks.spotbugsMain {
-//            reports.create("html") {
-//                isEnabled = true
-//                setStylesheet("fancy-hist.xsl")
-//            }
-//        }
-//        tasks.spotbugsTest {
-//            reports.create("html") {
-//                isEnabled = true
-//                setStylesheet("fancy-hist.xsl")
-//            }
-//        }
-//    }
+    spotbugs {
+        tasks.spotbugsMain {
+            reports.create("html") {
+                isEnabled = true
+                setStylesheet("fancy-hist.xsl")
+            }
+        }
+        tasks.spotbugsTest {
+            reports.create("html") {
+                isEnabled = true
+                setStylesheet("fancy-hist.xsl")
+            }
+        }
+    }
 
     tasks.jar {
         archiveBaseName.set("specmesh-${project.name}")

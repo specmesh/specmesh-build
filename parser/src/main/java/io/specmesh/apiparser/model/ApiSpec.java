@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.Value;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Value
@@ -13,17 +14,17 @@ import java.util.Map;
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ApiSpec {
-    private String id;
-    private String asyncapi;
+    String id;
+    String asyncapi;
 
-    private Map<String, Map<String, Operation>> channels;
+    Map<String, Map<String, Operation>> channels;
 
     public String id() {
         return id;
     }
 
     public Map<String, Map<String, Operation>> channels() {
-        return channels;
+        return new LinkedHashMap<>(channels);
     }
 
     public String asyncapi() {

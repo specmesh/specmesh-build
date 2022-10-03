@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.Value;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -19,18 +21,18 @@ import java.util.Objects;
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Operation {
-    private String operationId;
-    private String summary;
-    private String description;
-    private List<String> tags;
+    String operationId;
+    String summary;
+    String description;
+    List<String> tags;
 
     @SuppressWarnings("rawtypes")
-    private Map bindings;
+    Map bindings;
     //    https://www.asyncapi.com/docs/reference/specification/v2.4.0#operationTraitObject
     @SuppressWarnings("rawtypes")
-    private Map traits;
+    Map traits;
 
-    private Message message;
+    Message message;
 
     public String operationId() {
         return operationId;
@@ -45,17 +47,18 @@ public class Operation {
     }
 
     public List<String> tags() {
-        return tags;
+        return new ArrayList<>(tags);
     }
 
-    @SuppressWarnings("rawtypes")
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public Map bindings() {
-        return bindings;
+        return new LinkedHashMap<>(bindings);
     }
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public Map traits() {
-        return traits;
+        return new LinkedHashMap<>(traits);
     }
 
     public Message message() {

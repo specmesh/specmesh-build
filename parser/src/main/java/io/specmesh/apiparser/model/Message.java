@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.Value;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -18,46 +19,46 @@ import java.util.Objects;
 @JsonIgnoreProperties(ignoreUnknown = true)
 
 public class Message {
-    private String messageId;
+    String messageId;
 
     @SuppressWarnings("rawtypes")
-    private Map headers;
+    Map headers;
 
     @SuppressWarnings("rawtypes")
-    private Map payload;
+    Map payload;
 
     @SuppressWarnings("rawtypes")
-    private Map correlationId;
-    private String schemaFormat;
-    private String contentType;
-    private String name;
-    private String title;
-    private String summary;
-    private String description;
+    Map correlationId;
+    String schemaFormat;
+    String contentType;
+    String name;
+    String title;
+    String summary;
+    String description;
     @SuppressWarnings("rawtypes")
-    private Map tags;
+    Map tags;
     @SuppressWarnings("rawtypes")
-    private Map bindings;
+    Map bindings;
     @SuppressWarnings("rawtypes")
-    private Map traits;
+    Map traits;
 
     public String messageId() {
         return messageId;
     }
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public Map headers() {
-        return headers;
+        return new LinkedHashMap<>(headers);
     }
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public Map payload() {
-        return payload;
+        return new LinkedHashMap<>(payload);
     }
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public Map correlationId() {
-        return correlationId;
+        return new LinkedHashMap<>(correlationId);
     }
 
     public String schemaFormat() {
@@ -84,19 +85,19 @@ public class Message {
         return description;
     }
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public Map tags() {
-        return tags;
+        return new LinkedHashMap(tags);
     }
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public Map bindings() {
-        return bindings;
+        return new LinkedHashMap(bindings);
     }
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public Map traits() {
-        return traits;
+        return new LinkedHashMap(traits);
     }
 
     @Override
