@@ -23,7 +23,7 @@ public class ApiSpec {
     String asyncapi;
 
     @JsonProperty
-    Map<String, Map<String, Operation>> channels;
+    Map<String, Channel> channels;
 
     public String id() {
         return validate(id).substring("urn:".length()).replace(":", DELIMITER+"");
@@ -40,9 +40,7 @@ public class ApiSpec {
     public Map<String, Channel> channels() {
         return channels.entrySet().stream().collect(Collectors.toMap(
                         e -> getCanonical(id(), e.getKey()),
-                        e-> new Channel(e.getKey(), getCanonical(id(), e.getKey()),
-                                Channel.PUBSUB.valueOf(e.getValue().entrySet().iterator().next().getKey().toUpperCase()),
-                                e.getValue().entrySet().iterator().next().getValue()),
+                        e-> e.getValue(),
                         (k, v) -> k,
                         LinkedHashMap::new
                 )
