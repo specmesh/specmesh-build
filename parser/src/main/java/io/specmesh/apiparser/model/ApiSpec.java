@@ -37,27 +37,20 @@ public class ApiSpec {
         return id;
     }
 
-    public Map<String, Map<String, Operation>> channels() {
-        return new LinkedHashMap<>(channels);
+    public Map<String, Channel> channels() {
+        return channels.entrySet().stream().collect(Collectors.toMap(
+                        e -> getCanonical(id(), e.getKey()),
+                        e-> new Channel(e.getKey(), getCanonical(id(), e.getKey()),
+                                Channel.PUBSUB.valueOf(e.getValue().entrySet().iterator().next().getKey().toUpperCase()),
+                                e.getValue().entrySet().iterator().next().getValue()),
+                        (k, v) -> k,
+                        LinkedHashMap::new
+                )
+        );
     }
 
     public String asyncapi() {
         return asyncapi;
-    }
-
-    /**
-     * Returns list of channel names
-     * @return fully qualified canonical channel names (id + channel-name) unless fully qualified already
-     */
-    public Map<String, String> canonicalChannels() {
-        return channels.entrySet().stream().collect(
-                Collectors.toMap(
-                    e -> getCanonical(id(), e.getKey()),
-                        Map.Entry::getKey,
-                    (k, v) -> k,
-                    LinkedHashMap::new
-                )
-        );
     }
 
     private String getCanonical(final String id, final String channelName) {

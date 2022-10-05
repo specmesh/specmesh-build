@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.Value;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -62,17 +63,17 @@ public class Message {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     public Map headers() {
-        return new LinkedHashMap<>(headers);
+        return headers == null ? Collections.EMPTY_MAP : new LinkedHashMap<>(headers);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     public Map payload() {
-        return new LinkedHashMap<>(payload);
+        return payload == null ? Collections.EMPTY_MAP : new LinkedHashMap<>(payload);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     public Map correlationId() {
-        return new LinkedHashMap<>(correlationId);
+        return correlationId == null ? Collections.EMPTY_MAP : new LinkedHashMap<>(correlationId);
     }
 
     public String schemaFormat() {
@@ -101,17 +102,17 @@ public class Message {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     public Map tags() {
-        return new LinkedHashMap(tags);
+        return tags == null ? Collections.EMPTY_MAP : new LinkedHashMap(tags);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     public Map bindings() {
-        return new LinkedHashMap(bindings);
+        return bindings == null ? Collections.EMPTY_MAP : new LinkedHashMap(bindings);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     public Map traits() {
-        return new LinkedHashMap(traits);
+        return traits == null ? Collections.EMPTY_MAP : new LinkedHashMap(traits);
     }
 
     @Override

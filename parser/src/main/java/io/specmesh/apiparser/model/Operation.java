@@ -7,11 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.Value;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * https://www.asyncapi.com/docs/reference/specification/v2.4.0#operationObject
@@ -55,18 +51,18 @@ public class Operation {
     }
 
     public List<String> tags() {
-        return new ArrayList<>(tags);
+        return tags == null ? Collections.emptyList() : new ArrayList<>(tags);
     }
 
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     public Map bindings() {
-        return new LinkedHashMap<>(bindings);
+        return bindings == null ? Collections.EMPTY_MAP : new LinkedHashMap<>(bindings);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     public Map traits() {
-        return new LinkedHashMap<>(traits);
+        return traits == null ? Collections.EMPTY_MAP : new LinkedHashMap<>(traits);
     }
 
     public Message message() {
