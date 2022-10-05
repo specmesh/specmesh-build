@@ -1,6 +1,7 @@
 package io.specmesh.apiparser.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -21,17 +22,24 @@ import java.util.Objects;
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Operation {
+    @JsonProperty
     String operationId;
+    @JsonProperty
     String summary;
+    @JsonProperty
     String description;
+    @JsonProperty
     List<String> tags;
 
     @SuppressWarnings("rawtypes")
+    @JsonProperty
     Map bindings;
     //    https://www.asyncapi.com/docs/reference/specification/v2.4.0#operationTraitObject
     @SuppressWarnings("rawtypes")
+    @JsonProperty
     Map traits;
 
+    @JsonProperty
     Message message;
 
     public String operationId() {
