@@ -19,7 +19,6 @@ import java.util.Objects;
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-
 public class Message {
     @JsonProperty
     String messageId;

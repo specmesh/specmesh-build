@@ -15,18 +15,18 @@ servers:
     protocol: mqtt
 channels:
   public/light/measured:
+    # publish bindings to instruct topic configuration per environment
+    bindings:
+      kafka:
+        envs:
+          - staging
+          - prod
+        partitions: 3
+        replicas: 1
+        retention: 1
     publish:
       summary: Inform about environmental lighting conditions for a particular streetlight.
       operationId: onLightMeasured
-      # publish bindings to instruct topic configuration per environment
-      bindings:
-        kafka:
-          envs:
-            - staging
-            - prod
-          partitions: 3
-          replicas: 1
-          retention: 1
       message:
         name: LightMeasured
         payload:

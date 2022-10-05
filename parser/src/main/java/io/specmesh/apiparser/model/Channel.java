@@ -1,36 +1,41 @@
 package io.specmesh.apiparser.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Value;
+
+@Value
+@NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
+@AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Channel {
-    enum PUBSUB {
-        PUBLISH,
-        SUBSCRIBE
+
+    @JsonProperty
+    String description;
+
+    @JsonProperty
+    Bindings bindings;
+    @JsonProperty
+    Operation publish;
+    @JsonProperty
+    Operation subscribe;
+
+    public String description() {
+        return description;
     }
 
-    private final String canonicalName;
-    private final String name;
-    private final PUBSUB pubsub;
-    private final Operation operation;
-
-    public Channel(final String name, final String canonicalName, final PUBSUB pubsub, final  Operation operation){
-        this.name = name;
-        this.canonicalName = canonicalName;
-        this.pubsub = pubsub;
-        this.operation = operation;
+    public Bindings bindings() {
+        return bindings;
     }
 
-    public String canonicalName() {
-        return canonicalName;
+    public Operation getPublish() {
+        return publish;
     }
 
-    public String name() {
-        return name;
-    }
-
-    public PUBSUB pubsub() {
-        return pubsub;
-    }
-
-    public Operation operation() {
-        return operation;
+    public Operation getSubscribe() {
+        return subscribe;
     }
 }

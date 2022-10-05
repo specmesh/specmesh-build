@@ -33,7 +33,7 @@ public class AsyncApiParserTest {
         assertThat(channelsMap.size(), is(2));
         assertThat("Should have assembled id + channelname", channelsMap.keySet(), hasItem("simple.streetlights.public.light.measured"));
 
-        Bindings producerBindings = channelsMap.get("simple.streetlights.public.light.measured").operation().bindings();
+        Bindings producerBindings = channelsMap.get("simple.streetlights.public.light.measured").bindings();
         assertThat(producerBindings.kafka().partitions(), is(3));
         assertThat(producerBindings.kafka().replicas(), is(1));
         assertThat(producerBindings.kafka().retention(), is(1));
@@ -41,8 +41,6 @@ public class AsyncApiParserTest {
 
         assertThat("Should use absolute path", channelsMap.keySet(), hasItem("london.hammersmith.transport.public.tube"));
     }
-
-
 
     private ApiSpec getAPISpecFromResource() {
         try {
