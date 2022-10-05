@@ -27,9 +27,8 @@ public class Operation {
     @JsonProperty
     List<String> tags;
 
-    @SuppressWarnings("rawtypes")
     @JsonProperty
-    Map bindings;
+    Bindings bindings;
     //    https://www.asyncapi.com/docs/reference/specification/v2.4.0#operationTraitObject
     @SuppressWarnings("rawtypes")
     @JsonProperty
@@ -54,10 +53,8 @@ public class Operation {
         return tags == null ? Collections.emptyList() : new ArrayList<>(tags);
     }
 
-
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public Map bindings() {
-        return bindings == null ? Collections.EMPTY_MAP : new LinkedHashMap<>(bindings);
+    public Bindings bindings() {
+        return bindings;
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

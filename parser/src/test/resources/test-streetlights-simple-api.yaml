@@ -18,6 +18,15 @@ channels:
     publish:
       summary: Inform about environmental lighting conditions for a particular streetlight.
       operationId: onLightMeasured
+      # publish bindings to instruct topic configuration per environment
+      bindings:
+        kafka:
+          envs:
+            - staging
+            - prod
+          partitions: 3
+          replicas: 1
+          retention: 1
       message:
         name: LightMeasured
         payload:
@@ -38,6 +47,9 @@ channels:
   /london/hammersmith/transport/public/tube:
     subscribe:
       summary: Humans arriving in the borough
+      bindings:
+        kafka:
+          groupId: 'aConsumerGroupId'
       message:
         name: Human
         payload:
