@@ -1,6 +1,7 @@
 package io.specmesh.apiparser.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -19,27 +20,40 @@ import java.util.Objects;
 @JsonIgnoreProperties(ignoreUnknown = true)
 
 public class Message {
+    @JsonProperty
     String messageId;
 
     @SuppressWarnings("rawtypes")
+    @JsonProperty
     Map headers;
 
     @SuppressWarnings("rawtypes")
+    @JsonProperty
     Map payload;
 
     @SuppressWarnings("rawtypes")
+    @JsonProperty
     Map correlationId;
+    @JsonProperty
     String schemaFormat;
+    @JsonProperty
     String contentType;
+    @JsonProperty
     String name;
+    @JsonProperty
     String title;
+    @JsonProperty
     String summary;
+    @JsonProperty
     String description;
     @SuppressWarnings("rawtypes")
+    @JsonProperty
     Map tags;
     @SuppressWarnings("rawtypes")
+    @JsonProperty
     Map bindings;
     @SuppressWarnings("rawtypes")
+    @JsonProperty
     Map traits;
 
     public String messageId() {

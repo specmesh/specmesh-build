@@ -25,7 +25,7 @@ allprojects {
     apply(plugin = "com.diffplug.spotless")
     apply(plugin = "com.github.spotbugs")
 
-    group = "com.specmesh.common"
+    group = "com.specmesh.build"
 
     java {
         withSourcesJar()
@@ -55,6 +55,7 @@ subprojects {
         set("hamcrestVersion", "1.3")
         set("log4jVersion", "2.14.0")
         set("classGraphVersion", "4.8.21")
+        set("testcontainersVersion", "1.17.3")
     }
 
     val junitVersion: String by extra
@@ -64,9 +65,10 @@ subprojects {
     val guavaVersion : String by extra
     val hamcrestVersion : String by extra
     val log4jVersion : String by extra
+    val testcontainersVersion : String by extra
 
     dependencies {
-//        testImplementation(project(":test"))
+        testImplementation(project(":parser"))
         testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
         testImplementation("org.junit.jupiter:junit-jupiter-params:${junitVersion}")
         testImplementation("org.junit-pioneer:junit-pioneer:${junitPioneerVersion}")

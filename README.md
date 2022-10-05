@@ -8,3 +8,8 @@ Provides:
 1. Validate Topic names must contain public, private or protected.
 1. GradlePlugin to run Terraform provisioning or resources as part of any infrastructure pipeline (demo included).
 1. Provision schemas to specified Schema registry. From spec defined SR cluster that is identified with SR- prefix.
+
+
+# Developer Notes
+
+1. Install the intellij checkstyle plugin and load the config from config/checkstyle.xml
