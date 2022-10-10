@@ -69,6 +69,7 @@ subprojects {
 
     dependencies {
         testImplementation(project(":parser"))
+        testImplementation(project(":kafka"))
         testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
         testImplementation("org.junit.jupiter:junit-jupiter-params:${junitVersion}")
         testImplementation("org.junit-pioneer:junit-pioneer:${junitPioneerVersion}")
