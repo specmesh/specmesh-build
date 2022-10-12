@@ -41,7 +41,7 @@ subprojects {
     project.version = project.parent?.version!!
 
     extra.apply {
-        set("kafkaVersion", "2.6.0")
+        set("kafkaVersion", "3.3.1")
         set("openTracingVersion", "0.33.0")
         set("observabilityVersion", "1.1.8")
         set("guavaVersion", "29.0-jre")
