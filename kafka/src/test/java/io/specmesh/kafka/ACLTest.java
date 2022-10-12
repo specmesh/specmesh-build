@@ -2,7 +2,6 @@ package io.specmesh.kafka;
 
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.google.common.collect.Sets;
@@ -43,6 +42,7 @@ public class ACLTest {
     public static final String DOMAIN_ROOT = "simple.streetlights";
     public static final String PUBLIC_LIGHT_MEASURED = ".public.light.measured";
     public static final String PRIVATE_LIGHT_EVENTS = ".private.light.events";
+    public static final String FOREIGN_DOMAIN = "london.hammersmith.transport";
     // CHECKSTYLE_RULES.OFF: VisibilityModifier
     @Container
     public KafkaContainer kafka = getKafkaContainer();
@@ -61,14 +61,19 @@ public class ACLTest {
                 "username=\"admin\" " +
                 "password=\"admin-secret\" " +
                 "user_admin=\"admin-secret\" " +
-                "user_producer=\"producer-secret\" " +
-                "user_consumer=\"consumer-secret\";");
+                String.format("user_%s=\"%s-secret\" ", DOMAIN_ROOT, DOMAIN_ROOT) +
+                String.format("user_%s_producer=\"%s_producer-secret\" ", DOMAIN_ROOT, DOMAIN_ROOT) +
+                String.format("user_%s_consumer=\"%s_consumer-secret\" ", DOMAIN_ROOT, DOMAIN_ROOT) +
+                String.format("user_%s_producer=\"%s_producer-secret\" ", FOREIGN_DOMAIN, FOREIGN_DOMAIN) +
+                String.format("user_%s_consumer=\"%s_consumer-secret\";", FOREIGN_DOMAIN, FOREIGN_DOMAIN)
+
+        );
 
         env.put("KAFKA_SASL_JAAS_CONFIG", "org.apache.kafka.common.security.plain.PlainLoginModule required " +
                 "username=\"admin\" " +
                 "password=\"admin-secret\";");
         return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:6.2.1"))
-                .withStartupAttempts(1)
+                .withStartupAttempts(2)
                 .withEnv(env)
                 ;
     }
@@ -88,9 +93,10 @@ public class ACLTest {
         adminClientProperties.put(AdminClientConfig.CLIENT_ID_CONFIG, DOMAIN_ROOT);
         adminClientProperties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
         adminClientProperties.put(AdminClientConfig.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
+        adminClientProperties.put("sasl.mechanism", "PLAIN");
         adminClientProperties.put("sasl.jaas.config","org.apache.kafka.common.security.plain.PlainLoginModule required " +
                 "   username=\"admin\" password=\"admin-secret\";");
-        adminClientProperties.put("sasl.mechanism", "PLAIN");
+
         adminClient = AdminClient.create(adminClientProperties);
         CreateTopicsResult topics = adminClient.createTopics(
                 Sets.newHashSet(
@@ -120,9 +126,9 @@ public class ACLTest {
                 new KafkaProducer<>(
                         cloneProperties(adminClientProperties, Map.of(
                                 AdminClientConfig.CLIENT_ID_CONFIG, DOMAIN_ROOT + ".producer",
-                                "sasl.jaas.config","org.apache.kafka.common.security.plain.PlainLoginModule required " +
-                                        "   username=\"producer\" " +
-                                        "   password=\"producer-secret\";"
+                                "sasl.jaas.config", String.format("org.apache.kafka.common.security.plain.PlainLoginModule required " +
+                                        "   username=\"%s_producer\" " +
+                                        "   password=\"%s_producer-secret\";", DOMAIN_ROOT, DOMAIN_ROOT)
                         )),
                         Serdes.Long().serializer(),
                         Serdes.String().serializer());
@@ -132,7 +138,10 @@ public class ACLTest {
                         Map.of(
                                 ConsumerConfig.CLIENT_ID_CONFIG, DOMAIN_ROOT + ".consumer",
                                 ConsumerConfig.GROUP_ID_CONFIG, DOMAIN_ROOT + ".consumer-group",
-                                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"
+                                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest",
+                                "sasl.jaas.config", String.format("org.apache.kafka.common.security.plain.PlainLoginModule required " +
+                                        "   username=\"%s_consumer\" " +
+                                        "   password=\"%s_consumer-secret\";", DOMAIN_ROOT, DOMAIN_ROOT)
                         )
                 ),
                 Serdes.Long().deserializer(),
@@ -142,16 +151,25 @@ public class ACLTest {
 
         foreignProducer =
                 new KafkaProducer<>(
-                        cloneProperties(adminClientProperties,  Map.of(AdminClientConfig.CLIENT_ID_CONFIG, "london.hammersmith.transport")),
+                        cloneProperties(adminClientProperties,  Map.of(
+                                AdminClientConfig.CLIENT_ID_CONFIG, FOREIGN_DOMAIN + ".producer",
+                                "sasl.jaas.config", String.format("org.apache.kafka.common.security.plain.PlainLoginModule required " +
+                                        "   username=\"%s_producer\" " +
+                                        "   password=\"%s_producer-secret\";", DOMAIN_ROOT, DOMAIN_ROOT)
+                                )
+                        ),
                         Serdes.Long().serializer(),
                         Serdes.String().serializer());
 
         foreignConsumer = new KafkaConsumer<>(
                 cloneProperties(adminClientProperties,
                         Map.of(
-                                ConsumerConfig.CLIENT_ID_CONFIG, "london.hammersmith.transport",
-                                ConsumerConfig.GROUP_ID_CONFIG, "london.hammersmith.transport" + ".consumer",
-                                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"
+                                ConsumerConfig.CLIENT_ID_CONFIG, FOREIGN_DOMAIN + ".consumer",
+                                ConsumerConfig.GROUP_ID_CONFIG, FOREIGN_DOMAIN + ".consumer-group",
+                                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest",
+                                "sasl.jaas.config", String.format("org.apache.kafka.common.security.plain.PlainLoginModule required " +
+                                        "   username=\"%s_consumer\" " +
+                                        "   password=\"%s_consumer-secret\";", FOREIGN_DOMAIN, FOREIGN_DOMAIN)
                         )),
                 Serdes.Long().deserializer(),
                 Serdes.String().deserializer());
@@ -178,6 +196,12 @@ public class ACLTest {
 
         System.out.println("GOT:" + poll.count());
         assertThat("Didnt get Record", poll.count(), is(1));
+
+        foreignConsumer.subscribe(Collections.singleton(DOMAIN_ROOT + PUBLIC_LIGHT_MEASURED));
+        ConsumerRecords<Long, String> pollForeign = foreignConsumer.poll(Duration.of(30, TimeUnit.SECONDS.toChronoUnit()));
+
+        System.out.println("GOT:" + pollForeign.count());
+        assertThat("Didnt get Record", pollForeign.count(), is(1));
     }
 
     private Properties cloneProperties(Properties adminClientProperties, Map<String, String> entries) {
