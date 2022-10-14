@@ -24,11 +24,19 @@ channels:
         partitions: 3
         replicas: 1
         retention: 1
+        configs:
+          cleanup.policy: delete
+
     publish:
       summary: Inform about environmental lighting conditions for a particular streetlight.
       operationId: onLightMeasured
       message:
         name: LightMeasured
+        tags:
+          - name: "human"
+            description: "eats food"
+          - name: "big data london"
+            description: "data mesh thing"
         payload:
           type: object
           properties:

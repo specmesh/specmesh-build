@@ -7,22 +7,17 @@ import lombok.NoArgsConstructor;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
+
 @Value
 @Accessors(fluent=true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
-public class Channel {
+public class Tag {
+    @JsonProperty
+    String name;
 
     @JsonProperty
     String description;
 
-    @JsonProperty
-    Bindings bindings;
-
-    @JsonProperty
-    Operation publish;
-
-    @JsonProperty
-    Operation subscribe;
 
 }

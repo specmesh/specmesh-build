@@ -8,7 +8,12 @@ import com.google.common.collect.Sets;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +43,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
-public class ACLTest {
+public class SASLPlainPrincipleTest {
     public static final String DOMAIN_ROOT = "simple.streetlights";
     public static final String PUBLIC_LIGHT_MEASURED = ".public.light.measured";
     public static final String PRIVATE_LIGHT_EVENTS = ".private.light.events";
@@ -73,7 +78,7 @@ public class ACLTest {
                 "username=\"admin\" " +
                 "password=\"admin-secret\";");
         return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:6.2.1"))
-                .withStartupAttempts(2)
+                .withStartupAttempts(3)
                 .withEnv(env)
                 ;
     }

@@ -9,6 +9,7 @@ import io.specmesh.apiparser.model.Bindings;
 import io.specmesh.apiparser.model.Channel;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 public class AsyncApiParserTest {
@@ -33,14 +34,34 @@ public class AsyncApiParserTest {
         assertThat(channelsMap.size(), is(2));
         assertThat("Should have assembled id + channelname", channelsMap.keySet(), hasItem("simple.streetlights.public.light.measured"));
 
-        Bindings producerBindings = channelsMap.get("simple.streetlights.public.light.measured").bindings();
+        final Bindings producerBindings = channelsMap.get("simple.streetlights.public.light.measured").bindings();
         assertThat(producerBindings.kafka().partitions(), is(3));
         assertThat(producerBindings.kafka().replicas(), is(1));
         assertThat(producerBindings.kafka().retention(), is(1));
-        assertThat(producerBindings.kafka().envs().size(), is(2));
 
         assertThat("Should use absolute path", channelsMap.keySet(), hasItem("london.hammersmith.transport.public.tube"));
+
     }
+
+    @Test
+    public void shouldReturnOperationTags() throws IOException {
+        final Map<String, Channel> channelsMap = apiSpec.channels();
+        assertThat(channelsMap.size(), is(2));
+        assertThat("Should have assembled 'id + channelname'", channelsMap.keySet(), hasItem("simple.streetlights.public.light.measured"));
+
+        final Bindings producerBindings = channelsMap.get("simple.streetlights.public.light.measured").bindings();
+        assertThat(producerBindings.kafka().configs().size(), is(2));
+        assertThat(producerBindings.kafka().configs().keySet(), is(Set.of("cleanup.policy", "retention.ms")));
+        assertThat(producerBindings.kafka().envs().size(), is(2));
+
+//        assertThat(channelsMap.values().iterator().next().publish().message().tags(),
+//                is(List.of(
+//                        Tag.builder().build()new Tag("human","eats food"),
+//                        new Tag("big data london","data mesh thing")
+//                        ))
+//        );
+    }
+
 
     private ApiSpec getAPISpecFromResource() {
         try {
