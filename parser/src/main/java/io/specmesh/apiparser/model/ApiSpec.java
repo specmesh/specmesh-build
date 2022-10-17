@@ -2,19 +2,21 @@ package io.specmesh.apiparser.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.Value;
+import lombok.experimental.Accessors;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Value
-@NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
-@AllArgsConstructor
+@Accessors(fluent=true)
 @JsonIgnoreProperties(ignoreUnknown = true)
+@NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
+@SuppressFBWarnings
 public class ApiSpec {
     private static final char DELIMITER = System.getProperty("DELIMITER", ".").charAt(0);
     @JsonProperty
@@ -45,10 +47,6 @@ public class ApiSpec {
                         LinkedHashMap::new
                 )
         );
-    }
-
-    public String asyncapi() {
-        return asyncapi;
     }
 
     private String getCanonical(final String id, final String channelName) {

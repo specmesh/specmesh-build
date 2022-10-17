@@ -41,7 +41,7 @@ subprojects {
     project.version = project.parent?.version!!
 
     extra.apply {
-        set("kafkaVersion", "2.6.0")
+        set("kafkaVersion", "3.3.1")
         set("openTracingVersion", "0.33.0")
         set("observabilityVersion", "1.1.8")
         set("guavaVersion", "29.0-jre")
@@ -56,6 +56,7 @@ subprojects {
         set("log4jVersion", "2.14.0")
         set("classGraphVersion", "4.8.21")
         set("testcontainersVersion", "1.17.3")
+        set("lombokVersion", "1.18.24")
     }
 
     val junitVersion: String by extra
@@ -66,6 +67,7 @@ subprojects {
     val hamcrestVersion : String by extra
     val log4jVersion : String by extra
     val testcontainersVersion : String by extra
+    val lombokVersion : String by extra
 
     dependencies {
         testImplementation(project(":parser"))
