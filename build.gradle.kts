@@ -22,6 +22,7 @@ allprojects {
     }
     apply(plugin = "idea")
     apply(plugin = "java")
+    apply(plugin = "maven-publish")
     apply(plugin = "checkstyle")
     apply(plugin = "com.diffplug.spotless")
     apply(plugin = "com.github.spotbugs")
