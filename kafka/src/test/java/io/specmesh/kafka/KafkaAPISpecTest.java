@@ -11,13 +11,12 @@ import io.specmesh.apiparser.model.ApiSpec;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.acl.AclBinding;
 import org.junit.jupiter.api.Test;
 public class KafkaAPISpecTest {
     final KafkaApiSpec apiSpec = new KafkaApiSpec(getAPISpecFromResource());
-    private AdminClient adminClient;
+//    private AdminClient adminClient;
 
 
     @Test

@@ -85,7 +85,7 @@ public class SASLPlainPrincipleTest {
 
     private AdminClient adminClient;
     private KafkaProducer domainProducer;
-    private KafkaProducer<Long, String> foreignProducer;
+//    private KafkaProducer<Long, String> foreignProducer;
     private KafkaConsumer<Long, String> domainConsumer;
     private KafkaConsumer<Long, String> foreignConsumer;
 
@@ -154,17 +154,17 @@ public class SASLPlainPrincipleTest {
 
 
 
-        foreignProducer =
-                new KafkaProducer<>(
-                        cloneProperties(adminClientProperties,  Map.of(
-                                AdminClientConfig.CLIENT_ID_CONFIG, FOREIGN_DOMAIN + ".producer",
-                                "sasl.jaas.config", String.format("org.apache.kafka.common.security.plain.PlainLoginModule required " +
-                                        "   username=\"%s_producer\" " +
-                                        "   password=\"%s_producer-secret\";", DOMAIN_ROOT, DOMAIN_ROOT)
-                                )
-                        ),
-                        Serdes.Long().serializer(),
-                        Serdes.String().serializer());
+//        foreignProducer =
+//                new KafkaProducer<>(
+//                        cloneProperties(adminClientProperties,  Map.of(
+//                                AdminClientConfig.CLIENT_ID_CONFIG, FOREIGN_DOMAIN + ".producer",
+//                                "sasl.jaas.config", String.format("org.apache.kafka.common.security.plain.PlainLoginModule required " +
+//                                        "   username=\"%s_producer\" " +
+//                                        "   password=\"%s_producer-secret\";", DOMAIN_ROOT, DOMAIN_ROOT)
+//                                )
+//                        ),
+//                        Serdes.Long().serializer(),
+//                        Serdes.String().serializer());
 
         foreignConsumer = new KafkaConsumer<>(
                 cloneProperties(adminClientProperties,
