@@ -6,8 +6,7 @@ name: Release Builds
 #      - v*
 
 on:
-  push:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build-package-release:
@@ -21,23 +20,13 @@ jobs:
           java-version: 17
           distribution: 'temurin'
           cache: gradle
-      - name: clean with Gradle
-        uses: gradle/gradle-build-action@v2
+      - name: Build with Gradle
+        uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
         with:
-          arguments: clean
-      - name: publishToMavenLocal with Gradle
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: publishToMavenLocal
-      - name: Upload Maven Local
-        uses: actions/upload-artifact@v2
-        with:
-          name: gradle-package-linux
-          path: ~/.m2/repository/com/github/specmesh/
+          arguments: build
       - name: publish Native to GitHub Packages
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
         with:
-          arguments: publishNativePublicationToGitHubPackagesRepository
+          arguments: publish
         env:
-          USERNAME: ${{ secrets.USERNAME }}
-          TOKEN: ${{ secrets.TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}

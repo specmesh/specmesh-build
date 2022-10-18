@@ -6,6 +6,7 @@ tasks.wrapper {
 }
 plugins {
     java
+    id("maven-publish")
     id("com.github.spotbugs") version "4.7.2"
     id("com.diffplug.spotless") version "6.11.0"
     id("pl.allegro.tech.build.axion-release") version "1.11.0"
@@ -32,6 +33,19 @@ allprojects {
 
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    publishing {
+        repositories {
+            maven {
+                name = "GitHubPackages"
+                url = uri("https://github.com/specmesh/specmesh-build")
+                credentials {
+                    username = System.getenv("GITHUB_ACTOR")
+                    password = System.getenv("GITHUB_TOKEN")
+                }
+            }
+        }
     }
 }
 
