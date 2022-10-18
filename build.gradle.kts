@@ -40,7 +40,7 @@ allprojects {
         repositories {
             maven {
                 name = "GitHubPackages"
-                url = uri("https://github.com/specmesh/specmesh-build")
+                url = uri("https://maven.pkg.github.com/specmesh/specmesh-build")
                 credentials {
                     username = System.getenv("GITHUB_ACTOR")
                     password = System.getenv("GITHUB_TOKEN")
