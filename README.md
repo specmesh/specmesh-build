@@ -1,4 +1,4 @@
-# SpecMesh build tools
+# SpecMesh build tools [![CI](https://github.com/specmesh/specmesh-build/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/specmesh/specmesh-build/actions/workflows/ci.yml)
 
 Provides:
 1. AsyncAPI spec parser
