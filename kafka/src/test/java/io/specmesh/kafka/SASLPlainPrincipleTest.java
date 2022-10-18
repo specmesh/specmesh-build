@@ -92,8 +92,6 @@ public class SASLPlainPrincipleTest {
     @BeforeEach
     public void createAllTheThings() {
 
-        System.out.println("BROKER URL:" + kafka.getBootstrapServers());
-
         final Properties adminClientProperties = new Properties();
         adminClientProperties.put(AdminClientConfig.CLIENT_ID_CONFIG, DOMAIN_ROOT);
         adminClientProperties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());

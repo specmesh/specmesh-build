@@ -15,17 +15,16 @@ import java.util.stream.Collectors;
 
 /**
  * Kafka entity mappings from the AsyncAPISpec
- *
- * TODO: consider a compareXXX function. i.e. compareTopics, compareACLs, compareSchemas
- * This could be used to drive AlterConfigsResult alterConfigs(Map<ConfigResource, Config> configs)
- * Validation checks.
- * 1 - Owned topics require a Kafka binding
  */
 public class KafkaApiSpec {
     private ApiSpec apiSpec;
 
     public KafkaApiSpec(final ApiSpec apiSpec) {
         this.apiSpec = apiSpec;
+    }
+
+    public String id() {
+        return apiSpec.id();
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -52,10 +51,10 @@ public class KafkaApiSpec {
     private void validateTopicConfig() {
         final String id = apiSpec.id();
         apiSpec.channels().forEach( (k , v) -> {
-                            if (k.startsWith(id) && (v.bindings() == null || v.bindings().kafka() == null)) {
-                                throw new IllegalStateException("Kafka bindings are missing from channel: [" + k + "] Domain owner: [" + id + "]");
-                            }
-                        });
+            if (k.startsWith(id) && (v.bindings() == null || v.bindings().kafka() == null)) {
+                throw new IllegalStateException("Kafka bindings are missing from channel: [" + k + "] Domain owner: [" + id + "]");
+            }
+        });
     }
 
     /**
@@ -69,7 +68,7 @@ public class KafkaApiSpec {
         final String id = apiSpec.id();
         final String principle = apiSpec.id();
         return List.of(
-                // unrestricted access to public topics
+                // unrestricted access to public topics - must use User:* and not User:domain-*
                 new AclBinding(
                         new ResourcePattern(ResourceType.TOPIC, id + ".public", PatternType.PREFIXED),
                         new AccessControlEntry("User:*", "*", AclOperation.READ, AclPermissionType.ALLOW)),
@@ -77,13 +76,16 @@ public class KafkaApiSpec {
                 // READ, WRITE to owned topics
                 new AclBinding(
                         new ResourcePattern(ResourceType.TOPIC, id, PatternType.PREFIXED),
-                        new AccessControlEntry("User:" + principle, "*", AclOperation.WRITE, AclPermissionType.ALLOW)),
+                        new AccessControlEntry(formatPrinciple(principle), "*", AclOperation.READ, AclPermissionType.ALLOW)),
                 new AclBinding(
                         new ResourcePattern(ResourceType.TOPIC, id, PatternType.PREFIXED),
-                        new AccessControlEntry("User:" + principle, "*", AclOperation.READ, AclPermissionType.ALLOW)),
+                        new AccessControlEntry(formatPrinciple(principle), "*", AclOperation.WRITE, AclPermissionType.ALLOW)),
                 new AclBinding(
                         new ResourcePattern(ResourceType.TOPIC, id, PatternType.PREFIXED),
-                        new AccessControlEntry("User:" + principle, "*", AclOperation.IDEMPOTENT_WRITE, AclPermissionType.ALLOW))
+                        new AccessControlEntry(formatPrinciple(principle), "*", AclOperation.IDEMPOTENT_WRITE, AclPermissionType.ALLOW))
                 );
+    }
+    public static String formatPrinciple(final String domainId) {
+        return "User:domain-" + domainId;
     }
 }

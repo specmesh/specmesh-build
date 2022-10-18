@@ -20,19 +20,17 @@ import java.util.Map;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 @SuppressFBWarnings
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class Message {
     @JsonProperty
     String messageId;
 
-    @SuppressWarnings("rawtypes")
     @JsonProperty
     Map headers = Collections.EMPTY_MAP;;
 
-    @SuppressWarnings("rawtypes")
     @JsonProperty
     Map payload = Collections.EMPTY_MAP;;
 
-    @SuppressWarnings("rawtypes")
     @JsonProperty
     Map correlationId = Collections.EMPTY_MAP;
     @JsonProperty
@@ -47,12 +45,11 @@ public class Message {
     String summary;
     @JsonProperty
     String description;
+
     @JsonProperty
     List<Tag> tags = Collections.EMPTY_LIST ;
-    @SuppressWarnings("rawtypes")
     @JsonProperty
     Map bindings;
-    @SuppressWarnings("rawtypes")
     @JsonProperty
     Map traits = Collections.EMPTY_MAP;
 

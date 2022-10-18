@@ -21,6 +21,10 @@ public class ApiSpec {
     private static final char DELIMITER = System.getProperty("DELIMITER", ".").charAt(0);
     @JsonProperty
     String id;
+
+    @JsonProperty
+    String version;
+
     @JsonProperty
     String asyncapi;
 

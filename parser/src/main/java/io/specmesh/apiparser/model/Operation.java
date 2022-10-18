@@ -21,6 +21,7 @@ import java.util.Map;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 @SuppressFBWarnings
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class Operation {
     @JsonProperty
     String operationId;
@@ -39,7 +40,6 @@ public class Operation {
     Bindings bindings;
 
     //    https://www.asyncapi.com/docs/reference/specification/v2.4.0#operationTraitObject
-    @SuppressWarnings("rawtypes")
     @JsonProperty
     Map traits = Collections.EMPTY_MAP;
 

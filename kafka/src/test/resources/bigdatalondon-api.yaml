@@ -78,6 +78,36 @@ channels:
               minimum: 0
               description: Id of the human purchasing the food
 
+  private/retail/subway/customers:
+    bindings:
+      kafka:
+        partitions: 3
+
+    publish:
+      summary: Humans customers
+      message:
+        name: Food Item
+        tags: [
+          name: "human",
+          name: "customer"
+        ]
+        payload:
+          type: object
+          properties:
+            id:
+              type: integer
+              minimum: 0
+              description: Id of the food
+            cost:
+              type: number
+              minimum: 0
+              description: GBP cost of the food item
+            human_id:
+              type: integer
+              minimum: 0
+              description: Id of the human purchasing the food
+
+
   /london/hammersmith/transport/public/tube:
     subscribe:
       summary: Humans arriving in the borough
