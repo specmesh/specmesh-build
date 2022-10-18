@@ -1,3 +1,5 @@
+// CHECKSTYLE_RULES.OFF: FinalLocalVariable
+// CHECKSTYLE_RULES.OFF: FinalParameters
 package io.specmesh.kafka;
 
 
@@ -5,7 +7,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.google.common.collect.Sets;
-
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collection;
@@ -17,7 +18,6 @@ import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.CreateTopicsResult;

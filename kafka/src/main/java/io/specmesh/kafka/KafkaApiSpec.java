@@ -16,8 +16,7 @@ import java.util.stream.Collectors;
 /**
  * Kafka entity mappings from the AsyncAPISpec
  *
- *
- * TODO: consider a compareXXX function. i.e. compareTopics, compareACLs, compareSchemas
+ * todo: consider a compareXXX function. i.e. compareTopics, compareACLs, compareSchemas
  * This could be used to drive AlterConfigsResult alterConfigs(Map<ConfigResource, Config> configs)
  * Validation checks.
  * 1 - Owned topics require a Kafka binding
@@ -54,7 +53,8 @@ public class KafkaApiSpec {
         final String id = apiSpec.id();
         apiSpec.channels().forEach( (k , v) -> {
                             if (k.startsWith(id) && (v.bindings() == null || v.bindings().kafka() == null)) {
-                                throw new IllegalStateException("Kafka bindings are missing from channel: [" + k + "] Domain owner: [" + id + "]");
+                                throw new IllegalStateException("Kafka bindings are missing from channel: " +
+                                        "[" + k + "] Domain owner: [" + id + "]");
                             }
                         });
     }
