@@ -3,45 +3,39 @@ package io.specmesh.kafka;
 
 import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.apiparser.model.ApiSpec;
-import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.acl.AclBinding;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.iterableWithSize;
 
 public class KafkaAPISpecTest {
     final KafkaApiSpec apiSpec = new KafkaApiSpec(getAPISpecFromResource());
-    private AdminClient adminClient;
-
 
     @Test
-    public void shouldListAppOwnedTopics() throws Exception {
+    public void shouldListAppOwnedTopics() {
         List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
         assertThat(newTopics.size(), is(2));
         // For adminClient.createTopics()
     }
 
     @Test
-    public void shouldGenerateACLsSoDomainOwnersCanWrite() throws Exception {
+    public void shouldGenerateACLsSoDomainOwnersCanWrite() {
         List<AclBinding> acls = apiSpec.listACLsForDomainOwnedTopics();
 
-        assertThat(acls.size(), is(4));
+        assertThat(acls, iterableWithSize(5));
 
+        assertThat("Protected ACL was not created", acls.get(0).toString(),
+                is("(pattern=ResourcePattern(resourceType=TOPIC, " +
+                        "name=london.hammersmith.olympia.bigdatalondon.protected.retail.subway.food.purchase, " +
+                        "patternType=PREFIXED), entry=(principal=User:domain-.some.other.domain.root, host=*, operation=READ, " +
+                        "permissionType=ALLOW))"));
         // For adminClient.createAcls(acls);
     }
-
-
-    private Properties cloneProperties(Properties adminClientProperties, Map<String, String> entries) {
-        Properties results = new Properties();
-        results.putAll(adminClientProperties);
-        results.putAll(entries);
-        return results;
-    }
-
 
 
     private ApiSpec getAPISpecFromResource() {

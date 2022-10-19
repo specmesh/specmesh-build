@@ -3,7 +3,9 @@ package io.specmesh.kafka;
 
 import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.apiparser.model.ApiSpec;
-import org.apache.kafka.clients.admin.*;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -12,7 +14,6 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.errors.TopicAuthorizationException;
 import org.apache.kafka.common.serialization.Serdes;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.*;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -20,11 +21,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -35,15 +32,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @Testcontainers
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class KafkaAPISpecFunctionalTest {
-    public static final String FOREIGN_DOMAIN = "london.hammersmith.transport";
+    public static final String FOREIGN_DOMAIN = ".london.hammersmith.transport";
     public static final int WAIT = 10;
 
 
     final static private KafkaApiSpec apiSpec = new KafkaApiSpec(getAPISpecFromResource());
+    public static final String SOME_OTHER_DOMAIN_ROOT = ".some.other.domain.root";
 
     // CHECKSTYLE_RULES.OFF: VisibilityModifier
     @Container
-    public static KafkaContainer kafka = getKafkaContainer();
+    public static final KafkaContainer kafka = getKafkaContainer();
 
     private AdminClient adminClient;
 
@@ -80,11 +78,11 @@ public class KafkaAPISpecFunctionalTest {
 
         KafkaProducer<Long, String> domainProducer = getDomainProducer(apiSpec.id());
 
-        domainProducer.send(new ProducerRecord(publicTopic.name(), 100L, "got value")).get(WAIT, TimeUnit.SECONDS);
+        domainProducer.send(new ProducerRecord<>(publicTopic.name(), 100L, "got value")).get(WAIT, TimeUnit.SECONDS);
 
-        domainProducer.send(new ProducerRecord(protectedTopic.name(), 200L, "got value")).get(WAIT, TimeUnit.SECONDS);
+        domainProducer.send(new ProducerRecord<>(protectedTopic.name(), 200L, "got value")).get(WAIT, TimeUnit.SECONDS);
 
-        domainProducer.send(new ProducerRecord(privateTopic.name(), 300L, "got value")).get(WAIT, TimeUnit.SECONDS);
+        domainProducer.send(new ProducerRecord<>(privateTopic.name(), 300L, "got value")).get(WAIT, TimeUnit.SECONDS);
 
         domainProducer.close();
 
@@ -92,7 +90,7 @@ public class KafkaAPISpecFunctionalTest {
 
     @Order(3)
     @Test
-    public void shouldConsumeMyPublicTopic() throws Exception {
+    public void shouldConsumeMyPublicTopic() {
 
         List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
         NewTopic publicTopic = newTopics.get(0);
@@ -111,7 +109,7 @@ public class KafkaAPISpecFunctionalTest {
 
     @Order(4)
     @Test
-    public void shouldConsumeMyProtectedTopic() throws Exception {
+    public void shouldConsumeMyProtectedTopic() {
 
         List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
         NewTopic protectedTopic = newTopics.get(1);
@@ -130,7 +128,7 @@ public class KafkaAPISpecFunctionalTest {
 
     @Order(5)
     @Test
-    public void shouldConsumeMyPrivateTopic() throws Exception {
+    public void shouldConsumeMyPrivateTopic() {
 
         List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
         NewTopic protectedTopic = newTopics.get(2);
@@ -147,7 +145,7 @@ public class KafkaAPISpecFunctionalTest {
 
     @Order(6)
     @Test
-    public void shouldConsumePublicTopicByForeignConsumer() throws Exception {
+    public void shouldConsumePublicTopicByForeignConsumer() {
 
         List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
         NewTopic publicTopic = newTopics.get(0);
@@ -165,7 +163,7 @@ public class KafkaAPISpecFunctionalTest {
 
     @Order(7)
     @Test
-    public void shouldNotConsumeProtectedTopicByForeignConsumer() throws Exception {
+    public void shouldNotConsumeProtectedTopicByForeignConsumer() {
 
         List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
         NewTopic protectedTopic = newTopics.get(1);
@@ -175,12 +173,29 @@ public class KafkaAPISpecFunctionalTest {
         KafkaConsumer<Long, String> foreignConsumer = getDomainConsumer(FOREIGN_DOMAIN);
         foreignConsumer.subscribe(Collections.singleton(protectedTopic.name()));
 
-        TopicAuthorizationException throwable = assertThrows(TopicAuthorizationException.class, () -> {
-                    foreignConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
-                }
-
+        TopicAuthorizationException throwable = assertThrows(
+                TopicAuthorizationException.class,
+                () -> foreignConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()))
         );
         assertThat(throwable.toString(), containsString("org.apache.kafka.common.errors.TopicAuthorizationException: Not authorized to access topics: [london.hammersmith.olympia.bigdatalondon.protected.retail.subway.food.purchase]"));
+    }
+
+    @Order(8)
+    @Test
+    public void shouldGrantRestrictedAccessToProtectedTopic() {
+
+        List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
+        NewTopic publicTopic = newTopics.get(1);
+
+        assertThat(publicTopic.name(), containsString(".protected."));
+
+
+        KafkaConsumer<Long, String> foreignConsumer = getDomainConsumer(SOME_OTHER_DOMAIN_ROOT);
+        foreignConsumer.subscribe(Collections.singleton(publicTopic.name()));
+        ConsumerRecords<Long, String> consumerRecords = foreignConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
+        foreignConsumer.close();
+
+        assertThat("Didnt get Record", consumerRecords.count(), is(1));
     }
 
     private Properties cloneProperties(Properties adminClientProperties, Map<String, String> entries) {
@@ -227,7 +242,6 @@ public class KafkaAPISpecFunctionalTest {
                 Serdes.String().deserializer());
     }
 
-    @NotNull
     private static Properties getClientProperties() {
         final Properties adminClientProperties = new Properties();
         adminClientProperties.put(AdminClientConfig.CLIENT_ID_CONFIG, apiSpec.id());
@@ -257,7 +271,7 @@ public class KafkaAPISpecFunctionalTest {
                 "user_admin=\"admin-secret\" " +
                 String.format("user_domain-%s=\"%s-secret\" ", apiSpec.id(), apiSpec.id()) +
                 String.format("user_domain-%s=\"%s-secret\" ", FOREIGN_DOMAIN, FOREIGN_DOMAIN) +
-                ";"
+                String.format("user_domain-%s=\"%s-secret\";", SOME_OTHER_DOMAIN_ROOT, SOME_OTHER_DOMAIN_ROOT)
         );
 
         env.put("KAFKA_SASL_JAAS_CONFIG", "org.apache.kafka.common.security.plain.PlainLoginModule required " +

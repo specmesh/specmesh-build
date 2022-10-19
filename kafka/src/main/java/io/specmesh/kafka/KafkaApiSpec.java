@@ -10,14 +10,16 @@ import org.apache.kafka.common.resource.PatternType;
 import org.apache.kafka.common.resource.ResourcePattern;
 import org.apache.kafka.common.resource.ResourceType;
 
+import java.util.AbstractMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * Kafka entity mappings from the AsyncAPISpec
  */
 public class KafkaApiSpec {
-    private ApiSpec apiSpec;
+    private final ApiSpec apiSpec;
 
     public KafkaApiSpec(final ApiSpec apiSpec) {
         this.apiSpec = apiSpec;
@@ -27,7 +29,6 @@ public class KafkaApiSpec {
         return apiSpec.id();
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     /**
      * Used by AdminClient.createTopics (includes support for configs overrides i.e. min.insync.replicas
      */
@@ -51,7 +52,7 @@ public class KafkaApiSpec {
     private void validateTopicConfig() {
         final String id = apiSpec.id();
         apiSpec.channels().forEach( (k , v) -> {
-            if (k.startsWith(id) && (v.bindings() == null || v.bindings().kafka() == null)) {
+            if (k.startsWith(id) && v.publish() != null &&  (v.bindings() == null || v.bindings().kafka() == null)) {
                 throw new IllegalStateException("Kafka bindings are missing from channel: [" + k + "] Domain owner: [" + id + "]");
             }
         });
@@ -60,14 +61,31 @@ public class KafkaApiSpec {
     /**
      * Create an ACL for the domain-id principle that allows writing to any topic prefixed with the Id
      * Prevent non ACL'd ones from writing to it (somehow)
-     * @return
      */
     public List<AclBinding> listACLsForDomainOwnedTopics() {
         validateTopicConfig();
 
         final String id = apiSpec.id();
         final String principle = apiSpec.id();
-        return List.of(
+
+        final List<Map.Entry<String, String>> grantAccessTo = apiSpec.channels().entrySet().stream()
+                .filter(e -> e.getKey().startsWith(id + ".protected.") && e.getValue().publish().tags().toString().contains("grant-access:"))
+                .flatMap(
+                        v -> v.getValue().publish().tags().stream()
+                                .filter(tag -> tag.name().startsWith("grant-access:"))
+                                .map(item -> new AbstractMap.SimpleImmutableEntry<>(item.name(), v.getKey()))).collect(Collectors.toList());
+
+        final List<AclBinding> protectedAccessAcls = grantAccessTo.stream().map(e ->
+                new AclBinding(
+                        new ResourcePattern(ResourceType.TOPIC, e.getValue(), PatternType.PREFIXED),
+                        new AccessControlEntry("User:" + e.getKey().substring("grant-access:".length()),
+                                "*", AclOperation.READ, AclPermissionType.ALLOW))
+
+        ).collect(Collectors.toList());
+
+
+        protectedAccessAcls.addAll(
+                List.of(
                 // unrestricted access to public topics - must use User:* and not User:domain-*
                 new AclBinding(
                         new ResourcePattern(ResourceType.TOPIC, id + ".public", PatternType.PREFIXED),
@@ -83,7 +101,8 @@ public class KafkaApiSpec {
                 new AclBinding(
                         new ResourcePattern(ResourceType.TOPIC, id, PatternType.PREFIXED),
                         new AccessControlEntry(formatPrinciple(principle), "*", AclOperation.IDEMPOTENT_WRITE, AclPermissionType.ALLOW))
-                );
+        ));
+        return protectedAccessAcls;
     }
     public static String formatPrinciple(final String domainId) {
         return "User:domain-" + domainId;

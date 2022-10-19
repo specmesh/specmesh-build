@@ -1,4 +1,4 @@
-asyncapi: '2.4.0'
+asyncapi: '2.5.0'
 id: 'urn:london:hammersmith:olympia:bigdatalondon'
 
 info:
@@ -56,6 +56,9 @@ channels:
 
     publish:
       summary: Humans purchasing food
+      tags: [
+        name: "grant-access:domain-.some.other.domain.root"
+      ]
       message:
         name: Food Item
         tags: [
