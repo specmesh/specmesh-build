@@ -14,14 +14,22 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.errors.TopicAuthorizationException;
 import org.apache.kafka.common.serialization.Serdes;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -36,7 +44,7 @@ public class KafkaAPISpecFunctionalTest {
     public static final int WAIT = 10;
 
 
-    final static private KafkaApiSpec apiSpec = new KafkaApiSpec(getAPISpecFromResource());
+    private static final KafkaApiSpec apiSpec = new KafkaApiSpec(getAPISpecFromResource());
     public static final String SOME_OTHER_DOMAIN_ROOT = ".some.other.domain.root";
 
     // CHECKSTYLE_RULES.OFF: VisibilityModifier
@@ -65,18 +73,18 @@ public class KafkaAPISpecFunctionalTest {
     @Order(2)
     @Test
     public void shouldPublishToMyPublicTopic() throws Exception {
-        List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
+        final List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
 
-        NewTopic publicTopic = newTopics.get(0);
-        NewTopic protectedTopic = newTopics.get(1);
-        NewTopic privateTopic = newTopics.get(2);
+        final NewTopic publicTopic = newTopics.get(0);
+        final NewTopic protectedTopic = newTopics.get(1);
+        final NewTopic privateTopic = newTopics.get(2);
 
         assertThat("Expected 'public'", publicTopic.name(), containsString(".public."));
         assertThat("Expected 'protected'", protectedTopic.name(), containsString(".protected."));
         assertThat("Expected 'private'", privateTopic.name(), containsString(".private."));
 
 
-        KafkaProducer<Long, String> domainProducer = getDomainProducer(apiSpec.id());
+        final KafkaProducer<Long, String> domainProducer = getDomainProducer(apiSpec.id());
 
         domainProducer.send(new ProducerRecord<>(publicTopic.name(), 100L, "got value")).get(WAIT, TimeUnit.SECONDS);
 
@@ -92,15 +100,15 @@ public class KafkaAPISpecFunctionalTest {
     @Test
     public void shouldConsumeMyPublicTopic() {
 
-        List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
-        NewTopic publicTopic = newTopics.get(0);
+        final List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
+        final NewTopic publicTopic = newTopics.get(0);
 
         assertThat(publicTopic.name(), containsString(".public."));
 
-        KafkaConsumer<Long, String> domainConsumer = getDomainConsumer(apiSpec.id());
+        final KafkaConsumer<Long, String> domainConsumer = getDomainConsumer(apiSpec.id());
 
         domainConsumer.subscribe(Collections.singleton(publicTopic.name()));
-        ConsumerRecords<Long, String> records = domainConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
+        final ConsumerRecords<Long, String> records = domainConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
 
         domainConsumer.close();
 
@@ -111,15 +119,15 @@ public class KafkaAPISpecFunctionalTest {
     @Test
     public void shouldConsumeMyProtectedTopic() {
 
-        List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
-        NewTopic protectedTopic = newTopics.get(1);
+        final List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
+        final NewTopic protectedTopic = newTopics.get(1);
         assertThat(protectedTopic.name(), containsString(".protected."));
 
 
-        KafkaConsumer<Long, String> domainConsumer = getDomainConsumer(apiSpec.id());
+        final KafkaConsumer<Long, String> domainConsumer = getDomainConsumer(apiSpec.id());
 
         domainConsumer.subscribe(Collections.singleton(protectedTopic.name()));
-        ConsumerRecords<Long, String> records = domainConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
+        final ConsumerRecords<Long, String> records = domainConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
 
         domainConsumer.close();
 
@@ -130,14 +138,14 @@ public class KafkaAPISpecFunctionalTest {
     @Test
     public void shouldConsumeMyPrivateTopic() {
 
-        List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
-        NewTopic protectedTopic = newTopics.get(2);
+        final List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
+        final NewTopic protectedTopic = newTopics.get(2);
         assertThat(protectedTopic.name(), containsString(".private."));
 
-        KafkaConsumer<Long, String> domainConsumer = getDomainConsumer(apiSpec.id());
+        final KafkaConsumer<Long, String> domainConsumer = getDomainConsumer(apiSpec.id());
 
         domainConsumer.subscribe(Collections.singleton(protectedTopic.name()));
-        ConsumerRecords<Long, String> records = domainConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
+        final ConsumerRecords<Long, String> records = domainConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
         domainConsumer.close();
 
         assertThat("Didnt get Record", records.count(), is(1));
@@ -147,15 +155,15 @@ public class KafkaAPISpecFunctionalTest {
     @Test
     public void shouldConsumePublicTopicByForeignConsumer() {
 
-        List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
-        NewTopic publicTopic = newTopics.get(0);
+        final List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
+        final NewTopic publicTopic = newTopics.get(0);
 
         assertThat(publicTopic.name(), containsString(".public."));
 
 
-        KafkaConsumer<Long, String> foreignConsumer = getDomainConsumer(FOREIGN_DOMAIN);
+        final KafkaConsumer<Long, String> foreignConsumer = getDomainConsumer(FOREIGN_DOMAIN);
         foreignConsumer.subscribe(Collections.singleton(publicTopic.name()));
-        ConsumerRecords<Long, String> consumerRecords = foreignConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
+        final ConsumerRecords<Long, String> consumerRecords = foreignConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
         foreignConsumer.close();
 
         assertThat("Didnt get Record", consumerRecords.count(), is(1));
@@ -165,41 +173,43 @@ public class KafkaAPISpecFunctionalTest {
     @Test
     public void shouldNotConsumeProtectedTopicByForeignConsumer() {
 
-        List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
-        NewTopic protectedTopic = newTopics.get(1);
+        final List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
+        final NewTopic protectedTopic = newTopics.get(1);
 
         assertThat(protectedTopic.name(), containsString(".protected."));
 
-        KafkaConsumer<Long, String> foreignConsumer = getDomainConsumer(FOREIGN_DOMAIN);
+        final KafkaConsumer<Long, String> foreignConsumer = getDomainConsumer(FOREIGN_DOMAIN);
         foreignConsumer.subscribe(Collections.singleton(protectedTopic.name()));
 
-        TopicAuthorizationException throwable = assertThrows(
+        final TopicAuthorizationException throwable = assertThrows(
                 TopicAuthorizationException.class,
                 () -> foreignConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()))
         );
-        assertThat(throwable.toString(), containsString("org.apache.kafka.common.errors.TopicAuthorizationException: Not authorized to access topics: [london.hammersmith.olympia.bigdatalondon.protected.retail.subway.food.purchase]"));
+        assertThat(throwable.toString(), containsString(
+                "org.apache.kafka.common.errors.TopicAuthorizationException: Not authorized to access topics: " +
+                        "[london.hammersmith.olympia.bigdatalondon.protected.retail.subway.food.purchase]"));
     }
 
     @Order(8)
     @Test
     public void shouldGrantRestrictedAccessToProtectedTopic() {
 
-        List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
-        NewTopic publicTopic = newTopics.get(1);
+        final List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
+        final NewTopic publicTopic = newTopics.get(1);
 
         assertThat(publicTopic.name(), containsString(".protected."));
 
 
-        KafkaConsumer<Long, String> foreignConsumer = getDomainConsumer(SOME_OTHER_DOMAIN_ROOT);
+        final KafkaConsumer<Long, String> foreignConsumer = getDomainConsumer(SOME_OTHER_DOMAIN_ROOT);
         foreignConsumer.subscribe(Collections.singleton(publicTopic.name()));
-        ConsumerRecords<Long, String> consumerRecords = foreignConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
+        final ConsumerRecords<Long, String> consumerRecords = foreignConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
         foreignConsumer.close();
 
         assertThat("Didnt get Record", consumerRecords.count(), is(1));
     }
 
-    private Properties cloneProperties(Properties adminClientProperties, Map<String, String> entries) {
-        Properties results = new Properties();
+    private Properties cloneProperties(final Properties adminClientProperties, final Map<String, String> entries) {
+        final Properties results = new Properties();
         results.putAll(adminClientProperties);
         results.putAll(entries);
         return results;
@@ -207,7 +217,8 @@ public class KafkaAPISpecFunctionalTest {
 
     private static ApiSpec getAPISpecFromResource() {
         try {
-            return new AsyncApiParser().loadResource(KafkaAPISpecFunctionalTest.class.getClassLoader().getResourceAsStream("bigdatalondon-api.yaml"));
+            return new AsyncApiParser().loadResource(KafkaAPISpecFunctionalTest.class.getClassLoader()
+                    .getResourceAsStream("bigdatalondon-api.yaml"));
         } catch (Throwable t) {
             throw new RuntimeException("Failed to load test resource", t);
         }

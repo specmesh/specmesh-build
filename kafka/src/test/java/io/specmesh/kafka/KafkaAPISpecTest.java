@@ -3,9 +3,6 @@
 package io.specmesh.kafka;
 
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.apiparser.model.ApiSpec;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -25,7 +22,7 @@ public class KafkaAPISpecTest {
     @Test
     public void shouldListAppOwnedTopics() {
         List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
-        assertThat(newTopics.size(), is(2));
+        assertThat(newTopics.size(), is(3));
         // For adminClient.createTopics()
     }
 
