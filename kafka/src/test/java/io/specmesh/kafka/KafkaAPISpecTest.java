@@ -1,5 +1,10 @@
+// CHECKSTYLE_RULES.OFF: FinalLocalVariable
+// CHECKSTYLE_RULES.OFF: FinalParameters
 package io.specmesh.kafka;
 
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.apiparser.model.ApiSpec;
@@ -15,6 +20,7 @@ import static org.hamcrest.Matchers.iterableWithSize;
 
 public class KafkaAPISpecTest {
     final KafkaApiSpec apiSpec = new KafkaApiSpec(getAPISpecFromResource());
+
 
     @Test
     public void shouldListAppOwnedTopics() {
