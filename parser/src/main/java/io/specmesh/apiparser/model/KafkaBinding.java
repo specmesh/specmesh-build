@@ -8,7 +8,6 @@ import lombok.Value;
 import lombok.experimental.Accessors;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,8 +15,8 @@ import java.util.Map;
 /**
  * Note: Lombok has a Value/Defaults bug which means we have messy accessors to cope with default values:
  * See
- * - https://stackoverflow.com/questions/47883931/default-value-in-lombok-how-to-init-default-with-both-constructor-and-builder
- * - https://github.com/projectlombok/lombok/issues/1347
+ * - <a href="https://stackoverflow.com/questions/47883931/default-value-in-lombok-how-to-init-default-with-both-constructor-and-builder">...</a>
+ * - <a href="https://github.com/projectlombok/lombok/issues/1347">...</a>
  */
 
 
@@ -43,16 +42,17 @@ public class KafkaBinding {
     @JsonProperty
     int retention;
 
-    @SuppressWarnings("rawtypes")
     @JsonProperty
-    Map configs = Collections.EMPTY_MAP;
+    Map<String, String> configs = Collections.emptyMap();
 
     @JsonProperty
     String groupId;
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public Map configs() {
-        final Map results = new LinkedHashMap(configs != null ? configs : new HashMap());
+    @JsonProperty
+    String schemaIdLocation;
+
+    public Map<String, String> configs() {
+        final Map<String, String> results = new LinkedHashMap<>(configs);
 
         if (!results.containsKey(RETENTION_MS) && retention != 0) {
             results.put("retention.ms", String.valueOf(retention * DAYS_TO_MS));

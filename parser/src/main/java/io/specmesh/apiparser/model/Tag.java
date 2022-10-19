@@ -18,6 +18,4 @@ public class Tag {
 
     @JsonProperty
     String description;
-
-
 }
