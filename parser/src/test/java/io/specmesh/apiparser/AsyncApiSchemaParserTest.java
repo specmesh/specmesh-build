@@ -20,14 +20,12 @@ public class AsyncApiSchemaParserTest {
         assertThat(channelsMap.size(), is(2));
         assertThat("Should have assembled 'id + channelname'", channelsMap.keySet(), hasItem("simple.schema-demo.public.user.signed"));
 
-        Operation publish = channelsMap.get("simple.schema-demo.public.user.signed").publish();
+        final Operation publish = channelsMap.get("simple.schema-demo.public.user.signed").publish();
         assertThat(publish.message().schemaRef(), is("simple_schema_demo_user-signedup.avsc"));
 
         assertThat(publish.message().schemaFormat(), is("application/vnd.apache.avro+json;version=1.9.0"));
         assertThat(publish.message().contentType(), is("application/octet-stream"));
         assertThat(publish.message().bindings().kafka().schemaIdLocation(), is("header"));
-
-
     }
 
     @Test
@@ -36,12 +34,11 @@ public class AsyncApiSchemaParserTest {
         assertThat(channelsMap.size(), is(2));
         assertThat("Should have assembled 'id + channelname'", channelsMap.keySet(), hasItem("london.hammersmith.transport.public.tube"));
 
-        Operation subscribe = channelsMap.get("london.hammersmith.transport.public.tube").subscribe();
+        final Operation subscribe = channelsMap.get("london.hammersmith.transport.public.tube").subscribe();
         assertThat(subscribe.message().schemaRef(), is("london_hammersmith_transport_public_passenger.avsc"));
         assertThat(subscribe.message().schemaFormat(), is("application/vnd.apache.avro+json;version=1.9.0"));
         assertThat(subscribe.message().contentType(), is("application/octet-stream"));
         assertThat(subscribe.message().bindings().kafka().schemaIdLocation(), is("header"));
-
     }
 
 
