@@ -3,17 +3,16 @@
 package io.specmesh.kafka;
 
 
-import io.specmesh.apiparser.AsyncApiParser;
-import io.specmesh.apiparser.model.ApiSpec;
-import org.apache.kafka.clients.admin.NewTopic;
-import org.apache.kafka.common.acl.AclBinding;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.iterableWithSize;
+
+import io.specmesh.apiparser.AsyncApiParser;
+import io.specmesh.apiparser.model.ApiSpec;
+import java.util.List;
+import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.common.acl.AclBinding;
+import org.junit.jupiter.api.Test;
 
 public class KafkaAPISpecTest {
     final KafkaApiSpec apiSpec = new KafkaApiSpec(getAPISpecFromResource());
