@@ -1,15 +1,14 @@
 package io.specmesh.apiparser;
 
-import io.specmesh.apiparser.model.ApiSpec;
-import io.specmesh.apiparser.model.Channel;
-import io.specmesh.apiparser.model.Operation;
-import org.junit.jupiter.api.Test;
-
-import java.util.Map;
-
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+
+import io.specmesh.apiparser.model.ApiSpec;
+import io.specmesh.apiparser.model.Channel;
+import io.specmesh.apiparser.model.Operation;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
 
 public class AsyncApiSchemaParserTest {
     final ApiSpec apiSpec = getAPISpecFromResource();
