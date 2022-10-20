@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * https://www.asyncapi.com/docs/reference/specification/v2.4.0#messageObject
+ * <a href="https://www.asyncapi.com/docs/reference/specification/v2.4.0#messageObject">...</a>
  */
 @Value
 @Accessors(fluent=true)
@@ -26,31 +26,43 @@ public class Message {
     String messageId;
 
     @JsonProperty
-    Map headers = Collections.EMPTY_MAP;;
+    Map headers = Collections.EMPTY_MAP;
 
     @JsonProperty
-    Map payload = Collections.EMPTY_MAP;;
+    Map payload = Collections.EMPTY_MAP;
 
     @JsonProperty
     Map correlationId = Collections.EMPTY_MAP;
+
     @JsonProperty
     String schemaFormat;
+
     @JsonProperty
     String contentType;
+
     @JsonProperty
     String name;
+
     @JsonProperty
     String title;
+
     @JsonProperty
     String summary;
+
     @JsonProperty
     String description;
 
     @JsonProperty
     List<Tag> tags = Collections.EMPTY_LIST ;
+
     @JsonProperty
-    Map bindings;
+    Bindings bindings;
+
     @JsonProperty
     Map traits = Collections.EMPTY_MAP;
+
+    public String schemaRef() {
+        return (String) payload.get("$ref");
+    }
 
 }
