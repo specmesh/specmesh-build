@@ -9,9 +9,8 @@ import static org.hamcrest.Matchers.iterableWithSize;
 
 import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.apiparser.model.ApiSpec;
-import java.util.List;
-
 import io.specmesh.apiparser.model.SchemaInfo;
+import java.util.List;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.acl.AclBinding;
 import org.junit.jupiter.api.Test;

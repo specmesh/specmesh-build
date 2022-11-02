@@ -16,7 +16,7 @@ import lombok.experimental.Accessors;
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 @AllArgsConstructor
 @SuppressFBWarnings
-public class RegisteredSchema<T> {
+public class RegisteredSchema {
     private final String subject;
     private final ParsedSchema schema;
     private final int id;

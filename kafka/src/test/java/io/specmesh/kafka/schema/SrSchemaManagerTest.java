@@ -1,21 +1,20 @@
 package io.specmesh.kafka.schema;
 
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.json.JsonSchema;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import org.junit.jupiter.api.Test;
 
 class SrSchemaManagerTest {
 
@@ -58,7 +57,7 @@ class SrSchemaManagerTest {
         // Then:
         assertThat(
                 result,
-                is(new RegisteredSchema<>(subject, latestSchema, latestId)));
+                is(new RegisteredSchema(subject, latestSchema, latestId)));
     }
 
 
@@ -78,8 +77,8 @@ class SrSchemaManagerTest {
                 srSchemaManager.loadById(subject, v2Id);
 
         // Then:
-        assertThat(actualV1, is(new RegisteredSchema<>(subject, v1Schema, v1Id)));
-        assertThat(actualV2, is(new RegisteredSchema<>(subject, v2Schema, v2Id)));
+        assertThat(actualV1, is(new RegisteredSchema(subject, v1Schema, v1Id)));
+        assertThat(actualV2, is(new RegisteredSchema(subject, v2Schema, v2Id)));
     }
 
 
@@ -99,7 +98,7 @@ class SrSchemaManagerTest {
         final int expectedId = schemaRegistryClient.getId(result.subject(), expectedSchema);
         assertThat(
                 result,
-                is(new RegisteredSchema<>(subject, expectedSchema, expectedId)));
+                is(new RegisteredSchema(subject, expectedSchema, expectedId)));
     }
 
     @Test
@@ -118,7 +117,7 @@ class SrSchemaManagerTest {
         final int expectedId = schemaRegistryClient.getId(result.subject(), expectedSchema);
         assertThat(
                 result,
-                is(new RegisteredSchema<>(subject, expectedSchema, expectedId)));
+                is(new RegisteredSchema(subject, expectedSchema, expectedId)));
     }
 
     public static JsonSchema loadSchemaFromClasspath(final String schemaFile) {
@@ -140,6 +139,4 @@ class SrSchemaManagerTest {
         final Object obj = yamlReader.readValue(yaml, Object.class);
         return MAPPER.writeValueAsString(obj);
     }
-
-
 }
