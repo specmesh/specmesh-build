@@ -8,10 +8,17 @@ val hamcrestVersion : String by extra
 val log4jVersion : String by extra
 val testcontainersVersion : String by extra
 val lombokVersion : String by extra
+val confluentVersion : String by extra
+
 
 dependencies {
 
     implementation(project(":parser"));
+
+    api("io.confluent:kafka-schema-registry-client:${confluentVersion}")
+    api("io.confluent:kafka-json-schema-provider:${confluentVersion}")
+    // https://mvnrepository.com/artifact/io.confluent/kafka-json-schema-provider
+
 
     api("org.hamcrest:hamcrest-all:$hamcrestVersion")
 
@@ -21,6 +28,7 @@ dependencies {
     implementation("com.microsoft.terraform:terraform-client:1.0.0");
 
     implementation("org.apache.kafka:kafka-clients:${kafkaVersion}");
+    implementation("commons-io:commons-io:2.11.0")
 
 
     compileOnly("org.projectlombok:lombok:$lombokVersion")

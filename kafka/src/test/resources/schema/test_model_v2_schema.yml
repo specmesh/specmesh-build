@@ -1,0 +1,15 @@
+---
+$id: com.spec.event.schema.test_model_schema.yml
+$schema: http://json-schema.org/draft-07/schema
+additionalProperties: false
+type: object
+
+properties:
+  id:
+    type: number
+    multipleOf: 1
+  name:
+    type: string
+
+required:
+  - id

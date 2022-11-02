@@ -1,0 +1,10 @@
+{
+  "namespace": "simple.schema.demo",
+  "type": "record",
+  "name": "User",
+  "fields": [
+    {"name": "fullName", "type": "string"},
+    {"name": "email",  "type": "string"},
+    {"name": "age", "type": "int"}
+  ]
+}

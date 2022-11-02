@@ -10,6 +10,8 @@ import static org.hamcrest.Matchers.iterableWithSize;
 import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.apiparser.model.ApiSpec;
 import java.util.List;
+
+import io.specmesh.apiparser.model.SchemaInfo;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.acl.AclBinding;
 import org.junit.jupiter.api.Test;
@@ -20,14 +22,14 @@ public class KafkaAPISpecTest {
 
     @Test
     public void shouldListAppOwnedTopics() {
-        List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
+        final List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
         assertThat(newTopics.size(), is(3));
         // For adminClient.createTopics()
     }
 
     @Test
     public void shouldGenerateACLsSoDomainOwnersCanWrite() {
-        List<AclBinding> acls = apiSpec.listACLsForDomainOwnedTopics();
+        final List<AclBinding> acls = apiSpec.listACLsForDomainOwnedTopics();
 
         assertThat(acls, iterableWithSize(5));
 
@@ -37,6 +39,14 @@ public class KafkaAPISpecTest {
                         "patternType=PREFIXED), entry=(principal=User:domain-.some.other.domain.root, host=*, operation=READ, " +
                         "permissionType=ALLOW))"));
         // For adminClient.createAcls(acls);
+    }
+
+    @Test
+    public void shouldGetSchemaInfoForOwnedTopics() {
+        final List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
+        final SchemaInfo schemaInfo = apiSpec.schemaInfoForTopic(newTopics.get(0).name());
+        assertThat(schemaInfo.schemaIdLocation(), is("header"));
+        // For adminClient.createTopics()
     }
 
 

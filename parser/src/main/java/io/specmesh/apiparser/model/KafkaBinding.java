@@ -51,6 +51,15 @@ public class KafkaBinding {
     @JsonProperty
     String schemaIdLocation;
 
+    @JsonProperty
+    String schemaIdPayloadEncoding;
+
+    @JsonProperty
+    String schemaLookupStrategy;
+
+    @JsonProperty
+    String bindingVersion;
+
     public Map<String, String> configs() {
         final Map<String, String> results = new LinkedHashMap<>(configs);
 
