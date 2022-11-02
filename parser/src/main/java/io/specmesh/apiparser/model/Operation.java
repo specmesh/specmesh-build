@@ -51,6 +51,7 @@ public class Operation {
             throw new IllegalStateException("Bindings not found for operation: " + operationId);
         }
         return new SchemaInfo(message().schemaRef(), message().schemaFormat(), message.bindings().kafka().schemaIdLocation(),
-                message.bindings().kafka().schemaIdPayloadEncoding(), message().contentType(), message.bindings().kafka().schemaLookupStrategy());
+                message.bindings().kafka().schemaIdPayloadEncoding(), message().contentType(),
+                message.bindings().kafka().schemaLookupStrategy());
     }
 }
