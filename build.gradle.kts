@@ -19,6 +19,12 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        maven {
+            url = uri("https://packages.confluent.io/maven/")
+        }
+        maven {
+            url = uri("https://repository.mulesoft.org/nexus/content/repositories/public/")
+        }
     }
     apply(plugin = "idea")
     apply(plugin = "java")
@@ -60,7 +66,7 @@ subprojects {
         set("openTracingVersion", "0.33.0")
         set("observabilityVersion", "1.1.8")
         set("guavaVersion", "29.0-jre")
-        set("confluentVersion", "6.0.0")
+        set("confluentVersion", "7.2.2")
         set("jacksonVersion", "2.11.3")
         set("medeiaValidatorVersion", "1.1.0")
         set("junitVersion", "5.7.0")
@@ -83,6 +89,7 @@ subprojects {
     val log4jVersion : String by extra
     val testcontainersVersion : String by extra
     val lombokVersion : String by extra
+    val confluentVersion : String by extra
 
     dependencies {
         testImplementation(project(":parser"))

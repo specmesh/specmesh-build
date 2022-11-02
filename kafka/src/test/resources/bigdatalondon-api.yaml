@@ -31,6 +31,7 @@ channels:
           cleanup.policy: delete
     publish:
       summary: Humans arriving
+      operationId: onHumansArriving
       message:
         name: Human
         tags:
@@ -38,6 +39,14 @@ channels:
             description: "eats food"
           - name: "big data london"
             description: "eats food"
+        bindings:
+          kafka:
+            key:
+              type: string
+              enum: [ 'myKey' ]
+            schemaIdLocation: 'header'
+            schemaIdPayloadEncoding: '4'
+            bindingVersion: '0.3.0'
         payload:
           type: object
           properties:

@@ -1,0 +1,51 @@
+---
+$id: party_schema.yml
+$schema: http://json-schema.org/draft-07/schema
+additionalProperties: false
+type: object
+
+
+definitions:
+  bigdecimal:
+    type: number
+  price:
+    type: object
+    properties:
+      value:
+        $ref: "#/definitions/bigdecimal"
+      currency:
+        type: number
+
+properties:
+  id:
+    type: number
+    multipleOf: 1
+  name:
+    type: string
+    minLength: 1
+  type:
+    enum:
+      - Customer
+      - House
+      - FXPB
+      - Transfer
+      - Bank
+  price:
+    $ref: "#/definitions/price"
+  systemDate:
+    type: string
+  systemTime:
+    type: string
+  zonedDateTime:
+    type: string
+  theNewField:
+    type: string
+
+required:
+  - id
+  - name
+  - type
+  - price
+  - systemDate
+  - systemTime
+  - zonedDateTime

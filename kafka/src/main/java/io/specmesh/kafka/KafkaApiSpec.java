@@ -1,6 +1,7 @@
 package io.specmesh.kafka;
 
 import io.specmesh.apiparser.model.ApiSpec;
+import io.specmesh.apiparser.model.SchemaInfo;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.acl.AccessControlEntry;
 import org.apache.kafka.common.acl.AclBinding;
@@ -106,5 +107,14 @@ public class KafkaApiSpec {
     }
     public static String formatPrinciple(final String domainId) {
         return "User:domain-" + domainId;
+    }
+
+    public SchemaInfo schemaInfoForTopic(final String topicName) {
+
+        final List<NewTopic> myTopics = listDomainOwnedTopics();
+        myTopics.stream().filter(topic -> topic.name().equals(topicName)).findFirst().orElseThrow(() ->
+                new IllegalStateException("Could not find 'owned' topic for:" + topicName));
+
+        return apiSpec.channels().get(topicName).publish().schemaInfo();
     }
 }
