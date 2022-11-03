@@ -26,6 +26,9 @@ dependencies {
     compileOnly("org.projectlombok:lombok:$lombokVersion")
     annotationProcessor("org.projectlombok:lombok:$lombokVersion")
 
+    implementation("org.slf4j:slf4j-api:1.7.36")
+    implementation("org.slf4j:slf4j-simple:1.7.36")
+
     implementation("com.fasterxml.jackson.core:jackson-annotations:2.13.4")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.4")
     implementation("com.github.spotbugs:spotbugs-annotations:$spotBugsVersion")
