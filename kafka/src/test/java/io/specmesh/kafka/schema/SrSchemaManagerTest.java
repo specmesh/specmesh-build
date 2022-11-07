@@ -19,7 +19,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Objects;
-
 import org.junit.jupiter.api.Test;
 import simple.schema_demo._public.user_signed_up_value.UserSignedUp;
 
