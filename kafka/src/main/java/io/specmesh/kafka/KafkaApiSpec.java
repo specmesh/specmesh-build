@@ -92,7 +92,11 @@ public class KafkaApiSpec {
                         new ResourcePattern(ResourceType.TOPIC, id + ".public", PatternType.PREFIXED),
                         new AccessControlEntry("User:*", "*", AclOperation.READ, AclPermissionType.ALLOW)),
 
-                // READ, WRITE to owned topics
+                new AclBinding(
+                        new ResourcePattern(ResourceType.TOPIC, id + "._public", PatternType.PREFIXED),
+                        new AccessControlEntry("User:*", "*", AclOperation.READ, AclPermissionType.ALLOW)),
+
+                        // READ, WRITE to owned topics
                 new AclBinding(
                         new ResourcePattern(ResourceType.TOPIC, id, PatternType.PREFIXED),
                         new AccessControlEntry(formatPrinciple(principle), "*", AclOperation.READ, AclPermissionType.ALLOW)),
