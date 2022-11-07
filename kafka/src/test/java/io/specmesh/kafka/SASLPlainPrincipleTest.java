@@ -3,21 +3,7 @@
 package io.specmesh.kafka;
 
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import com.google.common.collect.Sets;
-import java.io.IOException;
-import java.time.Duration;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
@@ -27,20 +13,26 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.acl.AccessControlEntry;
-import org.apache.kafka.common.acl.AclBinding;
-import org.apache.kafka.common.acl.AclOperation;
-import org.apache.kafka.common.acl.AclPermissionType;
-import org.apache.kafka.common.resource.PatternType;
-import org.apache.kafka.common.resource.ResourcePattern;
-import org.apache.kafka.common.resource.ResourceType;
 import org.apache.kafka.common.serialization.Serdes;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
+
+import java.time.Duration;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 @Testcontainers
 public class SASLPlainPrincipleTest {
@@ -50,9 +42,9 @@ public class SASLPlainPrincipleTest {
     public static final String FOREIGN_DOMAIN = "london.hammersmith.transport";
     // CHECKSTYLE_RULES.OFF: VisibilityModifier
     @Container
-    public KafkaContainer kafka = getKafkaContainer();
+    public static final KafkaContainer kafka = getKafkaContainer();
 
-    private KafkaContainer getKafkaContainer() {
+    private static KafkaContainer getKafkaContainer() {
         final Map<String, String> env = new LinkedHashMap<>();
         env.put("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "false");
         env.put("KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND", "true");
@@ -85,7 +77,6 @@ public class SASLPlainPrincipleTest {
 
     private AdminClient adminClient;
     private KafkaProducer domainProducer;
-//    private KafkaProducer<Long, String> foreignProducer;
     private KafkaConsumer<Long, String> domainConsumer;
     private KafkaConsumer<Long, String> foreignConsumer;
 
@@ -189,7 +180,6 @@ public class SASLPlainPrincipleTest {
     @Test
     public void shouldPubSubStuff() throws Exception {
 
-        final int assets = 1;
         Future send = domainProducer.send(new ProducerRecord(DOMAIN_ROOT + PUBLIC_LIGHT_MEASURED, 100L, "got value"));
         send.get();
         System.out.println("Produce Done:" + send.isDone());
@@ -214,47 +204,8 @@ public class SASLPlainPrincipleTest {
         return results;
     }
 
-
-    public List<AclBinding> setAclsForProducer(String principal, String topic) throws IOException {
-        List<AclBinding> acls = List.of(
-                buildTopicLevelAcl(principal, topic, PatternType.LITERAL, AclOperation.DESCRIBE),
-                buildTopicLevelAcl(principal, topic, PatternType.LITERAL, AclOperation.WRITE)
-        );
-        createAcls(acls);
-        return acls;
+    @AfterAll
+    public static void stopThings() {
+        kafka.stop();
     }
-
-    public List<AclBinding> setAclsForConsumer(String principal, String topic) throws IOException {
-        List<AclBinding> acls = List.of(
-            buildTopicLevelAcl(principal, topic, PatternType.LITERAL, AclOperation.DESCRIBE),
-            buildTopicLevelAcl(principal, topic, PatternType.LITERAL, AclOperation.READ),
-            buildGroupLevelAcl(principal, "*", PatternType.LITERAL, AclOperation.READ)
-        );
-        createAcls(acls);
-        return acls;
-    }
-
-    private void createAcls(Collection<AclBinding> acls) throws IOException {
-        try {
-            adminClient.createAcls(acls).all().get();
-        } catch (ExecutionException | InterruptedException e) {
-//            LOGGER.error(e);
-            throw new IOException(e);
-        }
-    }
-
-
-    private AclBinding buildTopicLevelAcl(
-            String principal, String topic, PatternType patternType, AclOperation aclOperation) {
-        return new AclBinding(new ResourcePattern(ResourceType.TOPIC, topic, patternType),
-                new AccessControlEntry(principal, "*", aclOperation, AclPermissionType.ALLOW));
-    }
-
-    private AclBinding buildGroupLevelAcl(
-            String principal, String group, PatternType patternType, AclOperation aclOperation) {
-        return new AclBinding(new ResourcePattern(ResourceType.GROUP, group, patternType),
-                new AccessControlEntry(principal, "*", aclOperation, AclPermissionType.ALLOW));
-    }
-
-
 }

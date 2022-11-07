@@ -7,21 +7,67 @@ import static org.hamcrest.Matchers.is;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import io.confluent.kafka.schemaregistry.avro.AvroSchema;
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
-import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.json.JsonSchema;
+import io.confluent.kafka.serializers.KafkaAvroDeserializer;
+import io.confluent.kafka.serializers.KafkaAvroSerializer;
+import io.confluent.kafka.serializers.KafkaAvroSerializerConfig;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
+import java.util.Objects;
+
 import org.junit.jupiter.api.Test;
+import simple.schema_demo._public.user_signed_up_value.UserSignedUp;
 
 class SrSchemaManagerTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private final SchemaRegistryClient schemaRegistryClient = new MockSchemaRegistryClient();
+    private final MockSchemaRegistryClient schemaRegistryClient = new MockSchemaRegistryClient();
     private final SrSchemaManager srSchemaManager = new SrSchemaManager(schemaRegistryClient);
+
+
+    @Test
+    public void shouldLoadAvroSchemaThenSerializeAndDeseralizeWithReflection() throws Exception {
+
+        final var topicSubject = "simple.schema_demo._public.user_signed_up";
+        final var schemaContent = Files.readString(
+                Path.of(
+                        Objects.requireNonNull(getClass()
+                                        .getResource("/schema/" + topicSubject + ".avsc"))
+                                .toURI()),
+                UTF_8);
+
+        final var avroSchema = new AvroSchema(schemaContent);
+
+
+        final var schemaId = schemaRegistryClient.register(topicSubject + "-value", avroSchema);
+
+        assertThat(schemaId, is (1));
+
+        final UserSignedUp signedUp = new UserSignedUp("joe bloggs", "bloggy@wasmail.com", 100);
+
+        final Map<String, ?> props = Map.of(
+                KafkaAvroSerializerConfig.AUTO_REGISTER_SCHEMAS, "false",
+                // schema-reflect MUST be true when writing Java objects (otherwise you send a datum-container instead of a Pogo)
+                KafkaAvroSerializerConfig.SCHEMA_REFLECTION_CONFIG, "true",
+                KafkaAvroSerializerConfig.USE_LATEST_VERSION, "true",
+                KafkaAvroSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, "mock://"
+            );
+        final KafkaAvroSerializer serializer = new KafkaAvroSerializer(schemaRegistryClient, props);
+
+
+        final byte[] bytess = serializer.serialize(topicSubject, signedUp);
+
+        final KafkaAvroDeserializer deserializer = new KafkaAvroDeserializer(schemaRegistryClient, props);
+        final UserSignedUp deserialize = (UserSignedUp) deserializer.deserialize(topicSubject, bytess);
+
+        assertThat(deserialize, is(signedUp));
+    }
 
     @Test
     public void shouldLoadSchemaFromClasspath() throws Exception {
@@ -126,8 +172,8 @@ class SrSchemaManagerTest {
                     yamlToJson(
                             Files.readString(
                                     Path.of(
-                                            RegisteredSchema.class
-                                                    .getResource("/schema/" + schemaFile)
+                                            Objects.requireNonNull(RegisteredSchema.class
+                                                            .getResource("/schema/" + schemaFile))
                                                     .toURI()),
                                     UTF_8)));
         } catch (final Exception e) {

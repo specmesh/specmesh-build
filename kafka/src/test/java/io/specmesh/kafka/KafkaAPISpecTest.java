@@ -30,7 +30,7 @@ public class KafkaAPISpecTest {
     public void shouldGenerateACLsSoDomainOwnersCanWrite() {
         final List<AclBinding> acls = apiSpec.listACLsForDomainOwnedTopics();
 
-        assertThat(acls, iterableWithSize(5));
+        assertThat(acls, iterableWithSize(6));
 
         assertThat("Protected ACL was not created", acls.get(0).toString(),
                 is("(pattern=ResourcePattern(resourceType=TOPIC, " +

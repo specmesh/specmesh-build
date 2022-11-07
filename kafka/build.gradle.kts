@@ -13,26 +13,29 @@ val confluentVersion : String by extra
 
 dependencies {
 
-    implementation(project(":parser"));
+    implementation(project(":parser"))
 
     api("io.confluent:kafka-schema-registry-client:${confluentVersion}")
     api("io.confluent:kafka-json-schema-provider:${confluentVersion}")
+    api("io.confluent:kafka-avro-serializer:${confluentVersion}")
     // https://mvnrepository.com/artifact/io.confluent/kafka-json-schema-provider
 
 
     api("org.hamcrest:hamcrest-all:$hamcrestVersion")
 
-    implementation("com.hashicorp:cdktf:0.12.2");
-    implementation("software.constructs:constructs:10.0.15");
-    implementation("com.google.guava:guava:28.0-jre");
-    implementation("com.microsoft.terraform:terraform-client:1.0.0");
+    implementation("com.hashicorp:cdktf:0.12.2")
+    implementation("software.constructs:constructs:10.0.15")
+    implementation("com.google.guava:guava:28.0-jre")
+    implementation("com.microsoft.terraform:terraform-client:1.0.0")
 
-    implementation("org.apache.kafka:kafka-clients:${kafkaVersion}");
+    implementation("org.apache.kafka:kafka-clients:${kafkaVersion}")
     implementation("commons-io:commons-io:2.11.0")
+    testImplementation("org.projectlombok:lombok:1.18.22")
 
 
     compileOnly("org.projectlombok:lombok:$lombokVersion")
     annotationProcessor("org.projectlombok:lombok:$lombokVersion")
+    testAnnotationProcessor("org.projectlombok:lombok:$lombokVersion")
 
     implementation("com.fasterxml.jackson.core:jackson-annotations:2.13.4")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.4")

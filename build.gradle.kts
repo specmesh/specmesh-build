@@ -116,7 +116,7 @@ subprojects {
     tasks.test {
         useJUnitPlatform()
         setForkEvery(1)
-        maxParallelForks = 4
+        maxParallelForks = 2
         testLogging {
             showStandardStreams = true
             exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL

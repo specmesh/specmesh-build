@@ -26,6 +26,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.errors.TopicAuthorizationException;
 import org.apache.kafka.common.serialization.Serdes;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -291,5 +292,10 @@ public class KafkaAPISpecFunctionalTest {
                 .withStartupAttempts(3)
                 .withEnv(env)
                 ;
+    }
+
+    @AfterAll
+    public static void stopThings() {
+        kafka.stop();
     }
 }
