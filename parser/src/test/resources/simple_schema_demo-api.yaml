@@ -34,7 +34,8 @@ channels:
       message:
         bindings:
           kafka:
-            schemaIdLocation: "header"
+            schemaIdLocation: "payload"
+            schemaIdPayloadEncoding: "confluent"
         schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
         contentType: "application/octet-stream"
         payload:

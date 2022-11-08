@@ -24,8 +24,8 @@ public class AsyncApiSchemaParserTest {
 
         assertThat(publish.message().schemaFormat(), is("application/vnd.apache.avro+json;version=1.9.0"));
         assertThat(publish.message().contentType(), is("application/octet-stream"));
-        assertThat(publish.message().bindings().kafka().schemaIdLocation(), is("header"));
-        assertThat(publish.schemaInfo().schemaIdLocation(), is("header"));
+        assertThat(publish.message().bindings().kafka().schemaIdLocation(), is("payload"));
+        assertThat(publish.schemaInfo().schemaIdLocation(), is("payload"));
     }
 
     @Test

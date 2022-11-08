@@ -30,7 +30,7 @@ public final class JsonSchemas {
     }
 
     public static JsonSchema loadFromClasspath(final Path schemaFile) {
-        final String path = File.separator + SCHEMA_DIRECTORY.resolve(schemaFile).toString();
+        final String path = File.separator + SCHEMA_DIRECTORY.resolve(schemaFile);
         final URL resource = JsonSchemas.class.getResource(path);
         if (resource == null) {
             throw new RuntimeException(
@@ -50,7 +50,7 @@ public final class JsonSchemas {
         return new String(IOUtils.toByteArray(resource), StandardCharsets.UTF_8);
     }
 
-    private static String yamlToJson(final String yaml) throws IOException {
+    public static String yamlToJson(final String yaml) throws IOException {
         final Object obj = yamlMapper.readValue(yaml, Object.class);
         return jsonWriter.writeValueAsString(obj);
     }
