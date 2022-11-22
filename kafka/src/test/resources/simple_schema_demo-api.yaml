@@ -14,7 +14,7 @@ servers:
     url: mqtt://test.mosquitto.org
     protocol: mqtt
 channels:
-  # PRODUCER WILL PUBLISH SCHEMA to SR
+  # PRODUCER/OWNER build pipe will publish schema to SR
   _public/user_signed_up:
     # publish bindings to instruct topic configuration per environment
     bindings:
@@ -34,11 +34,39 @@ channels:
       message:
         bindings:
           kafka:
-            schemaIdLocation: "header"
+            schemaIdLocation: "payload"
+            schemaIdPayloadEncoding: "confluent"
         schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
         contentType: "application/octet-stream"
         payload:
           $ref: "/schema/simple.schema_demo._public.user_signed_up.avsc"
+
+  # PRODUCER/OWNER build pipe will publish schema to SR
+  _public/user_checkout:
+    # publish bindings to instruct topic configuration per environment
+    bindings:
+      kafka:
+        envs:
+          - staging
+          - prod
+        partitions: 3
+        replicas: 1
+        retention: 1
+        configs:
+          cleanup.policy: delete
+
+    publish:
+      summary: User purchase confirmation
+      operationId: onUserCheckout
+      message:
+        bindings:
+          kafka:
+            schemaIdLocation: "payload"
+            schemaIdPayloadEncoding: "confluent"
+        schemaFormat: "application/json;version=1.9.0"
+        contentType: "application/json"
+        payload:
+          $ref: "/schema/simple.schema_demo._public.user_checkout.yml"
 
 # SUBSCRIBER WILL REQUEST SCHEMA from SR and CodeGen required classes. Header will be used for Id
   /london/hammersmith/transport/public/tube:

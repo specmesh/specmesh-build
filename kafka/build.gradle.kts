@@ -18,8 +18,7 @@ dependencies {
     api("io.confluent:kafka-schema-registry-client:${confluentVersion}")
     api("io.confluent:kafka-json-schema-provider:${confluentVersion}")
     api("io.confluent:kafka-avro-serializer:${confluentVersion}")
-    // https://mvnrepository.com/artifact/io.confluent/kafka-json-schema-provider
-
+    api("io.confluent:kafka-json-schema-serializer:${confluentVersion}")
 
     api("org.hamcrest:hamcrest-all:$hamcrestVersion")
 

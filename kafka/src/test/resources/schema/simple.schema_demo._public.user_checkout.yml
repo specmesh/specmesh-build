@@ -1,0 +1,41 @@
+{
+  "$schema":"http://json-schema.org/draft-07/schema#",
+  "title":"User Checkout",
+  "type":"object",
+  "additionalProperties":false,
+  "javaType":"simple.schema_demo._public.user_checkout_value.UserCheckout",
+  "properties":{
+    "id":{
+      "type":"integer"
+    },
+    "name":{
+      "oneOf":[
+        {
+          "type":"null",
+          "title":"Not included"
+        },
+        {
+          "type":"string"
+        }
+      ]
+    },
+    "price":{
+      "type":"integer"
+    },
+    "systemDate":{
+      "oneOf":[
+        {
+          "type":"null",
+          "title":"Not included"
+        },
+        {
+          "type":"string"
+        }
+      ]
+    }
+  },
+  "required":[
+    "id",
+    "price"
+  ]
+}
