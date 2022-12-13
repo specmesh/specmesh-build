@@ -33,7 +33,7 @@ allprojects {
     apply(plugin = "com.diffplug.spotless")
     apply(plugin = "com.github.spotbugs")
 
-    group = "com.specmesh.build"
+    group = "io.specmesh.build"
 
     java {
         withSourcesJar()
@@ -48,11 +48,12 @@ allprojects {
                 name = "GitHubPackages"
                 url = uri("https://maven.pkg.github.com/specmesh/specmesh-build")
                 credentials {
-                    username = System.getenv("GITHUB_ACTOR")
+                    username = System.getenv("GITHUB_USR")
                     password = System.getenv("GITHUB_TOKEN")
                 }
             }
         }
+
     }
 }
 
