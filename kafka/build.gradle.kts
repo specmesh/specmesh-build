@@ -19,6 +19,8 @@ dependencies {
     api("io.confluent:kafka-json-schema-provider:${confluentVersion}")
     api("io.confluent:kafka-avro-serializer:${confluentVersion}")
     api("io.confluent:kafka-json-schema-serializer:${confluentVersion}")
+    api("com.google.protobuf:protobuf-java:3.21.11")
+    api("io.confluent:kafka-protobuf-serializer:$confluentVersion")
 
     api("org.hamcrest:hamcrest-all:$hamcrestVersion")
 
@@ -41,9 +43,9 @@ dependencies {
     implementation("com.github.spotbugs:spotbugs-annotations:$spotBugsVersion")
 
 
-    testImplementation("org.testcontainers:testcontainers:${testcontainersVersion}")
+    implementation("org.testcontainers:testcontainers:${testcontainersVersion}")
     testImplementation("org.testcontainers:junit-jupiter:${testcontainersVersion}")
-    testImplementation("org.testcontainers:kafka:${testcontainersVersion}")
+    implementation("org.testcontainers:kafka:${testcontainersVersion}")
 
     testImplementation("org.apache.logging.log4j:log4j-api:${log4jVersion}")
     testImplementation("org.apache.logging.log4j:log4j-core:${log4jVersion}")

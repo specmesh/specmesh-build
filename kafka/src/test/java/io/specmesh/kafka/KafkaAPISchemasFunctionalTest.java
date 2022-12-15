@@ -1,28 +1,34 @@
 package io.specmesh.kafka;
 
 
+import static io.specmesh.kafka.Clients.consumer;
+import static io.specmesh.kafka.Clients.consumerProperties;
+import static io.specmesh.kafka.Clients.producer;
+import static io.specmesh.kafka.Clients.producerProperties;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import io.confluent.kafka.schemaregistry.avro.AvroSchema;
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
+import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializerConfig;
+import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
+import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializerConfig;
+import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
 import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.kafka.schema.SchemaRegistryContainer;
+import io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfo.UserInfo;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -66,11 +72,13 @@ class KafkaAPISchemasFunctionalTest {
     private static final KafkaApiSpec apiSpec = new KafkaApiSpec(getAPISpecFromResource());
 
     private AdminClient adminClient;
+    private SchemaRegistryClient schemaRegistryClient;
 
     @BeforeEach
     public void createAllTheThings() {
         System.out.println("createAllTheThings BROKER URL:" + kafkaContainer.getBootstrapServers());
         adminClient = AdminClient.create(getClientProperties());
+        schemaRegistryClient = new CachedSchemaRegistryClient(schemaRegistryContainer.getUrl(), 1000);
     }
 
 
@@ -86,7 +94,6 @@ class KafkaAPISchemasFunctionalTest {
         final var schemaRef = schemaInfo.schemaRef();
         assertThat(schemaRef, is("/schema/" + topicSubject + ".avsc"));
 
-        final var schemaRegistryClient = new CachedSchemaRegistryClient(schemaRegistryContainer.getUrl(), 1000);
         final var schemaContent = Files.readString(
                 Path.of(
                         Objects.requireNonNull(getClass()
@@ -111,16 +118,115 @@ class KafkaAPISchemasFunctionalTest {
         final ConsumerRecords<Long, UserSignedUp> consumerRecords = domainConsumer.poll(Duration.ofSeconds(10));
         assertThat(consumerRecords, is(notNullValue()));
         assertThat(consumerRecords.iterator().next().value(), is(sentRecord));
-
-
     }
 
 
-    private Properties cloneProperties(final Properties adminClientProperties, final Map<String, String> entries) {
-        final var results = new Properties();
-        results.putAll(adminClientProperties);
-        results.putAll(entries);
-        return results;
+    @Order(2)
+    @Test
+    void shouldProvisionProduceAndConsumeUsingAvroWithSpeccy() throws Exception {
+
+        Provisioner.provisionTopicsAndSchemas(apiSpec, adminClient, schemaRegistryClient, "./build/resources/test");
+
+        final List<NewTopic> domainTopics = apiSpec.listDomainOwnedTopics();
+        final var userSignedUpTopic = domainTopics.stream()
+                .filter(topic -> topic.name().endsWith("_public.user_signed_up")).findFirst().get().name();
+
+        /*
+          Produce on the schema
+         */
+        final KafkaProducer<Long, UserSignedUp> domainProducer = producer(
+                Long.class,
+                UserSignedUp.class,
+                producerProperties(
+                        apiSpec.id(),
+                        kafkaContainer.getBootstrapServers(),
+                        schemaRegistryContainer.getUrl(),
+                        LongSerializer.class,
+                        KafkaAvroSerializer.class,
+                        Map.of()));
+        final var sentRecord = new UserSignedUp("joe blogs" , "blogy@twasmail.com", 100);
+
+        domainProducer.send(
+                new ProducerRecord<>(userSignedUpTopic, 1000L,
+                        sentRecord
+                )
+        ).get();
+
+
+        final KafkaConsumer<Long, UserSignedUp> consumer = consumer(
+                Long.class,
+                UserSignedUp.class,
+                consumerProperties(
+                        apiSpec.id()+"222",
+                    kafkaContainer.getBootstrapServers(),
+                    schemaRegistryContainer.getUrl(),
+                    LongDeserializer.class,
+                    KafkaAvroDeserializer.class,
+                true,
+                    Map.of()));
+        consumer.subscribe(Collections.singleton(userSignedUpTopic));
+        final ConsumerRecords<Long, UserSignedUp> consumerRecords = consumer.poll(Duration.ofSeconds(10));
+        assertThat(consumerRecords, is(notNullValue()));
+        assertThat(consumerRecords.count(), is(1));
+        assertThat(consumerRecords.iterator().next().value(), is(sentRecord));
+    }
+
+    @Order(3)
+    @Test
+    void shouldProvisionProduceAndConsumeProtoWithSpeccy() throws Exception {
+
+        Provisioner.provisionTopicsAndSchemas(apiSpec, adminClient, schemaRegistryClient, "./build/resources/test");
+
+        final List<NewTopic> domainTopics = apiSpec.listDomainOwnedTopics();
+        final var userInfoTopic = domainTopics.stream().filter(topic -> topic.name().endsWith("_public.user_info")).findFirst().get().name();
+
+        /*
+          Produce on the schema
+         */
+        final KafkaProducer<Long, UserInfo> domainProducer = producer(
+                        Long.class,
+                        UserInfo.class,
+                        producerProperties(
+                                apiSpec.id(), kafkaContainer.getBootstrapServers(),
+                            schemaRegistryContainer.getUrl(),
+                            LongSerializer.class,
+                            KafkaProtobufSerializer.class,
+                            Map.of()
+                        )
+                );
+        final var userSam = UserInfo.newBuilder().setFullName("sam fteex").setEmail("hello-sam@bahamas.island").setAge(52).build();
+
+
+        domainProducer.send(
+                new ProducerRecord<>(userInfoTopic, 1000L,
+                        userSam
+                )
+        ).get();
+
+
+        final KafkaConsumer<Long, UserInfo> consumer = consumer(Long.class, UserInfo.class,
+                consumerProperties(
+                        apiSpec.id()+"3",
+                        kafkaContainer.getBootstrapServers(),
+                        schemaRegistryContainer.getUrl(),
+                        LongDeserializer.class,
+                        KafkaProtobufDeserializer.class,
+                        true,
+                        Map.of(KafkaProtobufDeserializerConfig.SPECIFIC_PROTOBUF_VALUE_TYPE, UserInfo.class.getName() ))
+        );
+        consumer.subscribe(Collections.singleton(userInfoTopic));
+        final ConsumerRecords<Long, UserInfo> consumerRecords = consumer.poll(Duration.ofSeconds(10));
+        assertThat(consumerRecords, is(notNullValue()));
+        assertThat(consumerRecords.count(), is(1));
+        assertThat(consumerRecords.iterator().next().value(), is(userSam));
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> cloneProperties(final Properties adminClientProperties, final Map<String, String> entries) {
+        Map<String, Object> mutableMap = new HashMap<String, Object>((Map) adminClientProperties);
+        mutableMap.putAll(entries);
+        return mutableMap;
     }
 
     private static ApiSpec getAPISpecFromResource() {
@@ -140,7 +246,7 @@ class KafkaAPISchemasFunctionalTest {
                                 ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, LongSerializer.class.getName(),
                                 ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class.getName(),
                                 AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG,
-                                        schemaRegistryContainer.getUrl(),
+                                schemaRegistryContainer.getUrl(),
                                 // AUTO-REG should be false to allow schemas to be published by controlled processes
                                 AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS, "false",
                                 // schema-reflect MUST be true when writing Java objects (otherwise you send a datum-container instead of a Pogo)
