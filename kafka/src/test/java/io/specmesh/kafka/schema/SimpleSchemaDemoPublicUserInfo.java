@@ -4,7 +4,9 @@
 package io.specmesh.kafka.schema;
 
 
-@SuppressWarnings("all")
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
+@SuppressWarnings("all") @SuppressFBWarnings
 public final class SimpleSchemaDemoPublicUserInfo {
   private SimpleSchemaDemoPublicUserInfo() {}
   public static void registerAllExtensions(
