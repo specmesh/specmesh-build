@@ -13,7 +13,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
@@ -108,7 +107,6 @@ public class SASLPlainPrincipleTest {
 
         topics.values().values().forEach(f -> {
             try {
-                System.out.println("checking");
                 f.get();
             } catch (ExecutionException | InterruptedException | RuntimeException e) {
                 throw new RuntimeException(e);
@@ -140,20 +138,6 @@ public class SASLPlainPrincipleTest {
                 Serdes.Long().deserializer(),
                 Serdes.String().deserializer());
 
-
-
-//        foreignProducer =
-//                new KafkaProducer<>(
-//                        cloneProperties(adminClientProperties,  Map.of(
-//                                AdminClientConfig.CLIENT_ID_CONFIG, FOREIGN_DOMAIN + ".producer",
-//                                "sasl.jaas.config", String.format("org.apache.kafka.common.security.plain.PlainLoginModule required " +
-//                                        "   username=\"%s_producer\" " +
-//                                        "   password=\"%s_producer-secret\";", DOMAIN_ROOT, DOMAIN_ROOT)
-//                                )
-//                        ),
-//                        Serdes.Long().serializer(),
-//                        Serdes.String().serializer());
-
         foreignConsumer = new KafkaConsumer<>(
                 cloneProperties(adminClientProperties,
                         Map.of(
@@ -166,33 +150,24 @@ public class SASLPlainPrincipleTest {
                         )),
                 Serdes.Long().deserializer(),
                 Serdes.String().deserializer());
-
-
-
-        final Properties consumerProperties = new Properties();
-        consumerProperties.put(
-                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
-        consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "my-test-group");
-        consumerProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void shouldPubSubStuff() throws Exception {
 
-        Future send = domainProducer.send(new ProducerRecord(DOMAIN_ROOT + PUBLIC_LIGHT_MEASURED, 100L, "got value"));
-        send.get();
-        System.out.println("Produce Done:" + send.isDone());
+        domainProducer
+                .send(new ProducerRecord(DOMAIN_ROOT + PUBLIC_LIGHT_MEASURED, 100L, "got value"))
+                .get();
 
         domainConsumer.subscribe(Collections.singleton(DOMAIN_ROOT + PUBLIC_LIGHT_MEASURED));
         ConsumerRecords<Long, String> poll = domainConsumer.poll(Duration.of(30, TimeUnit.SECONDS.toChronoUnit()));
 
-        System.out.println("GOT:" + poll.count());
         assertThat("Didnt get Record", poll.count(), is(1));
 
         foreignConsumer.subscribe(Collections.singleton(DOMAIN_ROOT + PUBLIC_LIGHT_MEASURED));
         ConsumerRecords<Long, String> pollForeign = foreignConsumer.poll(Duration.of(30, TimeUnit.SECONDS.toChronoUnit()));
 
-        System.out.println("GOT:" + pollForeign.count());
         assertThat("Didnt get Record", pollForeign.count(), is(1));
     }
 

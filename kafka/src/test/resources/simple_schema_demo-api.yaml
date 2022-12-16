@@ -68,8 +68,35 @@ channels:
         payload:
           $ref: "/schema/simple.schema_demo._public.user_checkout.yml"
 
+
+  # PRODUCER/OWNER build pipe will publish schema to SR
+  _public/user_info:
+    # publish bindings to instruct topic configuration per environment
+    bindings:
+      kafka:
+        envs:
+          - staging
+          - prod
+        partitions: 3
+        replicas: 1
+        retention: 1
+        configs:
+          cleanup.policy: delete
+
+    publish:
+      summary: User purchase confirmation
+      operationId: onUserCheckout
+      message:
+        bindings:
+          kafka:
+            schemaIdLocation: "payload"
+            schemaIdPayloadEncoding: "confluent"
+        schemaFormat: "application/json;version=1.9.0"
+        contentType: "application/json"
+        payload:
+          $ref: "/schema/simple.schema_demo._public.user_info.proto"
 # SUBSCRIBER WILL REQUEST SCHEMA from SR and CodeGen required classes. Header will be used for Id
-  /london/hammersmith/transport/public/tube:
+  /london/hammersmith/transport/_public/tube:
     subscribe:
       summary: Humans arriving in the borough
       bindings:
@@ -85,5 +112,5 @@ channels:
               type: string
         payload:
           # client should lookup this schema remotely from the schema registry - it is owned by the publisher
-          $ref: "london_hammersmith_transport_public_passenger.avsc"
+          $ref: "london.hammersmith.transport._public.tube.passenger.avsc"
 
