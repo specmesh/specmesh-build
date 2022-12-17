@@ -1,0 +1,138 @@
+asyncapi: '2.5.0'
+id: 'urn:london:hammersmith:olympia:bigdatalondon'
+
+info:
+  title: BigDataLondon API
+  version: '1.0.0'
+  description: |
+    Simple model of BigDataLondon as a Data Product
+  license:
+    name: Apache 2.0
+    url: 'https://www.apache.org/licenses/LICENSE-2.0'
+
+servers:
+  test:
+    url: test.mykafkacluster.org:8092
+    protocol: kafka-secure
+    description: Test broker
+
+channels:
+  public/attendee:
+    # publish bindings to instruct topic configuration per environment
+    bindings:
+      kafka:
+        envs:
+          - staging
+          - prod
+        partitions: 10
+        replicas: 1
+        retention: 1
+        configs:
+          cleanup.policy: delete
+    publish:
+      summary: Humans arriving
+      operationId: onHumansArriving
+      message:
+        name: Human
+        tags:
+          - name: "human"
+            description: "eats food"
+          - name: "big data london"
+            description: "eats food"
+        bindings:
+          kafka:
+            key:
+              type: string
+              enum: [ 'myKey' ]
+            schemaIdLocation: 'header'
+            schemaIdPayloadEncoding: '4'
+            bindingVersion: '0.3.0'
+        payload:
+          type: object
+          properties:
+            id:
+              type: integer
+              minimum: 0
+              description: Id of the human
+            age:
+              type: integer
+              minimum: 0
+              description: Age of the human
+  protected/retail/subway/food/purchase:
+    bindings:
+      kafka:
+        partitions: 3
+
+    publish:
+      summary: Humans purchasing food
+      tags: [
+        name: "grant-access:domain-.some.other.domain.root"
+      ]
+      message:
+        name: Food Item
+        tags: [
+          name: "human",
+          name: "purchase"
+        ]
+        payload:
+          type: object
+          properties:
+            id:
+              type: integer
+              minimum: 0
+              description: Id of the food
+            cost:
+              type: number
+              minimum: 0
+              description: GBP cost of the food item
+            human_id:
+              type: integer
+              minimum: 0
+              description: Id of the human purchasing the food
+
+  private/retail/subway/customers:
+    bindings:
+      kafka:
+        partitions: 3
+
+    publish:
+      summary: Humans customers
+      message:
+        name: Food Item
+        tags: [
+          name: "human",
+          name: "customer"
+        ]
+        payload:
+          type: object
+          properties:
+            id:
+              type: integer
+              minimum: 0
+              description: Id of the food
+            cost:
+              type: number
+              minimum: 0
+              description: GBP cost of the food item
+            human_id:
+              type: integer
+              minimum: 0
+              description: Id of the human purchasing the food
+
+
+  /london/hammersmith/transport/public/tube:
+    subscribe:
+      summary: Humans arriving in the borough
+      message:
+        name: Human
+        payload:
+          type: object
+          properties:
+            id:
+              type: integer
+              minimum: 0
+              description: Id of the human
+            age:
+              type: integer
+              minimum: 0
+              description: Age of the human

@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.apache.commons.collections.MapUtils;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -65,10 +66,10 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
     @Order(1)
     @Test
     void shouldProvisionProduceAndConsumeUsingAvroWithSpeccy() throws Exception {
+        Provisioner.provisionTopics(adminClient, apiSpec);
+        Provisioner.provisionSchemas(apiSpec, schemaRegistryClient, "./build/resources/test");
 
-        Provisioner.provisionTopicsAndSchemas(apiSpec, adminClient, schemaRegistryClient, "./build/resources/test");
-
-        final List<NewTopic> domainTopics = apiSpec.listDomainOwnedTopics();
+        final var domainTopics = apiSpec.listDomainOwnedTopics();
         final var userSignedUpTopic = domainTopics.stream()
                 .filter(topic -> topic.name().endsWith("_public.user_signed_up"))
                 .findFirst().orElseThrow(() -> new RuntimeException("user_signed_up topic not found")).name();
@@ -96,7 +97,7 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
                         1000L,
                         sentRecord
                 )
-        ).get();
+        ).get(60, TimeUnit.SECONDS);
 
 
         final KafkaConsumer<Long, UserSignedUp> consumer = consumer(
@@ -123,7 +124,8 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
     @Test
     void shouldProvisionProduceAndConsumeProtoWithSpeccyClient() throws Exception {
 
-        Provisioner.provisionTopicsAndSchemas(apiSpec, adminClient, schemaRegistryClient, "./build/resources/test");
+        Provisioner.provisionTopics(adminClient, apiSpec);
+        Provisioner.provisionSchemas(apiSpec, schemaRegistryClient, "./build/resources/test");
 
         final List<NewTopic> domainTopics = apiSpec.listDomainOwnedTopics();
         final var userInfoTopic = domainTopics.stream()
@@ -153,7 +155,7 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
                 new ProducerRecord<>(userInfoTopic, 1000L,
                         userSam
                 )
-        ).get();
+        ).get(60, TimeUnit.SECONDS);
 
 
         final KafkaConsumer<Long, UserInfo> consumer = consumer(Long.class, UserInfo.class,
@@ -178,7 +180,8 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
     @Test
     void shouldProvisionInfraAndStreamStuffUsingProtoAndSpeccyClient() throws Exception {
 
-        Provisioner.provisionTopicsAndSchemas(apiSpec, adminClient, schemaRegistryClient, "./build/resources/test");
+        Provisioner.provisionTopics(adminClient, apiSpec);
+        Provisioner.provisionSchemas(apiSpec, schemaRegistryClient, "./build/resources/test");
 
         final var domainTopics = apiSpec.listDomainOwnedTopics();
         final var userInfoTopic = domainTopics.stream()
@@ -241,7 +244,7 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
         final var userSam = UserInfo.newBuilder()
                 .setFullName("sam fteex").setEmail("hello-sam@bahamas.island").setAge(52)
                 .build();
-        producer.send(new ProducerRecord<>(userInfoTopic,1000L, userSam)).get();
+        producer.send(new ProducerRecord<>(userInfoTopic,1000L, userSam)).get(60, TimeUnit.SECONDS);
 
 
         final KafkaConsumer<Long, UserInfoEnriched> consumer = consumer(Long.class, UserInfoEnriched.class,
