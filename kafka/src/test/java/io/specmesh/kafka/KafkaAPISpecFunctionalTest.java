@@ -23,7 +23,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.errors.TopicAuthorizationException;
 import org.apache.kafka.common.serialization.Serdes;
 import org.junit.jupiter.api.AfterAll;
@@ -59,15 +58,11 @@ public class KafkaAPISpecFunctionalTest {
         adminClient = AdminClient.create(getClientProperties());
     }
 
-
     @Order(1)
     @Test
     public void shouldCreateDomainTopicsWithACLs() throws Exception {
-        final List<NewTopic> newTopics = apiSpec.listDomainOwnedTopics();
-        adminClient.createTopics(newTopics).all().get(WAIT, TimeUnit.SECONDS);
-        System.out.println("CREATED TOPICS: " + newTopics.size());
-        final List<AclBinding> aclBindings = apiSpec.listACLsForDomainOwnedTopics();
-        adminClient.createAcls(aclBindings).all().get(WAIT, TimeUnit.SECONDS);
+        Provisioner.provisionTopics(adminClient, apiSpec);
+        Provisioner.provisionAcls(adminClient, apiSpec);
     }
 
     @Order(2)
@@ -160,7 +155,6 @@ public class KafkaAPISpecFunctionalTest {
 
         assertThat(publicTopic.name(), containsString(".public."));
 
-
         final KafkaConsumer<Long, String> foreignConsumer = getDomainConsumer(FOREIGN_DOMAIN);
         foreignConsumer.subscribe(Collections.singleton(publicTopic.name()));
         final ConsumerRecords<Long, String> consumerRecords = foreignConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
@@ -218,7 +212,7 @@ public class KafkaAPISpecFunctionalTest {
     private static ApiSpec getAPISpecFromResource() {
         try {
             return new AsyncApiParser().loadResource(KafkaAPISpecFunctionalTest.class.getClassLoader()
-                    .getResourceAsStream("bigdatalondon-api.yaml"));
+                    .getResourceAsStream("apispec-functional-test-app.yaml"));
         } catch (Throwable t) {
             throw new RuntimeException("Failed to load test resource", t);
         }
