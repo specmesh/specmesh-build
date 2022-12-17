@@ -5,7 +5,7 @@ import static io.specmesh.kafka.Clients.consumer;
 import static io.specmesh.kafka.Clients.consumerProperties;
 import static io.specmesh.kafka.Clients.producer;
 import static io.specmesh.kafka.Clients.producerProperties;
-import static org.apache.kafka.streams.kstream.Produced.*;
+import static org.apache.kafka.streams.kstream.Produced.with;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -42,7 +42,6 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.Produced;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -71,7 +70,8 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
 
         final List<NewTopic> domainTopics = apiSpec.listDomainOwnedTopics();
         final var userSignedUpTopic = domainTopics.stream()
-                .filter(topic -> topic.name().endsWith("_public.user_signed_up")).findFirst().orElseThrow(() -> new RuntimeException("user_signed_up topic not found")).name();
+                .filter(topic -> topic.name().endsWith("_public.user_signed_up"))
+                .findFirst().orElseThrow(() -> new RuntimeException("user_signed_up topic not found")).name();
 
         /*
           Produce on the schema
@@ -126,7 +126,8 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
         Provisioner.provisionTopicsAndSchemas(apiSpec, adminClient, schemaRegistryClient, "./build/resources/test");
 
         final List<NewTopic> domainTopics = apiSpec.listDomainOwnedTopics();
-        final var userInfoTopic = domainTopics.stream().filter(topic -> topic.name().endsWith("_public.user_info")).findFirst().orElseThrow().name();
+        final var userInfoTopic = domainTopics.stream()
+                .filter(topic -> topic.name().endsWith("_public.user_info")).findFirst().orElseThrow().name();
 
         /*
           Produce on the schema
@@ -180,9 +181,12 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
         Provisioner.provisionTopicsAndSchemas(apiSpec, adminClient, schemaRegistryClient, "./build/resources/test");
 
         final var domainTopics = apiSpec.listDomainOwnedTopics();
-        final var userInfoTopic = domainTopics.stream().filter(topic -> topic.name().endsWith("_public.user_info")).findFirst().orElseThrow().name();
+        final var userInfoTopic = domainTopics.stream()
+                .filter(topic -> topic.name().endsWith("_public.user_info"))
+                .findFirst().orElseThrow().name();
         final var userInfoEnrichedTopic = domainTopics.stream()
-                .filter(topic -> topic.name().endsWith("_public.user_info_enriched")).findFirst().orElseThrow().name();
+                .filter(topic -> topic.name().endsWith("_public.user_info_enriched"))
+                .findFirst().orElseThrow().name();
 
         final var streamsConfiguration = Clients.kstreamsProperties(
                 apiSpec.id(),
