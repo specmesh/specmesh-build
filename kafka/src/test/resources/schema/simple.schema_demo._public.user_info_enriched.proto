@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package io.specmesh.kafka.schema;
+
+message UserInfoEnriched {
+  string fullName = 1;
+  string email = 2;
+  string address = 3;
+  int32 age = 4;
+  }

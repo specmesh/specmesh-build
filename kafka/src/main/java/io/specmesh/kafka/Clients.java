@@ -7,6 +7,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.streams.StreamsConfig;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -51,6 +52,38 @@ public final class Clients {
                 providedProperties);
     }
 
+    @SuppressWarnings("checkstyle:ParameterNumber")
+    @NotNull
+    public static Map<String, Object> kstreamsProperties(final String domainId,
+        final String serviceId,
+        final String bootstrapServers,
+        final String schemaRegistryUrl,
+        final Class<?> keySerdeClass,
+        final Class<?> valueSerdeClass,
+        final boolean acksAll,
+        final Map<String, Object> providedProperties) {
+
+            return mergeMaps(getClientProperties(domainId, bootstrapServers),
+                    Map.of(
+                            StreamsConfig.APPLICATION_ID_CONFIG, domainId + "." + serviceId,
+                            StreamsConfig.CLIENT_ID_CONFIG, domainId + "." + serviceId + ".client",
+                            StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, keySerdeClass.getName(),
+                            StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, valueSerdeClass.getName(),
+                            // Records should be flushed every 10 seconds. This is less than the default
+                            // in order to keep this example interactive.
+                            StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 10 * 1000,
+                            ProducerConfig.ACKS_CONFIG, acksAll? "all" : "1",
+                            AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl,
+                            // AUTO-REG should be false to allow schemas to be published by controlled processes
+                            AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS, "false",
+                            // schema-reflect MUST be true when writing Java objects
+                            // (otherwise you send a datum-container (avro) or dynamic record (proto) instead of a Pojo)
+                            KafkaAvroSerializerConfig.SCHEMA_REFLECTION_CONFIG, "true",
+                            KafkaAvroSerializerConfig.USE_LATEST_VERSION, "true"
+                    ),
+                    providedProperties);
+        }
+
 
     public static  <K, V> KafkaConsumer<K, V> consumer(final Class<K> keyClass,
                                                        final Class<V> valueClass,
@@ -88,10 +121,12 @@ public final class Clients {
         return adminClientProperties;
     }
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private static Map<String, Object> mergeMaps(final Map... manyMaps) {
         final HashMap<String, Object> mutableMap = new HashMap<>();
         Arrays.stream(manyMaps).forEach(mutableMap::putAll);
         return  mutableMap;
     }
+
+
 }
