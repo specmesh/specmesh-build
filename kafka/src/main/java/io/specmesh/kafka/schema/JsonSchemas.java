@@ -12,18 +12,18 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 import org.apache.commons.io.IOUtils;
 
 public final class JsonSchemas {
 
     public static final Path SCHEMA_DIRECTORY = Paths.get("schema");
 
-    private static final ObjectMapper yamlMapper =
-            new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
+    private static final ObjectMapper yamlMapper = new ObjectMapper(
+            new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
     private static final ObjectMapper jsonWriter = new ObjectMapper();
 
-    private JsonSchemas() {}
+    private JsonSchemas() {
+    }
 
     public static JsonSchema loadFromClasspath(final String schemaFile) {
         return loadFromClasspath(Paths.get(schemaFile));
@@ -33,15 +33,13 @@ public final class JsonSchemas {
         final String path = File.separator + SCHEMA_DIRECTORY.resolve(schemaFile);
         final URL resource = JsonSchemas.class.getResource(path);
         if (resource == null) {
-            throw new RuntimeException(
-                    "Failed to load schema resource: " + path + ". Resource not found");
+            throw new RuntimeException("Failed to load schema resource: " + path + ". Resource not found");
         }
 
         try {
             return new JsonSchema(yamlToJson(loadYamlFromUrl(resource)));
         } catch (final Exception e) {
-            throw new RuntimeException(
-                    "Failed to convert schema resource: " + path + ". " + e.getMessage(), e);
+            throw new RuntimeException("Failed to convert schema resource: " + path + ". " + e.getMessage(), e);
         }
     }
 

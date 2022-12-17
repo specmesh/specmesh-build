@@ -2,7 +2,6 @@
 // CHECKSTYLE_RULES.OFF: FinalParameters
 package io.specmesh.kafka;
 
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -49,28 +48,23 @@ public class SASLPlainPrincipleTest {
         env.put("KAFKA_SUPER_USERS", "User:OnlySuperUser");
         env.put("KAFKA_SASL_ENABLED_MECHANISMS", "PLAIN,SASL_PLAINTEXT");
 
-
         env.put("KAFKA_LISTENER_SECURITY_PROTOCOL_MAP", "BROKER:PLAINTEXT,PLAINTEXT:SASL_PLAINTEXT");
         env.put("KAFKA_LISTENER_NAME_PLAINTEXT_SASL_ENABLED_MECHANISMS", "PLAIN");
-        env.put("KAFKA_LISTENER_NAME_PLAINTEXT_PLAIN_SASL_JAAS_CONFIG", "org.apache.kafka.common.security.plain.PlainLoginModule required " +
-                "username=\"admin\" " +
-                "password=\"admin-secret\" " +
-                "user_admin=\"admin-secret\" " +
-                String.format("user_%s=\"%s-secret\" ", DOMAIN_ROOT, DOMAIN_ROOT) +
-                String.format("user_%s_producer=\"%s_producer-secret\" ", DOMAIN_ROOT, DOMAIN_ROOT) +
-                String.format("user_%s_consumer=\"%s_consumer-secret\" ", DOMAIN_ROOT, DOMAIN_ROOT) +
-                String.format("user_%s_producer=\"%s_producer-secret\" ", FOREIGN_DOMAIN, FOREIGN_DOMAIN) +
-                String.format("user_%s_consumer=\"%s_consumer-secret\";", FOREIGN_DOMAIN, FOREIGN_DOMAIN)
+        env.put("KAFKA_LISTENER_NAME_PLAINTEXT_PLAIN_SASL_JAAS_CONFIG",
+                "org.apache.kafka.common.security.plain.PlainLoginModule required " + "username=\"admin\" "
+                        + "password=\"admin-secret\" " + "user_admin=\"admin-secret\" "
+                        + String.format("user_%s=\"%s-secret\" ", DOMAIN_ROOT, DOMAIN_ROOT)
+                        + String.format("user_%s_producer=\"%s_producer-secret\" ", DOMAIN_ROOT, DOMAIN_ROOT)
+                        + String.format("user_%s_consumer=\"%s_consumer-secret\" ", DOMAIN_ROOT, DOMAIN_ROOT)
+                        + String.format("user_%s_producer=\"%s_producer-secret\" ", FOREIGN_DOMAIN, FOREIGN_DOMAIN)
+                        + String.format("user_%s_consumer=\"%s_consumer-secret\";", FOREIGN_DOMAIN, FOREIGN_DOMAIN)
 
         );
 
-        env.put("KAFKA_SASL_JAAS_CONFIG", "org.apache.kafka.common.security.plain.PlainLoginModule required " +
-                "username=\"admin\" " +
-                "password=\"admin-secret\";");
-        return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:6.2.1"))
-                .withStartupAttempts(3)
-                .withEnv(env)
-                ;
+        env.put("KAFKA_SASL_JAAS_CONFIG", "org.apache.kafka.common.security.plain.PlainLoginModule required "
+                + "username=\"admin\" " + "password=\"admin-secret\";");
+        return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:6.2.1")).withStartupAttempts(3)
+                .withEnv(env);
     }
 
     private AdminClient adminClient;
@@ -86,24 +80,15 @@ public class SASLPlainPrincipleTest {
         adminClientProperties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
         adminClientProperties.put(AdminClientConfig.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
         adminClientProperties.put("sasl.mechanism", "PLAIN");
-        adminClientProperties.put("sasl.jaas.config","org.apache.kafka.common.security.plain.PlainLoginModule required " +
-                "   username=\"admin\" password=\"admin-secret\";");
+        adminClientProperties.put("sasl.jaas.config",
+                "org.apache.kafka.common.security.plain.PlainLoginModule required "
+                        + "   username=\"admin\" password=\"admin-secret\";");
 
         adminClient = AdminClient.create(adminClientProperties);
         CreateTopicsResult topics = adminClient.createTopics(
-                Sets.newHashSet(
-                        new NewTopic(
-                                DOMAIN_ROOT + PUBLIC_LIGHT_MEASURED,
-                                1,
-                                Short.parseShort("1")),
-                        new NewTopic(
-                                DOMAIN_ROOT + PRIVATE_LIGHT_EVENTS,
-                                1,
-                                Short.parseShort("1")),
-                        new NewTopic(
-                                ".london.hammersmith.transport.public.tube", 1, Short.parseShort("1")
-                        )
-                ));
+                Sets.newHashSet(new NewTopic(DOMAIN_ROOT + PUBLIC_LIGHT_MEASURED, 1, Short.parseShort("1")),
+                        new NewTopic(DOMAIN_ROOT + PRIVATE_LIGHT_EVENTS, 1, Short.parseShort("1")),
+                        new NewTopic(".london.hammersmith.transport.public.tube", 1, Short.parseShort("1"))));
 
         topics.values().values().forEach(f -> {
             try {
@@ -113,52 +98,40 @@ public class SASLPlainPrincipleTest {
             }
         });
 
-        domainProducer =
-                new KafkaProducer<>(
-                        cloneProperties(adminClientProperties, Map.of(
-                                AdminClientConfig.CLIENT_ID_CONFIG, DOMAIN_ROOT + ".producer",
-                                "sasl.jaas.config", String.format("org.apache.kafka.common.security.plain.PlainLoginModule required " +
-                                        "   username=\"%s_producer\" " +
-                                        "   password=\"%s_producer-secret\";", DOMAIN_ROOT, DOMAIN_ROOT)
-                        )),
-                        Serdes.Long().serializer(),
-                        Serdes.String().serializer());
+        domainProducer = new KafkaProducer<>(
+                cloneProperties(adminClientProperties,
+                        Map.of(AdminClientConfig.CLIENT_ID_CONFIG, DOMAIN_ROOT + ".producer", "sasl.jaas.config",
+                                String.format("org.apache.kafka.common.security.plain.PlainLoginModule required "
+                                        + "   username=\"%s_producer\" " + "   password=\"%s_producer-secret\";",
+                                        DOMAIN_ROOT, DOMAIN_ROOT))),
+                Serdes.Long().serializer(), Serdes.String().serializer());
 
         domainConsumer = new KafkaConsumer<>(
                 cloneProperties(adminClientProperties,
-                        Map.of(
-                                ConsumerConfig.CLIENT_ID_CONFIG, DOMAIN_ROOT + ".consumer",
+                        Map.of(ConsumerConfig.CLIENT_ID_CONFIG, DOMAIN_ROOT + ".consumer",
                                 ConsumerConfig.GROUP_ID_CONFIG, DOMAIN_ROOT + ".consumer-group",
-                                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest",
-                                "sasl.jaas.config", String.format("org.apache.kafka.common.security.plain.PlainLoginModule required " +
-                                        "   username=\"%s_consumer\" " +
-                                        "   password=\"%s_consumer-secret\";", DOMAIN_ROOT, DOMAIN_ROOT)
-                        )
-                ),
-                Serdes.Long().deserializer(),
-                Serdes.String().deserializer());
+                                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest", "sasl.jaas.config",
+                                String.format("org.apache.kafka.common.security.plain.PlainLoginModule required "
+                                        + "   username=\"%s_consumer\" " + "   password=\"%s_consumer-secret\";",
+                                        DOMAIN_ROOT, DOMAIN_ROOT))),
+                Serdes.Long().deserializer(), Serdes.String().deserializer());
 
         foreignConsumer = new KafkaConsumer<>(
                 cloneProperties(adminClientProperties,
-                        Map.of(
-                                ConsumerConfig.CLIENT_ID_CONFIG, FOREIGN_DOMAIN + ".consumer",
+                        Map.of(ConsumerConfig.CLIENT_ID_CONFIG, FOREIGN_DOMAIN + ".consumer",
                                 ConsumerConfig.GROUP_ID_CONFIG, FOREIGN_DOMAIN + ".consumer-group",
-                                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest",
-                                "sasl.jaas.config", String.format("org.apache.kafka.common.security.plain.PlainLoginModule required " +
-                                        "   username=\"%s_consumer\" " +
-                                        "   password=\"%s_consumer-secret\";", FOREIGN_DOMAIN, FOREIGN_DOMAIN)
-                        )),
-                Serdes.Long().deserializer(),
-                Serdes.String().deserializer());
+                                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest", "sasl.jaas.config",
+                                String.format("org.apache.kafka.common.security.plain.PlainLoginModule required "
+                                        + "   username=\"%s_consumer\" " + "   password=\"%s_consumer-secret\";",
+                                        FOREIGN_DOMAIN, FOREIGN_DOMAIN))),
+                Serdes.Long().deserializer(), Serdes.String().deserializer());
     }
 
     @SuppressWarnings("unchecked")
     @Test
     public void shouldPubSubStuff() throws Exception {
 
-        domainProducer
-                .send(new ProducerRecord(DOMAIN_ROOT + PUBLIC_LIGHT_MEASURED, 100L, "got value"))
-                .get();
+        domainProducer.send(new ProducerRecord(DOMAIN_ROOT + PUBLIC_LIGHT_MEASURED, 100L, "got value")).get();
 
         domainConsumer.subscribe(Collections.singleton(DOMAIN_ROOT + PUBLIC_LIGHT_MEASURED));
         ConsumerRecords<Long, String> poll = domainConsumer.poll(Duration.of(30, TimeUnit.SECONDS.toChronoUnit()));
@@ -166,7 +139,8 @@ public class SASLPlainPrincipleTest {
         assertThat("Didnt get Record", poll.count(), is(1));
 
         foreignConsumer.subscribe(Collections.singleton(DOMAIN_ROOT + PUBLIC_LIGHT_MEASURED));
-        ConsumerRecords<Long, String> pollForeign = foreignConsumer.poll(Duration.of(30, TimeUnit.SECONDS.toChronoUnit()));
+        ConsumerRecords<Long, String> pollForeign = foreignConsumer
+                .poll(Duration.of(30, TimeUnit.SECONDS.toChronoUnit()));
 
         assertThat("Didnt get Record", pollForeign.count(), is(1));
     }

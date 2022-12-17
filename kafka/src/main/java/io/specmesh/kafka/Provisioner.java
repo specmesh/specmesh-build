@@ -24,32 +24,27 @@ public final class Provisioner {
 
     public static final int WAIT = 10;
 
-    public static int provisionTopics(final AdminClient adminClient,
-                                        final KafkaApiSpec apiSpec)
+    public static int provisionTopics(final AdminClient adminClient, final KafkaApiSpec apiSpec)
             throws InterruptedException, ExecutionException, TimeoutException {
 
         final var domainTopics = apiSpec.listDomainOwnedTopics();
 
-        final var existingTopics = adminClient.listTopics()
-                .listings().get(WAIT, TimeUnit.SECONDS).stream()
+        final var existingTopics = adminClient.listTopics().listings().get(WAIT, TimeUnit.SECONDS).stream()
                 .map(TopicListing::name).collect(Collectors.toList());
 
         final var newTopicsToCreate = domainTopics.stream()
-                .filter(newTopic -> !existingTopics.contains(newTopic.name()))
-                .collect(Collectors.toList());
+                .filter(newTopic -> !existingTopics.contains(newTopic.name())).collect(Collectors.toList());
 
         adminClient.createTopics(newTopicsToCreate).all().get(WAIT, TimeUnit.SECONDS);
         return newTopicsToCreate.size();
     }
 
     /**
-     * Still need to
-     * - add schema compatibility checks
-     * - add schema meta data requirement so crappy schemas cannot be published
+     * Still need to - add schema compatibility checks - add schema meta data
+     * requirement so crappy schemas cannot be published
      */
-    public static void provisionSchemas(final KafkaApiSpec apiSpec,
-                                         final SchemaRegistryClient schemaRegistryClient,
-                                         final String baseResourcePath) {
+    public static void provisionSchemas(final KafkaApiSpec apiSpec, final SchemaRegistryClient schemaRegistryClient,
+            final String baseResourcePath) {
 
         final var domainTopics = apiSpec.listDomainOwnedTopics();
 
@@ -74,12 +69,13 @@ public final class Provisioner {
         }));
     }
 
-    public static void provisionAcls(final AdminClient adminClient,
-                                     final KafkaApiSpec apiSpec) throws ExecutionException, InterruptedException, TimeoutException {
+    public static void provisionAcls(final AdminClient adminClient, final KafkaApiSpec apiSpec)
+            throws ExecutionException, InterruptedException, TimeoutException {
         adminClient.createAcls(apiSpec.listACLsForDomainOwnedTopics()).all().get(WAIT, TimeUnit.SECONDS);
     }
 
-    static ParsedSchema getSchema(final String topicName, final String schemaRef, final String path, final String content) {
+    static ParsedSchema getSchema(final String topicName, final String schemaRef, final String path,
+            final String content) {
 
         if (schemaRef.endsWith(".avsc")) {
             return new AvroSchema(content);

@@ -1,6 +1,5 @@
 package io.specmesh.kafka.schema;
 
-
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -35,21 +34,15 @@ class SrSchemaManagerTest {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final MockSchemaRegistryClient schemaRegistryClient = new MockSchemaRegistryClient(
-            List.of(new AvroSchemaProvider(), new JsonSchemaProvider())
-    );
+            List.of(new AvroSchemaProvider(), new JsonSchemaProvider()));
     private final SrSchemaManager srSchemaManager = new SrSchemaManager(schemaRegistryClient);
-
-
 
     @Test
     public void shouldLoadJsonSchemaThenSerializeAndDeseralize() throws Exception {
 
         final var topicSubject = "simple.schema_demo._public.user_checkout";
         final var schemaContent = JsonSchemas.yamlToJson(Files.readString(
-                Path.of(
-                        Objects.requireNonNull(getClass()
-                                        .getResource("/schema/" + topicSubject + ".yml"))
-                                .toURI()),
+                Path.of(Objects.requireNonNull(getClass().getResource("/schema/" + topicSubject + ".yml")).toURI()),
                 UTF_8));
 
         final var jsonSchema = new JsonSchema(schemaContent);
@@ -58,22 +51,20 @@ class SrSchemaManagerTest {
 
         final var schemaId = schemaRegistryClient.register(topicSubject + "-value", jsonSchema);
 
-        assertThat(schemaId, is (1));
+        assertThat(schemaId, is(1));
 
         final var userCheckout = new UserCheckout(100L, "joe bloggs", 100, "now");
 
-        final Map<String, ?> props = Map.of(
-                KafkaJsonSchemaSerializerConfig.AUTO_REGISTER_SCHEMAS, "false",
-                // schema-reflect MUST be true when writing Java objects (otherwise you send a datum-container instead of a Pogo)
+        final Map<String, ?> props = Map.of(KafkaJsonSchemaSerializerConfig.AUTO_REGISTER_SCHEMAS, "false",
+                // schema-reflect MUST be true when writing Java objects (otherwise you send a
+                // datum-container instead of a Pogo)
                 KafkaJsonSchemaSerializerConfig.SCHEMA_REFLECTION_CONFIG, "true",
                 KafkaJsonSchemaSerializerConfig.USE_LATEST_VERSION, "true",
                 KafkaJsonSchemaSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, "mock://",
                 KafkaJsonSchemaSerializerConfig.FAIL_INVALID_SCHEMA, true,
                 KafkaJsonSchemaSerializerConfig.WRITE_DATES_AS_ISO8601, true,
-                KafkaJsonDeserializerConfig.JSON_VALUE_TYPE, UserCheckout.class.getName()
-        );
+                KafkaJsonDeserializerConfig.JSON_VALUE_TYPE, UserCheckout.class.getName());
         final var serializer = new KafkaJsonSchemaSerializer(schemaRegistryClient, props);
-
 
         final byte[] bytess = serializer.serialize(topicSubject, userCheckout);
 
@@ -88,30 +79,24 @@ class SrSchemaManagerTest {
 
         final var topicSubject = "simple.schema_demo._public.user_signed_up";
         final var schemaContent = Files.readString(
-                Path.of(
-                        Objects.requireNonNull(getClass()
-                                        .getResource("/schema/" + topicSubject + ".avsc"))
-                                .toURI()),
+                Path.of(Objects.requireNonNull(getClass().getResource("/schema/" + topicSubject + ".avsc")).toURI()),
                 UTF_8);
 
         final var avroSchema = new AvroSchema(schemaContent);
 
-
         final var schemaId = schemaRegistryClient.register(topicSubject + "-value", avroSchema);
 
-        assertThat(schemaId, is (1));
+        assertThat(schemaId, is(1));
 
         final UserSignedUp signedUp = new UserSignedUp("joe bloggs", "bloggy@wasmail.com", 100);
 
-        final Map<String, ?> props = Map.of(
-                KafkaAvroSerializerConfig.AUTO_REGISTER_SCHEMAS, "false",
-                // schema-reflect MUST be true when writing Java objects (otherwise you send a datum-container instead of a Pogo)
+        final Map<String, ?> props = Map.of(KafkaAvroSerializerConfig.AUTO_REGISTER_SCHEMAS, "false",
+                // schema-reflect MUST be true when writing Java objects (otherwise you send a
+                // datum-container instead of a Pogo)
                 KafkaAvroSerializerConfig.SCHEMA_REFLECTION_CONFIG, "true",
                 KafkaAvroSerializerConfig.USE_LATEST_VERSION, "true",
-                KafkaAvroSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, "mock://"
-            );
+                KafkaAvroSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, "mock://");
         final KafkaAvroSerializer serializer = new KafkaAvroSerializer(schemaRegistryClient, props);
-
 
         final byte[] bytess = serializer.serialize(topicSubject, signedUp);
 
@@ -130,8 +115,7 @@ class SrSchemaManagerTest {
         final int expectedId = schemaRegistryClient.register(subject, expectedSchema);
 
         // When:
-        final RegisteredSchema schema =
-                srSchemaManager.loadFromClasspath(schemaPath, subject);
+        final RegisteredSchema schema = srSchemaManager.loadFromClasspath(schemaPath, subject);
 
         // Then:
         assertThat(schema.id(), is(expectedId));
@@ -149,15 +133,11 @@ class SrSchemaManagerTest {
         final int latestId = schemaRegistryClient.register(subject, latestSchema);
 
         // When:
-        final RegisteredSchema result =
-                srSchemaManager.loadLatest(subject);
+        final RegisteredSchema result = srSchemaManager.loadLatest(subject);
 
         // Then:
-        assertThat(
-                result,
-                is(new RegisteredSchema(subject, latestSchema, latestId)));
+        assertThat(result, is(new RegisteredSchema(subject, latestSchema, latestId)));
     }
-
 
     @Test
     public void shouldLoadByIdFromSchemaRegistry() throws Exception {
@@ -169,17 +149,13 @@ class SrSchemaManagerTest {
         final int v2Id = schemaRegistryClient.register(subject, v2Schema);
 
         // When:
-        final RegisteredSchema actualV1 =
-                srSchemaManager.loadById(subject, v1Id);
-        final RegisteredSchema actualV2 =
-                srSchemaManager.loadById(subject, v2Id);
+        final RegisteredSchema actualV1 = srSchemaManager.loadById(subject, v1Id);
+        final RegisteredSchema actualV2 = srSchemaManager.loadById(subject, v2Id);
 
         // Then:
         assertThat(actualV1, is(new RegisteredSchema(subject, v1Schema, v1Id)));
         assertThat(actualV2, is(new RegisteredSchema(subject, v2Schema, v2Id)));
     }
-
-
 
     @Test
     public void shouldRegisterSchema() throws Exception {
@@ -188,15 +164,12 @@ class SrSchemaManagerTest {
         final Path schemaFile = Paths.get("test_party_schema.yml");
 
         // When:
-        final RegisteredSchema result =
-                srSchemaManager.registerFromClasspath(schemaFile, subject);
+        final RegisteredSchema result = srSchemaManager.registerFromClasspath(schemaFile, subject);
 
         // Then:
         final JsonSchema expectedSchema = loadSchemaFromClasspath(schemaFile.toString());
         final int expectedId = schemaRegistryClient.getId(result.subject(), expectedSchema);
-        assertThat(
-                result,
-                is(new RegisteredSchema(subject, expectedSchema, expectedId)));
+        assertThat(result, is(new RegisteredSchema(subject, expectedSchema, expectedId)));
     }
 
     @Test
@@ -207,27 +180,19 @@ class SrSchemaManagerTest {
         schemaRegistryClient.register(subject, loadSchemaFromClasspath("test_party_schema.yml"));
 
         // When:
-        final RegisteredSchema result =
-                srSchemaManager.registerFromClasspath(schemaFile, subject);
+        final RegisteredSchema result = srSchemaManager.registerFromClasspath(schemaFile, subject);
 
         // Then:
         final JsonSchema expectedSchema = loadSchemaFromClasspath(schemaFile.toString());
         final int expectedId = schemaRegistryClient.getId(result.subject(), expectedSchema);
-        assertThat(
-                result,
-                is(new RegisteredSchema(subject, expectedSchema, expectedId)));
+        assertThat(result, is(new RegisteredSchema(subject, expectedSchema, expectedId)));
     }
 
     public static JsonSchema loadSchemaFromClasspath(final String schemaFile) {
         try {
-            return new JsonSchema(
-                    yamlToJson(
-                            Files.readString(
-                                    Path.of(
-                                            Objects.requireNonNull(RegisteredSchema.class
-                                                            .getResource("/schema/" + schemaFile))
-                                                    .toURI()),
-                                    UTF_8)));
+            return new JsonSchema(yamlToJson(Files.readString(Path
+                    .of(Objects.requireNonNull(RegisteredSchema.class.getResource("/schema/" + schemaFile)).toURI()),
+                    UTF_8)));
         } catch (final Exception e) {
             throw new AssertionError("Failed to load schemaFile: " + schemaFile, e);
         }
