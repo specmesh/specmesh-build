@@ -1,6 +1,5 @@
 package io.specmesh.kafka;
 
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -42,7 +41,6 @@ public class KafkaAPISpecFunctionalTest {
     public static final String FOREIGN_DOMAIN = ".london.hammersmith.transport";
     public static final int WAIT = 10;
 
-
     private static final KafkaApiSpec apiSpec = new KafkaApiSpec(getAPISpecFromResource());
     public static final String SOME_OTHER_DOMAIN_ROOT = ".some.other.domain.root";
 
@@ -78,7 +76,6 @@ public class KafkaAPISpecFunctionalTest {
         assertThat("Expected 'protected'", protectedTopic.name(), containsString(".protected."));
         assertThat("Expected 'private'", privateTopic.name(), containsString(".private."));
 
-
         final KafkaProducer<Long, String> domainProducer = getDomainProducer(apiSpec.id());
 
         domainProducer.send(new ProducerRecord<>(publicTopic.name(), 100L, "got value")).get(WAIT, TimeUnit.SECONDS);
@@ -103,7 +100,8 @@ public class KafkaAPISpecFunctionalTest {
         final KafkaConsumer<Long, String> domainConsumer = getDomainConsumer(apiSpec.id());
 
         domainConsumer.subscribe(Collections.singleton(publicTopic.name()));
-        final ConsumerRecords<Long, String> records = domainConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
+        final ConsumerRecords<Long, String> records = domainConsumer
+                .poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
 
         domainConsumer.close();
 
@@ -118,11 +116,11 @@ public class KafkaAPISpecFunctionalTest {
         final NewTopic protectedTopic = newTopics.get(1);
         assertThat(protectedTopic.name(), containsString(".protected."));
 
-
         final KafkaConsumer<Long, String> domainConsumer = getDomainConsumer(apiSpec.id());
 
         domainConsumer.subscribe(Collections.singleton(protectedTopic.name()));
-        final ConsumerRecords<Long, String> records = domainConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
+        final ConsumerRecords<Long, String> records = domainConsumer
+                .poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
 
         domainConsumer.close();
 
@@ -140,7 +138,8 @@ public class KafkaAPISpecFunctionalTest {
         final KafkaConsumer<Long, String> domainConsumer = getDomainConsumer(apiSpec.id());
 
         domainConsumer.subscribe(Collections.singleton(protectedTopic.name()));
-        final ConsumerRecords<Long, String> records = domainConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
+        final ConsumerRecords<Long, String> records = domainConsumer
+                .poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
         domainConsumer.close();
 
         assertThat("Didnt get Record", records.count(), is(1));
@@ -157,7 +156,8 @@ public class KafkaAPISpecFunctionalTest {
 
         final KafkaConsumer<Long, String> foreignConsumer = getDomainConsumer(FOREIGN_DOMAIN);
         foreignConsumer.subscribe(Collections.singleton(publicTopic.name()));
-        final ConsumerRecords<Long, String> consumerRecords = foreignConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
+        final ConsumerRecords<Long, String> consumerRecords = foreignConsumer
+                .poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
         foreignConsumer.close();
 
         assertThat("Didnt get Record", consumerRecords.count(), is(1));
@@ -175,13 +175,12 @@ public class KafkaAPISpecFunctionalTest {
         final KafkaConsumer<Long, String> foreignConsumer = getDomainConsumer(FOREIGN_DOMAIN);
         foreignConsumer.subscribe(Collections.singleton(protectedTopic.name()));
 
-        final TopicAuthorizationException throwable = assertThrows(
-                TopicAuthorizationException.class,
-                () -> foreignConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()))
-        );
-        assertThat(throwable.toString(), containsString(
-                "org.apache.kafka.common.errors.TopicAuthorizationException: Not authorized to access topics: " +
-                        "[london.hammersmith.olympia.bigdatalondon.protected.retail.subway.food.purchase]"));
+        final TopicAuthorizationException throwable = assertThrows(TopicAuthorizationException.class,
+                () -> foreignConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit())));
+        assertThat(throwable.toString(),
+                containsString(
+                        "org.apache.kafka.common.errors.TopicAuthorizationException: Not authorized to access topics: "
+                                + "[london.hammersmith.olympia.bigdatalondon.protected.retail.subway.food.purchase]"));
     }
 
     @Order(8)
@@ -193,10 +192,10 @@ public class KafkaAPISpecFunctionalTest {
 
         assertThat(publicTopic.name(), containsString(".protected."));
 
-
         final KafkaConsumer<Long, String> foreignConsumer = getDomainConsumer(SOME_OTHER_DOMAIN_ROOT);
         foreignConsumer.subscribe(Collections.singleton(publicTopic.name()));
-        final ConsumerRecords<Long, String> consumerRecords = foreignConsumer.poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
+        final ConsumerRecords<Long, String> consumerRecords = foreignConsumer
+                .poll(Duration.of(WAIT, TimeUnit.SECONDS.toChronoUnit()));
         foreignConsumer.close();
 
         assertThat("Didnt get Record", consumerRecords.count(), is(1));
@@ -219,32 +218,20 @@ public class KafkaAPISpecFunctionalTest {
     }
 
     private KafkaProducer<Long, String> getDomainProducer(final String domainId) {
-        return new KafkaProducer<>(
-                cloneProperties(getClientProperties(),
-                        Map.of(
-                                AdminClientConfig.CLIENT_ID_CONFIG, domainId + ".producer",
-                                "sasl.jaas.config", String.format("org.apache.kafka.common.security.plain.PlainLoginModule required " +
-                                        "   username=\"domain-%s\" " +
-                                        "   password=\"%s-secret\";", domainId, domainId))
-                ),
-                Serdes.Long().serializer(),
-                Serdes.String().serializer());
+        return new KafkaProducer<>(cloneProperties(getClientProperties(), Map.of(AdminClientConfig.CLIENT_ID_CONFIG,
+                domainId + ".producer", "sasl.jaas.config",
+                String.format("org.apache.kafka.common.security.plain.PlainLoginModule required "
+                        + "   username=\"domain-%s\" " + "   password=\"%s-secret\";", domainId, domainId))),
+                Serdes.Long().serializer(), Serdes.String().serializer());
     }
 
     private KafkaConsumer<Long, String> getDomainConsumer(final String domainId) {
-        return new KafkaConsumer<>(
-                cloneProperties(getClientProperties(),
-                        Map.of(
-                                ConsumerConfig.CLIENT_ID_CONFIG, domainId + ".consumer",
-                                ConsumerConfig.GROUP_ID_CONFIG, domainId + ".consumer-group",
-                                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest",
-                                "sasl.jaas.config", String.format("org.apache.kafka.common.security.plain.PlainLoginModule required " +
-                                        "   username=\"domain-%s\" " +
-                                        "   password=\"%s-secret\";", domainId, domainId)
-                        )
-                ),
-                Serdes.Long().deserializer(),
-                Serdes.String().deserializer());
+        return new KafkaConsumer<>(cloneProperties(getClientProperties(), Map.of(ConsumerConfig.CLIENT_ID_CONFIG,
+                domainId + ".consumer", ConsumerConfig.GROUP_ID_CONFIG, domainId + ".consumer-group",
+                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest", "sasl.jaas.config",
+                String.format("org.apache.kafka.common.security.plain.PlainLoginModule required "
+                        + "   username=\"domain-%s\" " + "   password=\"%s-secret\";", domainId, domainId))),
+                Serdes.Long().deserializer(), Serdes.String().deserializer());
     }
 
     private static Properties getClientProperties() {
@@ -253,11 +240,11 @@ public class KafkaAPISpecFunctionalTest {
         adminClientProperties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
         adminClientProperties.put(AdminClientConfig.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
         adminClientProperties.put("sasl.mechanism", "PLAIN");
-        adminClientProperties.put("sasl.jaas.config","org.apache.kafka.common.security.plain.PlainLoginModule required " +
-                "   username=\"admin\" password=\"admin-secret\";");
+        adminClientProperties.put("sasl.jaas.config",
+                "org.apache.kafka.common.security.plain.PlainLoginModule required "
+                        + "   username=\"admin\" password=\"admin-secret\";");
         return adminClientProperties;
     }
-
 
     private static KafkaContainer getKafkaContainer() {
         final Map<String, String> env = new LinkedHashMap<>();
@@ -267,25 +254,20 @@ public class KafkaAPISpecFunctionalTest {
         env.put("KAFKA_SUPER_USERS", "User:OnlySuperUser");
         env.put("KAFKA_SASL_ENABLED_MECHANISMS", "PLAIN,SASL_PLAINTEXT");
 
-
         env.put("KAFKA_LISTENER_SECURITY_PROTOCOL_MAP", "BROKER:PLAINTEXT,PLAINTEXT:SASL_PLAINTEXT");
         env.put("KAFKA_LISTENER_NAME_PLAINTEXT_SASL_ENABLED_MECHANISMS", "PLAIN");
-        env.put("KAFKA_LISTENER_NAME_PLAINTEXT_PLAIN_SASL_JAAS_CONFIG", "org.apache.kafka.common.security.plain.PlainLoginModule required " +
-                "username=\"admin\" " +
-                "password=\"admin-secret\" " +
-                "user_admin=\"admin-secret\" " +
-                String.format("user_domain-%s=\"%s-secret\" ", apiSpec.id(), apiSpec.id()) +
-                String.format("user_domain-%s=\"%s-secret\" ", FOREIGN_DOMAIN, FOREIGN_DOMAIN) +
-                String.format("user_domain-%s=\"%s-secret\";", SOME_OTHER_DOMAIN_ROOT, SOME_OTHER_DOMAIN_ROOT)
-        );
+        env.put("KAFKA_LISTENER_NAME_PLAINTEXT_PLAIN_SASL_JAAS_CONFIG",
+                "org.apache.kafka.common.security.plain.PlainLoginModule required " + "username=\"admin\" "
+                        + "password=\"admin-secret\" " + "user_admin=\"admin-secret\" "
+                        + String.format("user_domain-%s=\"%s-secret\" ", apiSpec.id(), apiSpec.id())
+                        + String.format("user_domain-%s=\"%s-secret\" ", FOREIGN_DOMAIN, FOREIGN_DOMAIN)
+                        + String.format("user_domain-%s=\"%s-secret\";", SOME_OTHER_DOMAIN_ROOT,
+                                SOME_OTHER_DOMAIN_ROOT));
 
-        env.put("KAFKA_SASL_JAAS_CONFIG", "org.apache.kafka.common.security.plain.PlainLoginModule required " +
-                "username=\"admin\" " +
-                "password=\"admin-secret\";");
-        return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:6.2.1"))
-                .withStartupAttempts(3)
-                .withEnv(env)
-                ;
+        env.put("KAFKA_SASL_JAAS_CONFIG", "org.apache.kafka.common.security.plain.PlainLoginModule required "
+                + "username=\"admin\" " + "password=\"admin-secret\";");
+        return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:6.2.1")).withStartupAttempts(3)
+                .withEnv(env);
     }
 
     @AfterAll

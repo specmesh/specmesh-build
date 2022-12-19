@@ -11,7 +11,7 @@ import lombok.Value;
 import lombok.experimental.Accessors;
 
 @Value
-@Accessors(fluent=true)
+@Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 @AllArgsConstructor
