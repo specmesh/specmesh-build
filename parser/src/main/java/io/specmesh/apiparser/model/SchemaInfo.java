@@ -1,10 +1,11 @@
 package io.specmesh.apiparser.model;
 
+
 import lombok.Value;
 import lombok.experimental.Accessors;
 
 @Value
-@Accessors(fluent=true)
+@Accessors(fluent = true)
 public class SchemaInfo {
     private final String schemaRef;
     private final String schemaFormat;
@@ -14,7 +15,7 @@ public class SchemaInfo {
     private String schemaLookupStrategy;
 
     public SchemaInfo(final String schemaRef, final String schemaFormat, final String schemaIdLocation,
-                      final String schemaIdPayloadLocation, final String contentType, final String schemaLookupStrategy) {
+            final String schemaIdPayloadLocation, final String contentType, final String schemaLookupStrategy) {
         this.schemaRef = schemaRef;
         this.schemaFormat = schemaFormat;
         this.schemaIdLocation = schemaIdLocation;
