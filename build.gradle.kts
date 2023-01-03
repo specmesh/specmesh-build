@@ -6,16 +6,33 @@ tasks.wrapper {
 }
 plugins {
     java
-    id("maven-publish")
+    `maven-publish`
+    `signing`
     id("com.github.spotbugs") version "4.7.2"
     id("com.diffplug.spotless") version "6.11.0"
     id("pl.allegro.tech.build.axion-release") version "1.11.0"
 }
 
 
-project.version = scmVersion.version
+//project.version = scmVersion.version
+project.group = "io.specmesh"
+project.version = "0.1.0-SNAPSHOT"
 
 allprojects {
+
+    apply(plugin = "idea")
+    apply(plugin = "java")
+    apply(plugin = "signing")
+    apply(plugin = "checkstyle")
+    apply(plugin = "com.diffplug.spotless")
+    apply(plugin = "com.github.spotbugs")
+
+
+
+
+}
+
+subprojects {
     repositories {
         google()
         mavenCentral()
@@ -26,39 +43,20 @@ allprojects {
             url = uri("https://repository.mulesoft.org/nexus/content/repositories/public/")
         }
     }
+    apply(plugin = "maven-publish")
+
     apply(plugin = "idea")
     apply(plugin = "java")
-    apply(plugin = "maven-publish")
     apply(plugin = "checkstyle")
     apply(plugin = "com.diffplug.spotless")
     apply(plugin = "com.github.spotbugs")
 
-    group = "io.specmesh.build"
 
     java {
-        withSourcesJar()
 
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-
-    publishing {
-        repositories {
-            maven {
-                name = "GitHubPackages"
-                url = uri("https://maven.pkg.github.com/specmesh/specmesh-build")
-                credentials {
-                    username = System.getenv("GITHUB_USR")
-                    password = System.getenv("GITHUB_TOKEN")
-                }
-            }
-        }
-
-    }
-}
-
-subprojects {
-    apply(plugin = "maven-publish")
 
     project.version = project.parent?.version!!
 
@@ -127,9 +125,9 @@ subprojects {
         }
     }
 
+
     spotless {
         java {
-//            googleJavaFormat("1.9").aosp()
             eclipse()
             indentWithSpaces()
             importOrder()
@@ -175,15 +173,77 @@ subprojects {
     }
 
     tasks.jar {
-        archiveBaseName.set("specmesh-${project.name}")
+        setGroup("${project.group}")
+        archiveVersion.set("${project.version}")
+        archiveBaseName.set("${project.name}")
+
     }
 
-    configure<PublishingExtension> {
-        publications {
-            create<MavenPublication>("maven") {
-                from(components["java"])
-                artifactId = "specmesh-${project.name}"
+    publishing {
+        repositories {
+            maven {
+                name = "GitHubPackages"
+                url = uri("https://maven.pkg.github.com/specmesh/${rootProject.name}")
+                credentials {
+                    username = System.getenv("GITHUB_ACTOR")
+                    password = System.getenv("GITHUB_TOKEN")
+                }
             }
         }
+
+        publications {
+            create<MavenPublication>("mavenJava") {
+//                from(components["java"])
+
+                println("----------------")
+
+                println("PROJECT ROOT:" + rootProject.name)
+                println("PROJECT NAME:" + project.name)
+                println("Using ARTIFACTID:" + artifactId)
+
+                pom {
+                    name.set("${project.group}:${artifactId}")
+
+                    description.set("${project.name.capitalize()} library".replace("-", " "))
+
+                    url.set("https://www.specmesh.io")
+
+                    licenses {
+                        license {
+                            name.set("The Apache License, Version 2.0")
+                            url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            name.set("Neil Avery")
+                            email.set("8012398+neil-avery@users.noreply.github.com")
+                            organization.set("SpecMesh Master Builders")
+                            organizationUrl.set("https://www.specmesh.io")
+                        }
+                    }
+
+                    scm {
+                        connection.set("scm:git:git://github.com/specmesh/${rootProject.name}.git")
+                        developerConnection.set("scm:git:ssh://github.com/specmesh/${rootProject.name}.git")
+                        url.set("https://github.com/specmesh/${rootProject.name}")
+                    }
+                }
+            }
+        }
+    }
+
+    signing {
+        setRequired {
+            !project.version.toString().endsWith("-SNAPSHOT")
+                    && !project.hasProperty("skipSigning")
+        }
+
+        if (project.hasProperty("signingKey")) {
+            useInMemoryPgpKeys(properties["signingKey"].toString(), properties["signingPassword"].toString())
+        }
+
+        sign(publishing.publications["mavenJava"])
     }
 }
