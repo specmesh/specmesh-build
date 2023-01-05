@@ -19,17 +19,12 @@ project.group = "io.specmesh"
 project.version = "0.1.0-SNAPSHOT"
 
 allprojects {
-
     apply(plugin = "idea")
     apply(plugin = "java")
     apply(plugin = "signing")
     apply(plugin = "checkstyle")
     apply(plugin = "com.diffplug.spotless")
     apply(plugin = "com.github.spotbugs")
-
-
-
-
 }
 
 subprojects {
@@ -180,6 +175,8 @@ subprojects {
     }
 
     publishing {
+
+        println("---------------- PUBLISHING -------------- --------------")
         repositories {
             maven {
                 name = "GitHubPackages"
@@ -192,14 +189,12 @@ subprojects {
         }
 
         publications {
-            create<MavenPublication>("mavenJava") {
-//                from(components["java"])
-
-                println("----------------")
+            create<MavenPublication>("mavenArtifacts") {
+                from(components["java"])
 
                 println("PROJECT ROOT:" + rootProject.name)
                 println("PROJECT NAME:" + project.name)
-                println("Using ARTIFACTID:" + artifactId)
+                println("USING ARTIFACT-ID:" + artifactId)
 
                 pom {
                     name.set("${project.group}:${artifactId}")
@@ -244,6 +239,6 @@ subprojects {
             useInMemoryPgpKeys(properties["signingKey"].toString(), properties["signingPassword"].toString())
         }
 
-        sign(publishing.publications["mavenJava"])
+        sign(publishing.publications["mavenArtifacts"])
     }
 }
