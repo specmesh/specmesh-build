@@ -176,15 +176,13 @@ subprojects {
 
     publishing {
 
-        println("---------------- PUBLISHING -------------- --------------")
+        println("---------------- PUBLISHING --------------")
         repositories {
             maven {
-                name = "GitHubPackages"
+                name = "GitHubPackagesSpecMesh"
                 url = uri("https://maven.pkg.github.com/specmesh/${rootProject.name}")
-                credentials {
-                    username = System.getenv("GITHUB_ACTOR")
-                    password = System.getenv("GITHUB_TOKEN")
-                }
+                // set ~/.gradle/gradle.properties vars: GitHubPackagesSpecMeshUsername and Password accordingly
+                credentials(PasswordCredentials::class)
             }
         }
 
@@ -192,9 +190,8 @@ subprojects {
             create<MavenPublication>("mavenArtifacts") {
                 from(components["java"])
 
-                println("PROJECT ROOT:" + rootProject.name)
-                println("PROJECT NAME:" + project.name)
-                println("USING ARTIFACT-ID:" + artifactId)
+                artifactId = "${project.group}-${artifactId}"
+                project.group = "io.specmesh"
 
                 pom {
                     name.set("${project.group}:${artifactId}")
