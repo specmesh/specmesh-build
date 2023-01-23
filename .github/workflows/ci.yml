@@ -20,8 +20,15 @@ jobs:
 
       - name: 'Build with Gradle'
         uses: gradle/gradle-build-action@v2
+        with:
+          arguments: build
+
+      - name: Publish
+        # TODO: enable this before merging: if: github.event_name == 'push'
         env:
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGKEY }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGPASSWORD }}
-        with:
-          arguments: build
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./gradlew cV
+          ./gradlew publish
