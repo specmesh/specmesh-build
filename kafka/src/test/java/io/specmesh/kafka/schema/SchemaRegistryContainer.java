@@ -1,7 +1,5 @@
 package io.specmesh.kafka.schema;
 
-//import com.dimafeng.testcontainers.GenericContainer;
-
 
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
