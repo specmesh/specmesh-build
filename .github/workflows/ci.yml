@@ -18,10 +18,10 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: 'Build with Gradle'
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: build
+#      - name: 'Build with Gradle'
+#        uses: gradle/gradle-build-action@v2
+#        with:
+#          arguments: build
 
       - name: Publish
         # TODO: enable this before merging: if: github.event_name == 'push'
