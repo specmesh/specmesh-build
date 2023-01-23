@@ -20,5 +20,8 @@ jobs:
 
       - name: 'Build with Gradle'
         uses: gradle/gradle-build-action@v2
+        env:
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGKEY }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGPASSWORD }}
         with:
-          arguments: clean build
+          arguments: build
