@@ -1,5 +1,6 @@
 package io.specmesh.kafka.schema;
 
+
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.Network;
