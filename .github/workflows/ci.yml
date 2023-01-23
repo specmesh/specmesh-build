@@ -31,4 +31,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ./gradlew cV
-          ./gradlew publish
+          ./gradlew publish --stacktrace -i
