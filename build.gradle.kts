@@ -167,10 +167,12 @@ subprojects {
 
         repositories {
             maven {
-                name = "GitHubPackagesSpecMesh"
+                name = "GitHubPackages"
                 url = uri("https://maven.pkg.github.com/specmesh/${rootProject.name}")
-                // set ~/.gradle/gradle.properties vars: GitHubPackagesSpecMeshUsername and Password accordingly
-                credentials(PasswordCredentials::class)
+                credentials {
+                    username = System.getenv("GITHUB_ACTOR")
+                    password = System.getenv("GITHUB_TOKEN")
+                }
             }
         }
 
