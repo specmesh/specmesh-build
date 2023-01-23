@@ -70,7 +70,7 @@ subprojects {
         set("hamcrestVersion", "1.3")
         set("log4jVersion", "2.14.0")
         set("classGraphVersion", "4.8.21")
-        set("testcontainersVersion", "1.17.3")
+        set("testcontainersVersion", "1.17.6")
         set("lombokVersion", "1.18.24")
     }
 
