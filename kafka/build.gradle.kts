@@ -28,7 +28,7 @@ dependencies {
 
     api("org.hamcrest:hamcrest-all:$hamcrestVersion")
 
-    implementation("com.hashicorp:cdktf:0.12.2")
+    implementation("com.hashicorp:cdktf:0.16.0-pre.3")
     implementation("software.constructs:constructs:10.0.15")
     implementation("com.google.guava:guava:28.0-jre")
     implementation("com.microsoft.terraform:terraform-client:1.0.0")
