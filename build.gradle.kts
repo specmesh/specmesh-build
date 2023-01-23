@@ -1,33 +1,33 @@
-tasks.wrapper {
-    gradleVersion = "7.4"
-    // You can either download the binary-only version of Gradle (BIN) or
-    // the full version (with sources and documentation) of Gradle (ALL)
-    distributionType = Wrapper.DistributionType.ALL
-}
 plugins {
     java
     `maven-publish`
-    `signing`
+    signing
     id("com.github.spotbugs") version "4.7.2"
     id("com.diffplug.spotless") version "6.11.0"
-    id("pl.allegro.tech.build.axion-release") version "1.11.0"
+    id("pl.allegro.tech.build.axion-release") version "1.14.3"
 }
 
-
-//project.version = scmVersion.version
+project.version = scmVersion.version
 project.group = "io.specmesh"
-project.version = "0.1.0-SNAPSHOT"
 
 allprojects {
     apply(plugin = "idea")
     apply(plugin = "java")
-    apply(plugin = "signing")
     apply(plugin = "checkstyle")
     apply(plugin = "com.diffplug.spotless")
     apply(plugin = "com.github.spotbugs")
+
+    tasks.jar {
+        onlyIf { sourceSets.main.get().allSource.files.isNotEmpty() }
+    }
 }
 
 subprojects {
+    project.version = project.parent?.version!!
+
+    apply(plugin = "maven-publish")
+    apply(plugin = "signing")
+
     repositories {
         google()
         mavenCentral()
@@ -38,22 +38,14 @@ subprojects {
             url = uri("https://repository.mulesoft.org/nexus/content/repositories/public/")
         }
     }
-    apply(plugin = "maven-publish")
-
-    apply(plugin = "idea")
-    apply(plugin = "java")
-    apply(plugin = "checkstyle")
-    apply(plugin = "com.diffplug.spotless")
-    apply(plugin = "com.github.spotbugs")
-
 
     java {
-
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-    }
 
-    project.version = project.parent?.version!!
+        withSourcesJar()
+        withJavadocJar()
+    }
 
     extra.apply {
         set("kafkaVersion", "3.3.1")
@@ -81,30 +73,25 @@ subprojects {
     val guavaVersion : String by extra
     val hamcrestVersion : String by extra
     val log4jVersion : String by extra
-    val testcontainersVersion : String by extra
-    val lombokVersion : String by extra
-    val confluentVersion : String by extra
 
     dependencies {
         testImplementation(project(":parser"))
         testImplementation(project(":kafka"))
-        testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
-        testImplementation("org.junit.jupiter:junit-jupiter-params:${junitVersion}")
-        testImplementation("org.junit-pioneer:junit-pioneer:${junitPioneerVersion}")
-        testImplementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
+        testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
+        testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
+        testImplementation("org.junit-pioneer:junit-pioneer:$junitPioneerVersion")
+        testImplementation("org.mockito:mockito-junit-jupiter:$mockitoVersion")
         testImplementation("org.hamcrest:hamcrest-all:$hamcrestVersion")
-        testImplementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}")
-        testImplementation("com.google.guava:guava:${guavaVersion}")
-        testImplementation("com.google.guava:guava-testlib:${guavaVersion}")
-        testImplementation("org.apache.logging.log4j:log4j-api:${log4jVersion}")
-        testImplementation("org.apache.logging.log4j:log4j-core:${log4jVersion}")
-        testImplementation("org.apache.logging.log4j:log4j-slf4j18-impl:${log4jVersion}")
-        testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
+        testImplementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
+        testImplementation("com.google.guava:guava-testlib:$guavaVersion")
+        testImplementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
+        testImplementation("org.apache.logging.log4j:log4j-slf4j18-impl:$log4jVersion")
+        testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
     }
 
     tasks.compileJava {
-        options.compilerArgs.add("-Xlint:all,-serial")
-//        options.compilerArgs.add("-Werror")
+        options.compilerArgs.add("-Xlint:all,-serial,-processing")
+        options.compilerArgs.add("-Werror")
     }
 
     tasks.test {
@@ -120,6 +107,15 @@ subprojects {
         }
     }
 
+    tasks.javadoc {
+        if (JavaVersion.current().isJava9Compatible) {
+            (options as StandardJavadocDocletOptions).apply {
+                addBooleanOption("html5", true)
+                // Why -quite? See: https://github.com/gradle/gradle/issues/2354
+                addStringOption("Xwerror", "-quiet")
+            }
+        }
+    }
 
     spotless {
         java {
@@ -132,12 +128,8 @@ subprojects {
         }
     }
 
-    tasks.register("pre") {
+    tasks.register("format") {
         dependsOn("spotlessCheck", "spotlessApply")
-    }
-
-    tasks.register("preClean") {
-        dependsOn("clean", "pre")
     }
 
     tasks.register("checkstyle") {
@@ -168,15 +160,11 @@ subprojects {
     }
 
     tasks.jar {
-        setGroup("${project.group}")
-        archiveVersion.set("${project.version}")
-        archiveBaseName.set("${project.name}")
-
+        archiveBaseName.set("specmesh-${project.name}")
     }
 
     publishing {
 
-        println("---------------- PUBLISHING --------------")
         repositories {
             maven {
                 name = "GitHubPackagesSpecMesh"
@@ -190,13 +178,13 @@ subprojects {
             create<MavenPublication>("mavenArtifacts") {
                 from(components["java"])
 
-                artifactId = "${project.group}-${artifactId}"
+                artifactId = "specmesh-${artifactId}"
                 project.group = "io.specmesh"
 
                 pom {
                     name.set("${project.group}:${artifactId}")
 
-                    description.set("${project.name.capitalize()} library".replace("-", " "))
+                    description.set("Specmesh ${project.name.capitalize()} library".replace("-", " "))
 
                     url.set("https://www.specmesh.io")
 
@@ -214,12 +202,23 @@ subprojects {
                             organization.set("SpecMesh Master Builders")
                             organizationUrl.set("https://www.specmesh.io")
                         }
+
+                        developer {
+                            name.set("Andy Coates")
+                            email.set("8012398+big-andy-coates@users.noreply.github.com")
+                            organization.set("SpecMesh Master Builders")
+                            organizationUrl.set("https://www.specmesh.io")
+                        }
                     }
 
                     scm {
                         connection.set("scm:git:git://github.com/specmesh/${rootProject.name}.git")
                         developerConnection.set("scm:git:ssh://github.com/specmesh/${rootProject.name}.git")
                         url.set("https://github.com/specmesh/${rootProject.name}")
+                    }
+
+                    issueManagement {
+                        url.set("https://github.com/specmesh/${rootProject.name}/issues")
                     }
                 }
             }
@@ -239,3 +238,5 @@ subprojects {
         sign(publishing.publications["mavenArtifacts"])
     }
 }
+
+defaultTasks("format", "static", "check")
