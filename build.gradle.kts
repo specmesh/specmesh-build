@@ -63,7 +63,7 @@ subprojects {
         set("confluentVersion", "7.2.2")
         set("jacksonVersion", "2.11.3")
         set("medeiaValidatorVersion", "1.1.0")
-        set("junitVersion", "5.7.0")
+        set("junitVersion", "5.9.2")
         set("mockitoVersion", "3.4.6")
         set("junitPioneerVersion", "0.9.0")
         set("spotBugsVersion", "4.2.0")
