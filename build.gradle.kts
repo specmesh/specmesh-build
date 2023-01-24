@@ -5,6 +5,7 @@ plugins {
     id("com.github.spotbugs") version "4.7.2"
     id("com.diffplug.spotless") version "6.11.0"
     id("pl.allegro.tech.build.axion-release") version "1.14.3"
+    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
 }
 
 project.version = scmVersion.version
@@ -163,7 +164,6 @@ subprojects {
     }
 
     publishing {
-
         repositories {
             maven {
                 name = "GitHubPackages"
@@ -237,6 +237,23 @@ subprojects {
         }
 
         sign(publishing.publications["mavenArtifacts"])
+    }
+}
+
+nexusPublishing {
+    repositories {
+        sonatype {
+            nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
+
+            if (project.hasProperty("SONA_USERNAME")) {
+                username.set(project.property("SONA_USERNAME").toString())
+            }
+
+            if (project.hasProperty("SONA_PASSWORD")) {
+                password.set(project.property("SONA_PASSWORD").toString())
+            }
+        }
     }
 }
 
