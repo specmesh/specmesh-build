@@ -1,0 +1,44 @@
+# A Workflow for adjusting the version number of the next release
+
+name: Set next version
+run-name: Set next version (${{ inputs.part }})
+
+on:
+  workflow_dispatch:
+    inputs:
+      part:
+        description: "Part to increment: Major, Minor, Patch or the next release, e.g. 1.2.3"
+        required: true
+        default: Minor
+
+permissions:
+  contents: read
+
+concurrency: "${{ github.repository }}-versioning"
+
+jobs:
+  version:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          token: ${{ secrets.TRIGGER_GITHUB_TOKEN }}
+      - name: Fetch version history
+        run: git fetch --tags --unshallow
+      - name: Set up JDK
+        uses: actions/setup-java@1df8dbefe2a8cbc99770194893dd902763bee34b # v3.9.0
+        with:
+          java-version: '16'
+          distribution: 'adopt'
+          cache: gradle
+      - name: Increment version
+        if: contains(fromJson('["Major", "Minor", "Patch"]'), github.event.inputs.part)
+        run: |
+          # The following command will trigger the build.yml workflow as it pushes a alpha tag
+          ./gradlew markNextVersion -Prelease.incrementer=increment${{ github.event.inputs.part }}
+      - name: Set next version
+        if: (!contains(fromJson('["Major", "Minor", "Patch"]'), github.event.inputs.part))
+        run: |
+          # The following command will trigger the build.yml workflow as it pushes a alpha tag
+          ./gradlew markNextVersion -Prelease.version=${{ github.event.inputs.part }}

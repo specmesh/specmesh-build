@@ -228,7 +228,7 @@ subprojects {
 
     signing {
         setRequired {
-            !project.version.toString().endsWith("-SNAPSHOT")
+           !project.version.toString().endsWith("-SNAPSHOT")
                     && !project.hasProperty("skipSigning")
         }
 
