@@ -236,11 +236,11 @@ subprojects {
         // Todo:
         if (project.hasProperty("signingKey")) {
             val key = properties["signingKey"].toString()
-            println("signingKey:" + key.length + ":" + key.substring(0, 10))
+            println("signingKey:" + key.length + ":" + key.substring(0, Math.min(key.length, 10)))
         }
         if (project.hasProperty("signingPassword")) {
             val pwd = properties["signingPassword"].toString()
-            println("signingKey:" + pwd.length + ":" + pwd.substring(0, 10))
+            println("signingPassword:" + pwd.length + ":" + pwd.substring(0, Math.min(pwd.length, 10)))
         }
 
         if (project.hasProperty("signingKey")) {
