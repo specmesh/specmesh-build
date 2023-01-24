@@ -228,11 +228,23 @@ subprojects {
 
     signing {
         setRequired {
-            !project.version.toString().endsWith("-SNAPSHOT")
-                    && !project.hasProperty("skipSigning")
+//           todo:  !project.version.toString().endsWith("-SNAPSHOT")
+//                    && !project.hasProperty("skipSigning")
+            true
+        }
+
+        // Todo:
+        if (project.hasProperty("signingKey")) {
+            val key = properties["signingKey"].toString()
+            println("signingKey:" + key.length + ":" + key.substring(0, 10))
+        }
+        if (project.hasProperty("signingPassword")) {
+            val pwd = properties["signingPassword"].toString()
+            println("signingKey:" + pwd.length + ":" + pwd.substring(0, 10))
         }
 
         if (project.hasProperty("signingKey")) {
+            println("signing using in memopry key")
             useInMemoryPgpKeys(properties["signingKey"].toString(), properties["signingPassword"].toString())
         }
 
