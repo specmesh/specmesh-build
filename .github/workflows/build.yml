@@ -47,7 +47,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ./gradlew cV
-          ./gradlew publish
+          ./gradlew publish --stacktrace
+          # todo: ./gradlew publish
 
   create-gh-release:
     if: startsWith(github.ref, 'refs/tags/') && !endsWith(github.ref, '-alpha')
