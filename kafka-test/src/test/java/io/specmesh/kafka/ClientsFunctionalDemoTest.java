@@ -42,6 +42,8 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -92,7 +94,7 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
         final ConsumerRecords<Long, UserSignedUp> consumerRecords = consumer.poll(Duration.ofSeconds(10));
         assertThat(consumerRecords, is(notNullValue()));
         assertThat(consumerRecords.count(), is(1));
-        assertThat(consumerRecords.iterator().next().value(), is(sentRecord));
+        MatcherAssert.assertThat(consumerRecords.iterator().next().value(), Matchers.is(sentRecord));
     }
 
     @Order(2)
@@ -126,7 +128,7 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
         final ConsumerRecords<Long, UserInfo> consumerRecords = consumer.poll(Duration.ofSeconds(10));
         assertThat(consumerRecords, is(notNullValue()));
         assertThat(consumerRecords.count(), is(1));
-        assertThat(consumerRecords.iterator().next().value(), is(userSam));
+        MatcherAssert.assertThat(consumerRecords.iterator().next().value(), Matchers.is(userSam));
     }
 
     @Order(3)

@@ -22,10 +22,17 @@ import org.apache.kafka.common.resource.ResourceType;
 public class KafkaApiSpec {
     private final ApiSpec apiSpec;
 
+    /**
+     * @param apiSpec
+     *            the api spec
+     */
     public KafkaApiSpec(final ApiSpec apiSpec) {
         this.apiSpec = apiSpec;
     }
 
+    /**
+     * @return the id of the spec
+     */
     public String id() {
         return apiSpec.id();
     }
@@ -33,6 +40,8 @@ public class KafkaApiSpec {
     /**
      * Used by AdminClient.createTopics (includes support for configs overrides i.e.
      * min.insync.replicas
+     *
+     * @return the owned topics.
      */
     public List<NewTopic> listDomainOwnedTopics() {
 
@@ -60,6 +69,8 @@ public class KafkaApiSpec {
     /**
      * Create an ACL for the domain-id principle that allows writing to any topic
      * prefixed with the Id Prevent non ACL'd ones from writing to it (somehow)
+     *
+     * @return Acl bindings for owned topics
      */
     public List<AclBinding> listACLsForDomainOwnedTopics() {
         validateTopicConfig();
@@ -102,10 +113,14 @@ public class KafkaApiSpec {
                                 AclPermissionType.ALLOW))));
         return protectedAccessAcls;
     }
-    public static String formatPrinciple(final String domainId) {
-        return "User:domain-" + domainId;
-    }
 
+    /**
+     * Get schema info for the supplied {@code topicName}
+     *
+     * @param topicName
+     *            the name of the topic
+     * @return the schema info.
+     */
     public SchemaInfo schemaInfoForTopic(final String topicName) {
 
         final List<NewTopic> myTopics = listDomainOwnedTopics();
@@ -113,5 +128,15 @@ public class KafkaApiSpec {
                 .orElseThrow(() -> new IllegalStateException("Could not find 'owned' topic for:" + topicName));
 
         return apiSpec.channels().get(topicName).publish().schemaInfo();
+    }
+
+    /**
+     *
+     * @param domainId
+     *            the domain id
+     * @return the principle
+     */
+    public static String formatPrinciple(final String domainId) {
+        return "User:domain-" + domainId;
     }
 }

@@ -12,6 +12,9 @@ import lombok.NoArgsConstructor;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
+/**
+ * Pojo representing the api spec
+ */
 @Value
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -20,17 +23,20 @@ import lombok.experimental.Accessors;
 public class ApiSpec {
     private static final char DELIMITER = System.getProperty("DELIMITER", ".").charAt(0);
     @JsonProperty
-    String id;
+    private String id;
 
     @JsonProperty
-    String version;
+    private String version;
 
     @JsonProperty
-    String asyncapi;
+    private String asyncapi;
 
     @JsonProperty
-    Map<String, Channel> channels;
+    private Map<String, Channel> channels;
 
+    /**
+     * @return unique spec id
+     */
     public String id() {
         return validate(id).substring("urn:".length()).replace(":", DELIMITER + "");
     }
@@ -42,6 +48,9 @@ public class ApiSpec {
         return id;
     }
 
+    /**
+     * @return channels
+     */
     public Map<String, Channel> channels() {
         return channels.entrySet().stream().collect(Collectors.toMap(e -> getCanonical(id(), e.getKey()),
                 e -> e.getValue(), (k, v) -> k, LinkedHashMap::new));

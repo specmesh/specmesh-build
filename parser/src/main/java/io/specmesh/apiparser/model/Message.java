@@ -13,8 +13,11 @@ import lombok.Value;
 import lombok.experimental.Accessors;
 
 /**
- * <a href=
- * "https://www.asyncapi.com/docs/reference/specification/v2.4.0#messageObject">...</a>
+ * Pojo representing a Message.
+ *
+ * @see <a href=
+ *      "https://www.asyncapi.com/docs/reference/specification/v2.4.0#messageObject">spec
+ *      docs</a>
  */
 @Value
 @Accessors(fluent = true)
@@ -24,46 +27,48 @@ import lombok.experimental.Accessors;
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class Message {
     @JsonProperty
-    String messageId;
+    private String messageId;
 
     @JsonProperty
-    Map headers = Collections.EMPTY_MAP;
+    private Map headers = Collections.EMPTY_MAP;
 
     @JsonProperty
-    Map payload = Collections.EMPTY_MAP;
+    private Map payload = Collections.EMPTY_MAP;
 
     @JsonProperty
-    Map correlationId = Collections.EMPTY_MAP;
+    private Map correlationId = Collections.EMPTY_MAP;
 
     @JsonProperty
-    String schemaFormat;
+    private String schemaFormat;
 
     @JsonProperty
-    String contentType;
+    private String contentType;
 
     @JsonProperty
-    String name;
+    private String name;
 
     @JsonProperty
-    String title;
+    private String title;
 
     @JsonProperty
-    String summary;
+    private String summary;
 
     @JsonProperty
-    String description;
+    private String description;
 
     @JsonProperty
-    List<Tag> tags = Collections.EMPTY_LIST;
+    private List<Tag> tags = Collections.EMPTY_LIST;
 
     @JsonProperty
-    Bindings bindings;
+    private Bindings bindings;
 
     @JsonProperty
-    Map traits = Collections.EMPTY_MAP;
+    private Map traits = Collections.EMPTY_MAP;
 
+    /**
+     * @return the location of the schema
+     */
     public String schemaRef() {
         return (String) payload.get("$ref");
     }
-
 }

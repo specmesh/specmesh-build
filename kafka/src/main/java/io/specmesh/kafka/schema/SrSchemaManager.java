@@ -6,13 +6,30 @@ import io.confluent.kafka.schemaregistry.client.SchemaMetadata;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.json.JsonSchema;
 import java.nio.file.Path;
+
+/**
+ * Wrapper around the {@link SchemaRegistryClient}
+ */
 public class SrSchemaManager {
     private final SchemaRegistryClient schemaRegistry;
 
+    /**
+     * @param schemaRegistry
+     *            the client
+     */
     public SrSchemaManager(final SchemaRegistryClient schemaRegistry) {
         this.schemaRegistry = requireNonNull(schemaRegistry, "schemaRegistry");
     }
 
+    /**
+     * Load a schema from the classpath into the local schema cache.
+     *
+     * @param schemaFile
+     *            the path to the schema file
+     * @param subject
+     *            the subject under which to store it
+     * @return the registered schema
+     */
     public RegisteredSchema loadFromClasspath(final Path schemaFile, final String subject) {
         final JsonSchema jsonSchema = JsonSchemas.loadFromClasspath(schemaFile);
 
@@ -24,6 +41,13 @@ public class SrSchemaManager {
         }
     }
 
+    /**
+     * Load the latest version of a schema into the local schema cache.
+     *
+     * @param subject
+     *            the schema subject to load.
+     * @return the registered schema
+     */
     public RegisteredSchema loadLatest(final String subject) {
         try {
             final SchemaMetadata latestSchemaMetadata = schemaRegistry.getLatestSchemaMetadata(subject);
@@ -34,6 +58,15 @@ public class SrSchemaManager {
         }
     }
 
+    /**
+     * Load a specific version of a schema into the local schema cache.
+     *
+     * @param subject
+     *            the schema subject
+     * @param schemaId
+     *            the unique schema id.
+     * @return the registered schema.
+     */
     public RegisteredSchema loadById(final String subject, final int schemaId) {
         try {
             return new RegisteredSchema(subject, schemaRegistry.getSchemaById(schemaId), schemaId);
@@ -42,6 +75,15 @@ public class SrSchemaManager {
         }
     }
 
+    /**
+     * Register a schema with the schema registry from a file in the classpath.
+     *
+     * @param schemaFile
+     *            the path to the schema file
+     * @param subject
+     *            the subject under which to register it
+     * @return the registered schema.
+     */
     public RegisteredSchema registerFromClasspath(final Path schemaFile, final String subject) {
         final JsonSchema schema = JsonSchemas.loadFromClasspath(schemaFile);
 

@@ -10,6 +10,10 @@ import lombok.NoArgsConstructor;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
+/**
+ * Pojo for holding data about a schema that is registered with the schema
+ * registry.
+ */
 @Value
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)

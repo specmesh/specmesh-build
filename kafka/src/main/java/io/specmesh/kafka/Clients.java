@@ -15,15 +15,54 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.streams.StreamsConfig;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Factory for Kafka clients
+ */
 public final class Clients {
     private Clients() {
     }
 
+    /**
+     * Create a Kafka producer
+     *
+     * @param keyClass
+     *            the type of the key
+     * @param valueClass
+     *            the type of the value
+     * @param producerProperties
+     *            the properties
+     * @param <K>
+     *            the type of the key
+     * @param <V>
+     *            the type of the value
+     * @return the producer
+     */
     public static <K, V> KafkaProducer<K, V> producer(final Class<K> keyClass, final Class<V> valueClass,
             final Map<String, Object> producerProperties) {
         return new KafkaProducer<>(producerProperties);
     }
 
+    /**
+     * Create a map of producer properties with sensible defaults.
+     *
+     * @param domainId
+     *            the domain id, used to scope resource names.
+     * @param serviceId
+     *            the name of the service
+     * @param bootstrapServers
+     *            bootstrap servers config
+     * @param schemaRegistryUrl
+     *            url of schema registry
+     * @param keySerializerClass
+     *            type of key serializer
+     * @param valueSerializerClass
+     *            type of value serializer
+     * @param acksAll
+     *            require acks from all replicas?
+     * @param providedProperties
+     *            additional props
+     * @return props
+     */
     @SuppressWarnings("checkstyle:ParameterNumber")
     @NotNull
     public static Map<String, Object> producerProperties(final String domainId, final String serviceId,
@@ -45,6 +84,27 @@ public final class Clients {
                 providedProperties);
     }
 
+    /**
+     * Create props for KStream app with sensible defaults.
+     *
+     * @param domainId
+     *            the domain id, used to scope resource names.
+     * @param serviceId
+     *            the name of the service
+     * @param bootstrapServers
+     *            bootstrap servers config
+     * @param schemaRegistryUrl
+     *            url of schema registry
+     * @param keySerdeClass
+     *            type of key serde
+     * @param valueSerdeClass
+     *            type of value serde
+     * @param acksAll
+     *            require acks from all replicas?
+     * @param providedProperties
+     *            additional props
+     * @return the streams properties.
+     */
     @SuppressWarnings("checkstyle:ParameterNumber")
     @NotNull
     public static Map<String, Object> kstreamsProperties(final String domainId, final String serviceId,
@@ -69,11 +129,47 @@ public final class Clients {
                 KafkaAvroSerializerConfig.USE_LATEST_VERSION, "true"), providedProperties);
     }
 
+    /**
+     * Create a Kafka consumer
+     *
+     * @param keyClass
+     *            the type of the key
+     * @param valueClass
+     *            the type of the value
+     * @param consumerProperties
+     *            the properties
+     * @param <K>
+     *            the type of the key
+     * @param <V>
+     *            the type of the value
+     * @return the producer
+     */
     public static <K, V> KafkaConsumer<K, V> consumer(final Class<K> keyClass, final Class<V> valueClass,
             final Map<String, Object> consumerProperties) {
         return new KafkaConsumer<>(consumerProperties);
     }
 
+    /**
+     * Create a map of consumer properties with sensible defaults.
+     *
+     * @param domainId
+     *            the domain id, used to scope resource names.
+     * @param serviceId
+     *            the name of the service
+     * @param bootstrapServers
+     *            bootstrap servers config
+     * @param schemaRegistryUrl
+     *            url of schema registry
+     * @param keyDeserializerClass
+     *            type of key deserializer
+     * @param valueDeserializerClass
+     *            type of value deserializer
+     * @param autoOffsetResetEarliest
+     *            reset to earliest offset if no stored offsets?
+     * @param providedProperties
+     *            additional props
+     * @return props
+     */
     @SuppressWarnings("checkstyle:ParameterNumber")
     @NotNull
     public static Map<String, Object> consumerProperties(final String domainId, final String serviceId,
