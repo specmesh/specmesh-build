@@ -45,7 +45,6 @@ public class KafkaAPISpecFunctionalTest {
     public static final String SOME_OTHER_DOMAIN_ROOT = ".some.other.domain.root";
 
     // CHECKSTYLE_RULES.OFF: VisibilityModifier
-    @Container
     public static final KafkaContainer kafka = getKafkaContainer();
 
     private AdminClient adminClient;

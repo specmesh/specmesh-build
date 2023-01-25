@@ -45,7 +45,6 @@ channels:
               type: string
               enum: [ 'myKey' ]
             schemaIdLocation: 'header'
-            schemaIdPayloadEncoding: '4'
             bindingVersion: '0.3.0'
         payload:
           type: object

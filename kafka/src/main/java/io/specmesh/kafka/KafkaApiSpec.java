@@ -23,6 +23,7 @@ public class KafkaApiSpec {
     private final ApiSpec apiSpec;
 
     /**
+     * KafkaAPISpec
      * @param apiSpec
      *            the api spec
      */
@@ -31,6 +32,7 @@ public class KafkaApiSpec {
     }
 
     /**
+     * root id of the spec
      * @return the id of the spec
      */
     public String id() {
@@ -131,7 +133,7 @@ public class KafkaApiSpec {
     }
 
     /**
-     *
+     * Format the principle
      * @param domainId
      *            the domain id
      * @return the principle

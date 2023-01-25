@@ -53,13 +53,6 @@ public class KafkaBinding {
     @JsonProperty
     private String schemaIdLocation;
 
-    /**
-     * confluent (payload) / apicurio-legacy / apicurio-new / ibm event-streams
-     * serde (header)
-     */
-    @JsonProperty
-    private String schemaIdPayloadEncoding;
-
     @JsonProperty
     private String schemaLookupStrategy;
 
