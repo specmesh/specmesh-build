@@ -17,6 +17,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          token: ${{ secrets.TRIGGER_GITHUB_TOKEN }}
       - name: Fetch version history
         run: git fetch --tags --unshallow
       - name: Set up JDK
