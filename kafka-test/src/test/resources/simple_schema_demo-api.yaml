@@ -35,7 +35,6 @@ channels:
         bindings:
           kafka:
             schemaIdLocation: "payload"
-            schemaIdPayloadEncoding: "confluent"
         schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
         contentType: "application/octet-stream"
         payload:
@@ -62,7 +61,6 @@ channels:
         bindings:
           kafka:
             schemaIdLocation: "payload"
-            schemaIdPayloadEncoding: "confluent"
         schemaFormat: "application/json;version=1.9.0"
         contentType: "application/json"
         payload:
@@ -90,7 +88,6 @@ channels:
         bindings:
           kafka:
             schemaIdLocation: "payload"
-            schemaIdPayloadEncoding: "confluent"
         schemaFormat: "application/json;version=1.9.0"
         contentType: "application/json"
         payload:
@@ -116,7 +113,6 @@ channels:
         bindings:
           kafka:
             schemaIdLocation: "payload"
-            schemaIdPayloadEncoding: "confluent"
         schemaFormat: "application/json;version=1.9.0"
         contentType: "application/json"
         payload:

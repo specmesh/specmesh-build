@@ -14,6 +14,8 @@ public class SrSchemaManager {
     private final SchemaRegistryClient schemaRegistry;
 
     /**
+     * SR client wrapper
+     *
      * @param schemaRegistry
      *            the client
      */
