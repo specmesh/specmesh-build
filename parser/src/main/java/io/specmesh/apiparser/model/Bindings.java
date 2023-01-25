@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
+/**
+ * Pojo representing a binding
+ */
 @Value
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)

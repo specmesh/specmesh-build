@@ -13,8 +13,12 @@ import lombok.Value;
 import lombok.experimental.Accessors;
 
 /**
- * https://www.asyncapi.com/docs/reference/specification/v2.4.0#operationObject
- * https://www.asyncapi.com/docs/reference/specification/v2.4.0#messageTraitObject
+ * Pojo representing a Message.
+ *
+ * @see <a href=
+ *      "https://www.asyncapi.com/docs/reference/specification/v2.4.0#operationObject">operationObject</a>
+ * @see <a href=
+ *      "https://www.asyncapi.com/docs/reference/specification/v2.4.0#messageTraitObject">messageTraitObject</a>
  */
 @Value
 @Accessors(fluent = true)
@@ -24,28 +28,31 @@ import lombok.experimental.Accessors;
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class Operation {
     @JsonProperty
-    String operationId;
+    private String operationId;
 
     @JsonProperty
-    String summary;
+    private String summary;
 
     @JsonProperty
-    String description;
+    private String description;
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @JsonProperty
-    List<Tag> tags = Collections.EMPTY_LIST;
+    private List<Tag> tags = Collections.EMPTY_LIST;
 
     @JsonProperty
-    Bindings bindings;
+    private Bindings bindings;
 
     // https://www.asyncapi.com/docs/reference/specification/v2.4.0#operationTraitObject
     @JsonProperty
-    Map traits = Collections.EMPTY_MAP;
+    private Map traits = Collections.EMPTY_MAP;
 
     @JsonProperty
-    Message message;
+    private Message message;
 
+    /**
+     * @return schema info
+     */
     public SchemaInfo schemaInfo() {
         if (message.bindings() == null) {
             throw new IllegalStateException("Bindings not found for operation: " + operationId);

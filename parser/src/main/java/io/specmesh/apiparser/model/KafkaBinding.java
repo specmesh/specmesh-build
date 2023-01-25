@@ -12,57 +12,63 @@ import lombok.NoArgsConstructor;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
-/**
+/*
  * Note: Lombok has a Value/Defaults bug which means we have messy accessors to
  * cope with default values: See - <a href=
  * "https://stackoverflow.com/questions/47883931/default-value-in-lombok-how-to-init-default-with-both-constructor-and-builder">...</a>
  * - <a href="https://github.com/projectlombok/lombok/issues/1347">...</a>
  */
 
+/**
+ * Pojo representing a Kafka binding
+ */
 @Value
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @NoArgsConstructor(force = true) // , access = AccessLevel.PRIVATE)
 @SuppressFBWarnings
 public class KafkaBinding {
-    public static final int DAYS_TO_MS = 24 * 60 * 60 * 1000;
-    public static final String RETENTION_MS = "retention.ms";
+    private static final int DAYS_TO_MS = 24 * 60 * 60 * 1000;
+    private static final String RETENTION_MS = "retention.ms";
 
     @SuppressWarnings("unchecked")
     @JsonProperty
-    List<String> envs = Collections.EMPTY_LIST;
+    private List<String> envs = Collections.EMPTY_LIST;
 
     @JsonProperty
-    int partitions;
+    private int partitions;
 
     @JsonProperty
-    int replicas;
+    private int replicas;
 
     @JsonProperty
-    int retention;
+    private int retention;
 
     @JsonProperty
-    Map<String, String> configs = Collections.emptyMap();
+    private Map<String, String> configs = Collections.emptyMap();
 
     @JsonProperty
-    String groupId;
+    private String groupId;
 
     @JsonProperty
-    String schemaIdLocation;
+    private String schemaIdLocation;
 
     /**
      * confluent (payload) / apicurio-legacy / apicurio-new / ibm event-streams
      * serde (header)
      */
     @JsonProperty
-    String schemaIdPayloadEncoding;
+    private String schemaIdPayloadEncoding;
 
     @JsonProperty
-    String schemaLookupStrategy;
+    private String schemaLookupStrategy;
 
     @JsonProperty
-    String bindingVersion;
+    private String bindingVersion;
 
+    /**
+     * @return configs
+     */
     public Map<String, String> configs() {
         final Map<String, String> results = new LinkedHashMap<>(configs);
 
@@ -72,14 +78,26 @@ public class KafkaBinding {
         return results;
     }
 
+    /**
+     *
+     * @return number of topic partitions
+     */
     public int partitions() {
         return partitions == 0 ? 1 : partitions;
     }
 
+    /**
+     *
+     * @return number of topic replicas
+     */
     public int replicas() {
         return replicas == 0 ? 1 : replicas;
     }
 
+    /**
+     *
+     * @return message retention in ms.
+     */
     public int retention() {
         return retention == 0 ? 1 : retention;
     }

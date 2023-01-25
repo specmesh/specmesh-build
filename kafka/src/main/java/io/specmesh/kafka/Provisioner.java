@@ -18,30 +18,55 @@ import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.TopicListing;
 
+/**
+ * Provisions Kafka and SR resources
+ */
 public final class Provisioner {
+
+    private static final int REQUEST_TIMEOUT = 10;
+
     private Provisioner() {
     }
 
-    public static final int WAIT = 10;
-
+    /**
+     * Provision topics in the Kafka cluster.
+     *
+     * @param adminClient
+     *            admin client for the Kafka cluster.
+     * @param apiSpec
+     *            the api spec.
+     * @return number of topics created
+     * @throws InterruptedException
+     *             on interrupt
+     * @throws ExecutionException
+     *             on remote API call failure
+     * @throws TimeoutException
+     *             on timeout
+     */
     public static int provisionTopics(final AdminClient adminClient, final KafkaApiSpec apiSpec)
             throws InterruptedException, ExecutionException, TimeoutException {
 
         final var domainTopics = apiSpec.listDomainOwnedTopics();
 
-        final var existingTopics = adminClient.listTopics().listings().get(WAIT, TimeUnit.SECONDS).stream()
+        final var existingTopics = adminClient.listTopics().listings().get(REQUEST_TIMEOUT, TimeUnit.SECONDS).stream()
                 .map(TopicListing::name).collect(Collectors.toList());
 
         final var newTopicsToCreate = domainTopics.stream()
                 .filter(newTopic -> !existingTopics.contains(newTopic.name())).collect(Collectors.toList());
 
-        adminClient.createTopics(newTopicsToCreate).all().get(WAIT, TimeUnit.SECONDS);
+        adminClient.createTopics(newTopicsToCreate).all().get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
         return newTopicsToCreate.size();
     }
 
     /**
-     * Still need to - add schema compatibility checks - add schema meta data
-     * requirement so crappy schemas cannot be published
+     * Provision schemas to Schema Registry
+     *
+     * @param apiSpec
+     *            the api spec
+     * @param schemaRegistryClient
+     *            the client for the schema registry
+     * @param baseResourcePath
+     *            the path under which external schemas are stored.
      */
     public static void provisionSchemas(final KafkaApiSpec apiSpec, final SchemaRegistryClient schemaRegistryClient,
             final String baseResourcePath) {
@@ -69,9 +94,23 @@ public final class Provisioner {
         }));
     }
 
+    /**
+     * Provision acls in the Kafka cluster
+     *
+     * @param adminClient
+     *            th admin client for the cluster.
+     * @param apiSpec
+     *            the api spec.
+     * @throws InterruptedException
+     *             on interrupt
+     * @throws ExecutionException
+     *             on remote API call failure
+     * @throws TimeoutException
+     *             on timeout
+     */
     public static void provisionAcls(final AdminClient adminClient, final KafkaApiSpec apiSpec)
             throws ExecutionException, InterruptedException, TimeoutException {
-        adminClient.createAcls(apiSpec.listACLsForDomainOwnedTopics()).all().get(WAIT, TimeUnit.SECONDS);
+        adminClient.createAcls(apiSpec.listACLsForDomainOwnedTopics()).all().get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
     }
 
     static ParsedSchema getSchema(final String topicName, final String schemaRef, final String path,
@@ -88,5 +127,4 @@ public final class Provisioner {
         }
         throw new RuntimeException("Failed to handle topic:" + topicName + " schema: " + path);
     }
-
 }

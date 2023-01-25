@@ -97,15 +97,14 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             return this.unknownFields;
         }
         public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
-            return io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.internal_static_io_specmesh_kafka_schema_UserInfoEnriched_descriptor;
+            return SimpleSchemaDemoPublicUserInfoEnriched.internal_static_io_specmesh_kafka_schema_UserInfoEnriched_descriptor;
         }
 
         @java.lang.Override
         protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable internalGetFieldAccessorTable() {
-            return io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.internal_static_io_specmesh_kafka_schema_UserInfoEnriched_fieldAccessorTable
-                    .ensureFieldAccessorsInitialized(
-                            io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.class,
-                            io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.Builder.class);
+            return SimpleSchemaDemoPublicUserInfoEnriched.internal_static_io_specmesh_kafka_schema_UserInfoEnriched_fieldAccessorTable
+                    .ensureFieldAccessorsInitialized(SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.class,
+                            SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.Builder.class);
         }
 
         public static final int FULLNAME_FIELD_NUMBER = 1;
@@ -290,10 +289,10 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             if (obj == this) {
                 return true;
             }
-            if (!(obj instanceof io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched)) {
+            if (!(obj instanceof SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched)) {
                 return super.equals(obj);
             }
-            io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched other = (io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched) obj;
+            SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched other = (SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched) obj;
 
             if (!getFullName().equals(other.getFullName()))
                 return false;
@@ -328,57 +327,56 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             return hash;
         }
 
-        public static io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
-                java.nio.ByteBuffer data) throws com.google.protobuf.InvalidProtocolBufferException {
+        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(java.nio.ByteBuffer data)
+                throws com.google.protobuf.InvalidProtocolBufferException {
             return PARSER.parseFrom(data);
         }
-        public static io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
-                java.nio.ByteBuffer data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(java.nio.ByteBuffer data,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
                 throws com.google.protobuf.InvalidProtocolBufferException {
             return PARSER.parseFrom(data, extensionRegistry);
         }
-        public static io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
+        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
                 com.google.protobuf.ByteString data) throws com.google.protobuf.InvalidProtocolBufferException {
             return PARSER.parseFrom(data);
         }
-        public static io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
+        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
                 com.google.protobuf.ByteString data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
                 throws com.google.protobuf.InvalidProtocolBufferException {
             return PARSER.parseFrom(data, extensionRegistry);
         }
-        public static io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
-                byte[] data) throws com.google.protobuf.InvalidProtocolBufferException {
+        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(byte[] data)
+                throws com.google.protobuf.InvalidProtocolBufferException {
             return PARSER.parseFrom(data);
         }
-        public static io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
-                byte[] data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(byte[] data,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
                 throws com.google.protobuf.InvalidProtocolBufferException {
             return PARSER.parseFrom(data, extensionRegistry);
         }
-        public static io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
-                java.io.InputStream input) throws java.io.IOException {
+        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(java.io.InputStream input)
+                throws java.io.IOException {
             return com.google.protobuf.GeneratedMessageV3.parseWithIOException(PARSER, input);
         }
-        public static io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
-                java.io.InputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-                throws java.io.IOException {
+        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(java.io.InputStream input,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
             return com.google.protobuf.GeneratedMessageV3.parseWithIOException(PARSER, input, extensionRegistry);
         }
-        public static io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseDelimitedFrom(
+        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseDelimitedFrom(
                 java.io.InputStream input) throws java.io.IOException {
             return com.google.protobuf.GeneratedMessageV3.parseDelimitedWithIOException(PARSER, input);
         }
-        public static io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseDelimitedFrom(
+        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseDelimitedFrom(
                 java.io.InputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
                 throws java.io.IOException {
             return com.google.protobuf.GeneratedMessageV3.parseDelimitedWithIOException(PARSER, input,
                     extensionRegistry);
         }
-        public static io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
+        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
                 com.google.protobuf.CodedInputStream input) throws java.io.IOException {
             return com.google.protobuf.GeneratedMessageV3.parseWithIOException(PARSER, input);
         }
-        public static io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
+        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
                 com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
                 throws java.io.IOException {
             return com.google.protobuf.GeneratedMessageV3.parseWithIOException(PARSER, input, extensionRegistry);
@@ -391,8 +389,7 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
         public static Builder newBuilder() {
             return DEFAULT_INSTANCE.toBuilder();
         }
-        public static Builder newBuilder(
-                io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched prototype) {
+        public static Builder newBuilder(SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched prototype) {
             return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
         }
         @java.lang.Override
@@ -411,21 +408,20 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
         public static final class Builder extends com.google.protobuf.GeneratedMessageV3.Builder<Builder>
                 implements
                     // @@protoc_insertion_point(builder_implements:io.specmesh.kafka.schema.UserInfoEnriched)
-                    io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnrichedOrBuilder {
+                    SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnrichedOrBuilder {
             public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
-                return io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.internal_static_io_specmesh_kafka_schema_UserInfoEnriched_descriptor;
+                return SimpleSchemaDemoPublicUserInfoEnriched.internal_static_io_specmesh_kafka_schema_UserInfoEnriched_descriptor;
             }
 
             @java.lang.Override
             protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable internalGetFieldAccessorTable() {
-                return io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.internal_static_io_specmesh_kafka_schema_UserInfoEnriched_fieldAccessorTable
-                        .ensureFieldAccessorsInitialized(
-                                io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.class,
-                                io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.Builder.class);
+                return SimpleSchemaDemoPublicUserInfoEnriched.internal_static_io_specmesh_kafka_schema_UserInfoEnriched_fieldAccessorTable
+                        .ensureFieldAccessorsInitialized(SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.class,
+                                SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.Builder.class);
             }
 
             // Construct using
-            // io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.newBuilder()
+            // io.specmesh.kafka.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.newBuilder()
             private Builder() {
 
             }
@@ -447,18 +443,17 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
 
             @java.lang.Override
             public com.google.protobuf.Descriptors.Descriptor getDescriptorForType() {
-                return io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.internal_static_io_specmesh_kafka_schema_UserInfoEnriched_descriptor;
+                return SimpleSchemaDemoPublicUserInfoEnriched.internal_static_io_specmesh_kafka_schema_UserInfoEnriched_descriptor;
             }
 
             @java.lang.Override
-            public io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched getDefaultInstanceForType() {
-                return io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched
-                        .getDefaultInstance();
+            public SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched getDefaultInstanceForType() {
+                return SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.getDefaultInstance();
             }
 
             @java.lang.Override
-            public io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched build() {
-                io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched result = buildPartial();
+            public SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched build() {
+                SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched result = buildPartial();
                 if (!result.isInitialized()) {
                     throw newUninitializedMessageException(result);
                 }
@@ -466,8 +461,8 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             }
 
             @java.lang.Override
-            public io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched buildPartial() {
-                io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched result = new io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched(
+            public SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched buildPartial() {
+                SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched result = new SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched(
                         this);
                 if (bitField0_ != 0) {
                     buildPartial0(result);
@@ -476,8 +471,7 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
                 return result;
             }
 
-            private void buildPartial0(
-                    io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched result) {
+            private void buildPartial0(SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched result) {
                 int from_bitField0_ = bitField0_;
                 if (((from_bitField0_ & 0x00000001) != 0)) {
                     result.fullName_ = fullName_;
@@ -521,19 +515,16 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             }
             @java.lang.Override
             public Builder mergeFrom(com.google.protobuf.Message other) {
-                if (other instanceof io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched) {
-                    return mergeFrom(
-                            (io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched) other);
+                if (other instanceof SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched) {
+                    return mergeFrom((SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched) other);
                 } else {
                     super.mergeFrom(other);
                     return this;
                 }
             }
 
-            public Builder mergeFrom(
-                    io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched other) {
-                if (other == io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched
-                        .getDefaultInstance())
+            public Builder mergeFrom(SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched other) {
+                if (other == SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.getDefaultInstance())
                     return this;
                 if (!other.getFullName().isEmpty()) {
                     fullName_ = other.fullName_;
@@ -897,12 +888,12 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
         }
 
         // @@protoc_insertion_point(class_scope:io.specmesh.kafka.schema.UserInfoEnriched)
-        private static final io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched DEFAULT_INSTANCE;
+        private static final SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched DEFAULT_INSTANCE;
         static {
-            DEFAULT_INSTANCE = new io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched();
+            DEFAULT_INSTANCE = new SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched();
         }
 
-        public static io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched getDefaultInstance() {
+        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched getDefaultInstance() {
             return DEFAULT_INSTANCE;
         }
 
@@ -936,7 +927,7 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
         }
 
         @java.lang.Override
-        public io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched getDefaultInstanceForType() {
+        public SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched getDefaultInstanceForType() {
             return DEFAULT_INSTANCE;
         }
 

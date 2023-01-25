@@ -8,4 +8,4 @@
  */
 rootProject.name = "specmesh-build"
 
-include("parser", "kafka")
+include("parser", "kafka", "kafka-test")

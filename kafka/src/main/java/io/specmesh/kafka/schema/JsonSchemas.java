@@ -14,9 +14,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.apache.commons.io.IOUtils;
 
+/**
+ * Util class for working with Json schemas.
+ */
 public final class JsonSchemas {
 
-    public static final Path SCHEMA_DIRECTORY = Paths.get("schema");
+    private static final Path SCHEMA_DIRECTORY = Paths.get("schema");
 
     private static final ObjectMapper yamlMapper = new ObjectMapper(
             new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
@@ -25,10 +28,24 @@ public final class JsonSchemas {
     private JsonSchemas() {
     }
 
+    /**
+     * Load a schema from the classpath.
+     *
+     * @param schemaFile
+     *            the path to the schema.
+     * @return the schema.
+     */
     public static JsonSchema loadFromClasspath(final String schemaFile) {
         return loadFromClasspath(Paths.get(schemaFile));
     }
 
+    /**
+     * Load a schema from the classpath.
+     *
+     * @param schemaFile
+     *            the path to the schema.
+     * @return the schema.
+     */
     public static JsonSchema loadFromClasspath(final Path schemaFile) {
         final String path = File.separator + SCHEMA_DIRECTORY.resolve(schemaFile);
         final URL resource = JsonSchemas.class.getResource(path);
@@ -48,6 +65,15 @@ public final class JsonSchemas {
         return new String(IOUtils.toByteArray(resource), StandardCharsets.UTF_8);
     }
 
+    /**
+     * Convert a YAML into JSON.
+     *
+     * @param yaml
+     *            the YAML to convert
+     * @return the JSON
+     * @throws IOException
+     *             on invalid YAML
+     */
     public static String yamlToJson(final String yaml) throws IOException {
         final Object obj = yamlMapper.readValue(yaml, Object.class);
         return jsonWriter.writeValueAsString(obj);
