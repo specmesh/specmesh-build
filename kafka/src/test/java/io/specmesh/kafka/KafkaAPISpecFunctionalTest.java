@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.testcontainers.containers.KafkaContainer;
+import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
@@ -44,6 +45,7 @@ public class KafkaAPISpecFunctionalTest {
     public static final String SOME_OTHER_DOMAIN_ROOT = ".some.other.domain.root";
 
     // CHECKSTYLE_RULES.OFF: VisibilityModifier
+    @Container
     public static final KafkaContainer kafka = getKafkaContainer();
 
     private AdminClient adminClient;
