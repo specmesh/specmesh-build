@@ -15,7 +15,9 @@ public class SrSchemaManager {
 
     /**
      * SR client wrapper
-     * @param schemaRegistry the client
+     *
+     * @param schemaRegistry
+     *            the client
      */
     public SrSchemaManager(final SchemaRegistryClient schemaRegistry) {
         this.schemaRegistry = requireNonNull(schemaRegistry, "schemaRegistry");
