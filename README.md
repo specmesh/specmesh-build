@@ -1,4 +1,7 @@
-# SpecMesh build tools [![CI](https://github.com/specmesh/specmesh-build/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/specmesh/specmesh-build/actions/workflows/ci.yml)  [![Release Builds](https://github.com/specmesh/specmesh-build/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/specmesh/specmesh-build/actions/workflows/release.yml)
+[![CI](https://github.com/specmesh/specmesh-build/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/specmesh/specmesh-build/actions/workflows/ci.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/io.specmesh/specmesh-kafka.svg)](https://central.sonatype.dev/search?q=specmesh-*)
+
+# SpecMesh build tools
 
 Provides:
 1. AsyncAPI spec parser
