@@ -17,7 +17,7 @@ servers:
     description: Test broker
 
 channels:
-  public/attendee:
+  _public/attendee:
     # publish bindings to instruct topic configuration per environment
     bindings:
       kafka:
@@ -57,7 +57,7 @@ channels:
               type: integer
               minimum: 0
               description: Age of the human
-  protected/retail/subway/food/purchase:
+  _protected/retail/subway/food/purchase:
     bindings:
       kafka:
         partitions: 3
@@ -65,7 +65,7 @@ channels:
     publish:
       summary: Humans purchasing food
       tags: [
-        name: "grant-access:domain-.some.other.domain.root"
+        name: "grant-access:.some.other.domain.root"
       ]
       message:
         name: Food Item
@@ -89,7 +89,7 @@ channels:
               minimum: 0
               description: Id of the human purchasing the food
 
-  private/retail/subway/customers:
+  _private/retail/subway/customers:
     bindings:
       kafka:
         partitions: 3
@@ -119,7 +119,7 @@ channels:
               description: Id of the human purchasing the food
 
 
-  /london/hammersmith/transport/public/tube:
+  /london/hammersmith/transport/_public/tube:
     subscribe:
       summary: Humans arriving in the borough
       message:

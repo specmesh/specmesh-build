@@ -32,8 +32,8 @@ public class KafkaAPISpecTest {
 
         assertThat("Protected ACL was not created", acls.get(0).toString(),
                 is("(pattern=ResourcePattern(resourceType=TOPIC, "
-                        + "name=london.hammersmith.olympia.bigdatalondon.protected.retail.subway.food.purchase, "
-                        + "patternType=PREFIXED), entry=(principal=User:domain-.some.other.domain.root, host=*, operation=READ, "
+                        + "name=london.hammersmith.olympia.bigdatalondon._protected.retail.subway.food.purchase, "
+                        + "patternType=PREFIXED), entry=(principal=User:.some.other.domain.root, host=*, operation=READ, "
                         + "permissionType=ALLOW))"));
         // For adminClient.createAcls(acls);
     }
