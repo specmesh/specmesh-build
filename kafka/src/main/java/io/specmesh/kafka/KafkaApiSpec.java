@@ -83,7 +83,7 @@ public class KafkaApiSpec {
         final String principle = apiSpec.id();
 
         final List<Map.Entry<String, String>> grantAccessTo = apiSpec.channels().entrySet().stream()
-                .filter(e -> e.getKey().startsWith(id + ".protected.")
+                .filter(e -> e.getKey().startsWith(id + "._protected.")
                         && e.getValue().publish().tags().toString().contains("grant-access:"))
                 .flatMap(v -> v.getValue().publish().tags().stream()
                         .filter(tag -> tag.name().startsWith("grant-access:"))
@@ -98,7 +98,7 @@ public class KafkaApiSpec {
                 ).collect(Collectors.toList());
 
         protectedAccessAcls.addAll(List.of(
-                // unrestricted access to public topics - must use User:* and not User:domain-*
+                // unrestricted access to public topics
                 new AclBinding(new ResourcePattern(ResourceType.TOPIC, id + ".public", PatternType.PREFIXED),
                         new AccessControlEntry("User:*", "*", AclOperation.READ, AclPermissionType.ALLOW)),
 
@@ -137,11 +137,11 @@ public class KafkaApiSpec {
     /**
      * Format the principle
      *
-     * @param domainId
+     * @param domainIdAsUsername
      *            the domain id
      * @return the principle
      */
-    public static String formatPrinciple(final String domainId) {
-        return "User:domain-" + domainId;
+    public static String formatPrinciple(final String domainIdAsUsername) {
+        return "User:" + domainIdAsUsername;
     }
 }

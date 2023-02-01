@@ -194,8 +194,15 @@ public final class Clients {
         return adminClientProperties;
     }
 
+    /**
+     * Merges Maps
+     *
+     * @param manyMaps
+     *            - maps to merge
+     * @return merged maps
+     */
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private static Map<String, Object> mergeMaps(final Map... manyMaps) {
+    public static Map<String, Object> mergeMaps(final Map... manyMaps) {
         final HashMap<String, Object> mutableMap = new HashMap<>();
         Arrays.stream(manyMaps).forEach(mutableMap::putAll);
         return mutableMap;
