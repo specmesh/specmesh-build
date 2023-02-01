@@ -35,9 +35,7 @@ import lombok.experimental.Accessors;
  * - <a href="https://github.com/projectlombok/lombok/issues/1347">...</a>
  */
 
-/**
- * Pojo representing a Kafka binding
- */
+/** Pojo representing a Kafka binding */
 @Value
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -51,29 +49,21 @@ public class KafkaBinding {
     @JsonProperty
     private List<String> envs = Collections.EMPTY_LIST;
 
-    @JsonProperty
-    private int partitions;
+    @JsonProperty private int partitions;
 
-    @JsonProperty
-    private int replicas;
+    @JsonProperty private int replicas;
 
-    @JsonProperty
-    private int retention;
+    @JsonProperty private int retention;
 
-    @JsonProperty
-    private Map<String, String> configs = Collections.emptyMap();
+    @JsonProperty private Map<String, String> configs = Collections.emptyMap();
 
-    @JsonProperty
-    private String groupId;
+    @JsonProperty private String groupId;
 
-    @JsonProperty
-    private String schemaIdLocation;
+    @JsonProperty private String schemaIdLocation;
 
-    @JsonProperty
-    private String schemaLookupStrategy;
+    @JsonProperty private String schemaLookupStrategy;
 
-    @JsonProperty
-    private String bindingVersion;
+    @JsonProperty private String bindingVersion;
 
     /**
      * @return configs
@@ -88,7 +78,6 @@ public class KafkaBinding {
     }
 
     /**
-     *
      * @return number of topic partitions
      */
     public int partitions() {
@@ -96,7 +85,6 @@ public class KafkaBinding {
     }
 
     /**
-     *
      * @return number of topic replicas
      */
     public int replicas() {
@@ -104,7 +92,6 @@ public class KafkaBinding {
     }
 
     /**
-     *
      * @return message retention in ms.
      */
     public int retention() {

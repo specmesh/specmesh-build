@@ -27,15 +27,15 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@JsonSchemaInject(strings = {
-        @JsonSchemaString(path = "javaType", value = "simple.schema_demo._public.user_checkout_value.UserCheckout")})
+@JsonSchemaInject(
+        strings = {
+            @JsonSchemaString(
+                    path = "javaType",
+                    value = "simple.schema_demo._public.user_checkout_value.UserCheckout")
+        })
 public class UserCheckout {
-    @JsonProperty
-    long id;
-    @JsonProperty
-    String name;
-    @JsonProperty
-    int price;
-    @JsonProperty
-    String systemDate;
+    @JsonProperty long id;
+    @JsonProperty String name;
+    @JsonProperty int price;
+    @JsonProperty String systemDate;
 }

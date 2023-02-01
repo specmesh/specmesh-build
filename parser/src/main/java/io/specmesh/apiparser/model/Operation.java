@@ -32,9 +32,9 @@ import lombok.experimental.Accessors;
  * Pojo representing a Message.
  *
  * @see <a href=
- *      "https://www.asyncapi.com/docs/reference/specification/v2.4.0#operationObject">operationObject</a>
+ *     "https://www.asyncapi.com/docs/reference/specification/v2.4.0#operationObject">operationObject</a>
  * @see <a href=
- *      "https://www.asyncapi.com/docs/reference/specification/v2.4.0#messageTraitObject">messageTraitObject</a>
+ *     "https://www.asyncapi.com/docs/reference/specification/v2.4.0#messageTraitObject">messageTraitObject</a>
  */
 @Value
 @Accessors(fluent = true)
@@ -43,28 +43,22 @@ import lombok.experimental.Accessors;
 @SuppressFBWarnings
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class Operation {
-    @JsonProperty
-    private String operationId;
+    @JsonProperty private String operationId;
 
-    @JsonProperty
-    private String summary;
+    @JsonProperty private String summary;
 
-    @JsonProperty
-    private String description;
+    @JsonProperty private String description;
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @JsonProperty
     private List<Tag> tags = Collections.EMPTY_LIST;
 
-    @JsonProperty
-    private Bindings bindings;
+    @JsonProperty private Bindings bindings;
 
     // https://www.asyncapi.com/docs/reference/specification/v2.4.0#operationTraitObject
-    @JsonProperty
-    private Map traits = Collections.EMPTY_MAP;
+    @JsonProperty private Map traits = Collections.EMPTY_MAP;
 
-    @JsonProperty
-    private Message message;
+    @JsonProperty private Message message;
 
     /**
      * @return schema info
@@ -73,8 +67,11 @@ public class Operation {
         if (message.bindings() == null) {
             throw new IllegalStateException("Bindings not found for operation: " + operationId);
         }
-        return new SchemaInfo(message().schemaRef(), message().schemaFormat(),
-                message.bindings().kafka().schemaIdLocation(), message().contentType(),
+        return new SchemaInfo(
+                message().schemaRef(),
+                message().schemaFormat(),
+                message.bindings().kafka().schemaIdLocation(),
+                message().contentType(),
                 message.bindings().kafka().schemaLookupStrategy());
     }
 }
