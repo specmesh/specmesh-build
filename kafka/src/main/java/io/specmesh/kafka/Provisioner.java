@@ -217,8 +217,16 @@ public final class Provisioner {
         return env;
     }
 
+
+    /**
+     * Provisioning failures
+     */
     public static class ProvisioningException extends Exception {
 
+        /**
+         * Provisioning failures
+         * @param e exception to cause the failure
+         */
         public ProvisioningException(final Exception e) {
             super(e);
         }
