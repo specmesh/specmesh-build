@@ -21,7 +21,10 @@ import static java.util.Objects.requireNonNull;
 import io.specmesh.kafka.schema.SchemaRegistryContainer;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
+import org.apache.kafka.common.config.SaslConfigs;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -189,6 +192,7 @@ public final class DockerKafkaEnvironment
         private final Map<String, String> kafkaEnv = new HashMap<>(DEFAULT_KAFKA_ENV);
         private DockerImageName srImage = DockerImageName.parse(DEFAULT_SCHEMA_REG_IMAGE);
         private final Map<String, String> srEnv = new HashMap<>();
+        private final Map<String, String> userPasswords = new LinkedHashMap<>();
 
         /**
          * Customise the startup count.
@@ -283,11 +287,74 @@ public final class DockerKafkaEnvironment
         }
 
         /**
+         * Enable SASL authentication.
+         *
+         * <p>An {@code admin} user will be created
+         *
+         * @param adminUser name of the admin user.
+         * @param adminPassword password for the admin user.
+         * @param additionalUsers additional usernames and passwords or api-keys and tokens.
+         * @return self.
+         */
+        public Builder withSaslAuthentication(
+                final String adminUser,
+                final String adminPassword,
+                final String... additionalUsers) {
+            if (additionalUsers.length % 2 != 0) {
+                throw new IllegalArgumentException(
+                        "additional users must be in format user1, password1, ... userN, passwordN");
+            }
+            this.userPasswords.put(adminUser, adminPassword);
+            for (int i = 0; i < additionalUsers.length; i++) {
+                this.userPasswords.put(additionalUsers[i], additionalUsers[++i]);
+            }
+            return this;
+        }
+
+        /**
+         * Enables ACLs on the Kafka cluster.
+         *
+         * @return self.
+         */
+        public Builder withKafkaAcls() {
+            withKafkaEnv("KAFKA_SUPER_USERS", "User:admin");
+            withKafkaEnv("KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND", "true");
+            withKafkaEnv("KAFKA_AUTHORIZER_CLASS_NAME", "kafka.security.authorizer.AclAuthorizer");
+            return this;
+        }
+
+        /**
          * @return the new {@link DockerKafkaEnvironment} instance.
          */
         public DockerKafkaEnvironment build() {
+            maybeEnableSasl();
             return new DockerKafkaEnvironment(
                     startUpAttempts, startUpTimeout, kafkaDockerImage, kafkaEnv, srImage, srEnv);
+        }
+
+        private void maybeEnableSasl() {
+            if (userPasswords.isEmpty()) {
+                return;
+            }
+
+            withKafkaEnv(
+                    "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP",
+                    "BROKER:PLAINTEXT,PLAINTEXT:SASL_PLAINTEXT");
+            withKafkaEnv("KAFKA_LISTENER_NAME_PLAINTEXT_PLAIN_SASL_JAAS_CONFIG", buildJaasConfig());
+            withKafkaEnv("KAFKA_LISTENER_NAME_PLAINTEXT_SASL_ENABLED_MECHANISMS", "PLAIN");
+        }
+
+        private String buildJaasConfig() {
+            final Map.Entry<String, String> admin = userPasswords.entrySet().iterator().next();
+            final String basicJaas =
+                    Provisioner.clientSaslAuthProperties(admin.getKey(), admin.getValue())
+                            .get(SaslConfigs.SASL_JAAS_CONFIG)
+                            .toString();
+            return basicJaas.substring(0, basicJaas.length() - 1)
+                    + userPasswords.entrySet().stream()
+                            .map(e -> " user_" + e.getKey() + "=\"" + e.getValue() + "\"")
+                            .collect(Collectors.joining())
+                    + ";";
         }
     }
 }

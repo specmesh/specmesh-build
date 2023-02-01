@@ -71,22 +71,24 @@ import simple.schema_demo._public.user_signed_up_value.UserSignedUp;
 class ClientsFunctionalDemoTest {
     private static final KafkaApiSpec apiSpec = new KafkaApiSpec(getAPISpecFromResource());
 
+    private static final String ADMIN_USER = "admin";
+    private static final String ADMIN_PASSWORD = "admin-secret";
+
+    private static final String OWNER_USER = "simple.schema_demo";
+    private static final String OWNER_PASSWORD = "simple.schema_demo-secret";
+
     @RegisterExtension
     private static final KafkaEnvironment KAFKA_ENV =
             DockerKafkaEnvironment.builder()
-                    .withKafkaEnv(
-                            Provisioner.testAuthorizerConfig(
-                                    "simple.schema_demo",
-                                    "simple.schema_demo-secret",
-                                    "foreignDomain",
-                                    "foreignDomain-secret"))
+                    .withSaslAuthentication(ADMIN_USER, ADMIN_PASSWORD, OWNER_USER, OWNER_PASSWORD)
+                    .withKafkaAcls()
                     .build();
 
     private final SchemaRegistryClient schemaRegistryClient;
 
     ClientsFunctionalDemoTest() throws Exception {
         final AdminClient adminClient =
-                AdminClient.create(getClientProperties("admin", "admin-secret"));
+                AdminClient.create(getClientProperties(ADMIN_USER, ADMIN_PASSWORD));
         schemaRegistryClient =
                 new CachedSchemaRegistryClient(KAFKA_ENV.schemeRegistryServer(), 1000);
         Provisioner.provision(apiSpec, "./build/resources/test", adminClient, schemaRegistryClient);
@@ -119,8 +121,7 @@ class ClientsFunctionalDemoTest {
                                 LongSerializer.class,
                                 KafkaAvroSerializer.class,
                                 false,
-                                Provisioner.clientAuthProperties(
-                                        "simple.schema_demo", "simple.schema_demo-secret")));
+                                Provisioner.clientSaslAuthProperties(OWNER_USER, OWNER_PASSWORD)));
         final var sentRecord = new UserSignedUp("joe blogs", "blogy@twasmail.com", 100);
 
         producer.send(new ProducerRecord<>(userSignedUpTopic, 1000L, sentRecord))
@@ -138,8 +139,7 @@ class ClientsFunctionalDemoTest {
                                 LongDeserializer.class,
                                 KafkaAvroDeserializer.class,
                                 true,
-                                Provisioner.clientAuthProperties(
-                                        "simple.schema_demo", "simple.schema_demo-secret")));
+                                Provisioner.clientSaslAuthProperties(OWNER_USER, OWNER_PASSWORD)));
         consumer.subscribe(Collections.singleton(userSignedUpTopic));
 
         final ConsumerRecords<Long, UserSignedUp> consumerRecords =
@@ -177,8 +177,7 @@ class ClientsFunctionalDemoTest {
                                 LongSerializer.class,
                                 KafkaProtobufSerializer.class,
                                 false,
-                                Provisioner.clientAuthProperties(
-                                        "simple.schema_demo", "simple.schema_demo-secret")));
+                                Provisioner.clientSaslAuthProperties(OWNER_USER, OWNER_PASSWORD)));
         final var userSam =
                 UserInfo.newBuilder()
                         .setFullName("sam fteex")
@@ -201,13 +200,11 @@ class ClientsFunctionalDemoTest {
                                 LongDeserializer.class,
                                 KafkaProtobufDeserializer.class,
                                 true,
-                                Clients.mergeMaps(
-                                        Provisioner.clientAuthProperties(
-                                                "simple.schema_demo", "simple.schema_demo-secret"),
-                                        Map.of(
-                                                KafkaProtobufDeserializerConfig
-                                                        .SPECIFIC_PROTOBUF_VALUE_TYPE,
-                                                UserInfo.class.getName()))));
+                                Provisioner.clientSaslAuthProperties(OWNER_USER, OWNER_PASSWORD),
+                                Map.of(
+                                        KafkaProtobufDeserializerConfig
+                                                .SPECIFIC_PROTOBUF_VALUE_TYPE,
+                                        UserInfo.class.getName())));
 
         consumer.subscribe(Collections.singleton(userInfoTopic));
         final ConsumerRecords<Long, UserInfo> consumerRecords =
@@ -244,13 +241,10 @@ class ClientsFunctionalDemoTest {
                         Serdes.LongSerde.class,
                         KafkaProtobufSerde.class,
                         false,
-                        Clients.mergeMaps(
-                                Provisioner.clientAuthProperties(
-                                        "simple.schema_demo", "simple.schema_demo-secret"),
-                                Map.of(
-                                        KafkaProtobufDeserializerConfig
-                                                .SPECIFIC_PROTOBUF_VALUE_TYPE,
-                                        UserInfo.class.getName())));
+                        Provisioner.clientSaslAuthProperties(OWNER_USER, OWNER_PASSWORD),
+                        Map.of(
+                                KafkaProtobufDeserializerConfig.SPECIFIC_PROTOBUF_VALUE_TYPE,
+                                UserInfo.class.getName()));
 
         final var builder = new StreamsBuilder();
 
@@ -269,7 +263,7 @@ class ClientsFunctionalDemoTest {
                 userInfoEnrichedTopic,
                 with(
                         Serdes.Long(),
-                        new KafkaProtobufSerde(schemaRegistryClient, UserInfoEnriched.class)));
+                        new KafkaProtobufSerde<>(schemaRegistryClient, UserInfoEnriched.class)));
 
         final var streams =
                 new KafkaStreams(builder.build(), MapUtils.toProperties(streamsConfiguration));
@@ -290,8 +284,7 @@ class ClientsFunctionalDemoTest {
                                 LongSerializer.class,
                                 KafkaProtobufSerializer.class,
                                 false,
-                                Provisioner.clientAuthProperties(
-                                        "simple.schema_demo", "simple.schema_demo-secret")));
+                                Provisioner.clientSaslAuthProperties(OWNER_USER, OWNER_PASSWORD)));
 
         final var userSam =
                 UserInfo.newBuilder()
@@ -314,13 +307,11 @@ class ClientsFunctionalDemoTest {
                                 LongDeserializer.class,
                                 KafkaProtobufDeserializer.class,
                                 true,
-                                Clients.mergeMaps(
-                                        Provisioner.clientAuthProperties(
-                                                "simple.schema_demo", "simple.schema_demo-secret"),
-                                        Map.of(
-                                                KafkaProtobufDeserializerConfig
-                                                        .SPECIFIC_PROTOBUF_VALUE_TYPE,
-                                                UserInfoEnriched.class.getName()))));
+                                Provisioner.clientSaslAuthProperties(OWNER_USER, OWNER_PASSWORD),
+                                Map.of(
+                                        KafkaProtobufDeserializerConfig
+                                                .SPECIFIC_PROTOBUF_VALUE_TYPE,
+                                        UserInfoEnriched.class.getName())));
 
         consumer.subscribe(Collections.singleton(userInfoEnrichedTopic));
         final ConsumerRecords<Long, UserInfoEnriched> consumerRecords =
@@ -355,7 +346,7 @@ class ClientsFunctionalDemoTest {
 
     private static Properties getClientProperties(final String principle, final String secret) {
         final Properties properties = new Properties();
-        properties.putAll(Provisioner.clientAuthProperties(principle, secret));
+        properties.putAll(Provisioner.clientSaslAuthProperties(principle, secret));
         properties.put(AdminClientConfig.CLIENT_ID_CONFIG, apiSpec.id());
         properties.put(
                 AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_ENV.kafkaBootstrapServers());
