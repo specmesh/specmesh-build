@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -61,7 +62,7 @@ public final class DockerKafkaEnvironment
     private final Duration startUpTimeout;
     private final DockerImageName kafkaDockerImage;
     private final Map<String, String> kafkaEnv;
-    private final DockerImageName srDockerImage;
+    private final Optional<DockerImageName> srDockerImage;
     private final Map<String, String> srEnv;
 
     private Network network;
@@ -81,7 +82,7 @@ public final class DockerKafkaEnvironment
             final Duration startUpTimeout,
             final DockerImageName kafkaDockerImage,
             final Map<String, String> kafkaEnv,
-            final DockerImageName srDockerImage,
+            final Optional<DockerImageName> srDockerImage,
             final Map<String, String> srEnv) {
         this.startUpTimeout = requireNonNull(startUpTimeout, "startUpTimeout");
         this.startUpAttempts = startUpAttempts;
@@ -142,8 +143,13 @@ public final class DockerKafkaEnvironment
                         .withStartupTimeout(startUpTimeout)
                         .withEnv(kafkaEnv);
 
+        if (srDockerImage.isEmpty()) {
+            kafkaBroker.start();
+            return;
+        }
+
         schemaRegistry =
-                new SchemaRegistryContainer(srDockerImage)
+                new SchemaRegistryContainer(srDockerImage.get())
                         .withKafka(kafkaBroker)
                         .withNetworkAliases("schema-registry")
                         .withStartupAttempts(startUpAttempts)
@@ -190,7 +196,8 @@ public final class DockerKafkaEnvironment
         private DockerImageName kafkaDockerImage =
                 DockerImageName.parse(DEFAULT_KAFKA_DOCKER_IMAGE);
         private final Map<String, String> kafkaEnv = new HashMap<>(DEFAULT_KAFKA_ENV);
-        private DockerImageName srImage = DockerImageName.parse(DEFAULT_SCHEMA_REG_IMAGE);
+        private Optional<DockerImageName> srImage =
+                Optional.of(DockerImageName.parse(DEFAULT_SCHEMA_REG_IMAGE));
         private final Map<String, String> srEnv = new HashMap<>();
         private final Map<String, String> userPasswords = new LinkedHashMap<>();
 
@@ -254,13 +261,23 @@ public final class DockerKafkaEnvironment
         }
 
         /**
+         * Stop the Schema Registry container from starting.
+         *
+         * @return self.
+         */
+        public Builder withoutSchemaRegistry() {
+            this.srImage = Optional.empty();
+            return this;
+        }
+
+        /**
          * Customise the Docker image to use for Schema Registry.
          *
          * @param imageName the Docker image name.
          * @return self.
          */
         public Builder withSchemaRegistryImage(final String imageName) {
-            this.srImage = DockerImageName.parse(imageName);
+            this.srImage = Optional.of(DockerImageName.parse(imageName));
             return this;
         }
 
