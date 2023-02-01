@@ -49,7 +49,7 @@ public class KafkaAPISpecFunctionalTest {
 
     public KafkaAPISpecFunctionalTest() {
         System.out.println("createAllTheThings BROKER URL:" + kafka.getBootstrapServers());
-        AdminClient adminClient = AdminClient.create(getClientProperties());
+        final AdminClient adminClient = AdminClient.create(getClientProperties());
         try {
             Provisioner.provisionTopics(apiSpec, adminClient);
             Provisioner.provisionAcls(apiSpec, adminClient);

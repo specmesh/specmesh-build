@@ -56,7 +56,7 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
     private final SchemaRegistryClient schemaRegistryClient;
 
     ClientsFunctionalDemoTest() throws Exception {
-        AdminClient adminClient = AdminClient.create(getClientProperties("admin", "admin-secret"));
+        final AdminClient adminClient = AdminClient.create(getClientProperties("admin", "admin-secret"));
         schemaRegistryClient = new CachedSchemaRegistryClient(schemaRegistryContainer.getUrl(), 1000);
         Provisioner.provision(apiSpec, "./build/resources/test", adminClient, schemaRegistryClient);
     }
