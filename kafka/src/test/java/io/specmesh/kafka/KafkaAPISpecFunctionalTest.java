@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -63,8 +64,7 @@ public class KafkaAPISpecFunctionalTest {
     @Container public static final KafkaContainer kafka = getKafkaContainer();
 
     public KafkaAPISpecFunctionalTest() {
-        System.out.println("createAllTheThings BROKER URL:" + kafka.getBootstrapServers());
-        final AdminClient adminClient = AdminClient.create(getClientProperties());
+        final Admin adminClient = AdminClient.create(getClientProperties());
         try {
             Provisioner.provisionTopics(apiSpec, adminClient);
             Provisioner.provisionAcls(apiSpec, adminClient);
@@ -322,7 +322,7 @@ public class KafkaAPISpecFunctionalTest {
                 "org.apache.kafka.common.security.plain.PlainLoginModule required "
                         + "username=\"admin\" "
                         + "password=\"admin-secret\";");
-        return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.2.2"))
+        return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.3.1"))
                 .withStartupAttempts(3)
                 .withEnv(env);
     }

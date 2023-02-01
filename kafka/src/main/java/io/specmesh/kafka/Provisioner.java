@@ -34,7 +34,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.common.acl.AclBinding;
@@ -54,8 +54,7 @@ public final class Provisioner {
      * @return number of topics created
      * @throws ProvisioningException on provision failure
      */
-    public static int provisionTopics(final KafkaApiSpec apiSpec, final AdminClient adminClient)
-            throws ProvisioningException {
+    public static int provisionTopics(final KafkaApiSpec apiSpec, final Admin adminClient) {
 
         final var domainTopics = apiSpec.listDomainOwnedTopics();
 
@@ -70,7 +69,7 @@ public final class Provisioner {
                             .map(TopicListing::name)
                             .collect(Collectors.toList());
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new ProvisioningException(e);
+            throw new ProvisioningException("Failed to list topics", e);
         }
 
         final var newTopicsToCreate =
@@ -84,7 +83,7 @@ public final class Provisioner {
                     .all()
                     .get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new ProvisioningException(e);
+            throw new ProvisioningException("Failed to create topics", e);
         }
         return newTopicsToCreate.size();
     }
@@ -133,13 +132,12 @@ public final class Provisioner {
      * @param adminClient th admin client for the cluster.
      * @throws ProvisioningException on interrupt
      */
-    public static void provisionAcls(final KafkaApiSpec apiSpec, final AdminClient adminClient)
-            throws ProvisioningException {
+    public static void provisionAcls(final KafkaApiSpec apiSpec, final Admin adminClient) {
         final List<AclBinding> allAcls = apiSpec.listACLsForDomainOwnedTopics();
         try {
             adminClient.createAcls(allAcls).all().get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new ProvisioningException(e);
+            throw new ProvisioningException("Failed to create ACLs", e);
         }
     }
 
@@ -173,9 +171,8 @@ public final class Provisioner {
     public static void provision(
             final KafkaApiSpec apiSpec,
             final String schemaResources,
-            final AdminClient adminClient,
-            final SchemaRegistryClient schemaRegistryClient)
-            throws ProvisioningException {
+            final Admin adminClient,
+            final SchemaRegistryClient schemaRegistryClient) {
         provisionTopics(apiSpec, adminClient);
         provisionSchemas(apiSpec, schemaResources, schemaRegistryClient);
         provisionAcls(apiSpec, adminClient);
@@ -209,15 +206,13 @@ public final class Provisioner {
      * @param domainSecret their secret
      * @param otherDomainUser other user
      * @param otherDomainSecret their secret
-     * @param otherConfig other config needed for the env map
      * @return env map for broker
      */
     public static Map<String, String> testAuthorizerConfig(
             final String domainUser,
             final String domainSecret,
             final String otherDomainUser,
-            final String otherDomainSecret,
-            final Map<String, String> otherConfig) {
+            final String otherDomainSecret) {
         final Map<String, String> env = new LinkedHashMap<>();
         // must be 'true' for cluster metadata init - otherwise needs better sec config
         env.put("KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND", "true");
@@ -243,20 +238,13 @@ public final class Provisioner {
                 "org.apache.kafka.common.security.plain.PlainLoginModule required "
                         + "username=\"admin\" "
                         + "password=\"admin-secret\";");
-        env.putAll(otherConfig);
         return env;
     }
 
-    /** Provisioning failures */
-    public static class ProvisioningException extends Exception {
+    private static class ProvisioningException extends RuntimeException {
 
-        /**
-         * Provisioning failures
-         *
-         * @param e exception to cause the failure
-         */
-        public ProvisioningException(final Exception e) {
-            super(e);
+        ProvisioningException(final String msg, final Throwable cause) {
+            super(msg, cause);
         }
     }
 }

@@ -92,7 +92,7 @@ public class SASLPlainPrincipleTest {
                 "org.apache.kafka.common.security.plain.PlainLoginModule required "
                         + "username=\"admin\" "
                         + "password=\"admin-secret\";");
-        return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:6.2.1"))
+        return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.3.1"))
                 .withStartupAttempts(3)
                 .withEnv(env);
     }

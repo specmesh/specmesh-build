@@ -64,18 +64,31 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import simple.schema_demo._public.user_signed_up_value.UserSignedUp;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class ClientsFunctionalDemoTest extends AbstractContainerTest {
+class ClientsFunctionalDemoTest {
     private static final KafkaApiSpec apiSpec = new KafkaApiSpec(getAPISpecFromResource());
+
+    @RegisterExtension
+    private static final KafkaEnvironment KAFKA_ENV =
+            DockerKafkaEnvironment.builder()
+                    .withKafkaEnv(
+                            Provisioner.testAuthorizerConfig(
+                                    "simple.schema_demo",
+                                    "simple.schema_demo-secret",
+                                    "foreignDomain",
+                                    "foreignDomain-secret"))
+                    .build();
+
     private final SchemaRegistryClient schemaRegistryClient;
 
     ClientsFunctionalDemoTest() throws Exception {
         final AdminClient adminClient =
                 AdminClient.create(getClientProperties("admin", "admin-secret"));
         schemaRegistryClient =
-                new CachedSchemaRegistryClient(schemaRegistryContainer.getUrl(), 1000);
+                new CachedSchemaRegistryClient(KAFKA_ENV.schemeRegistryServer(), 1000);
         Provisioner.provision(apiSpec, "./build/resources/test", adminClient, schemaRegistryClient);
     }
 
@@ -101,8 +114,8 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
                         producerProperties(
                                 apiSpec.id(),
                                 "do-things",
-                                kafkaContainer.getBootstrapServers(),
-                                schemaRegistryContainer.getUrl(),
+                                KAFKA_ENV.kafkaBootstrapServers(),
+                                KAFKA_ENV.schemeRegistryServer(),
                                 LongSerializer.class,
                                 KafkaAvroSerializer.class,
                                 false,
@@ -120,8 +133,8 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
                         consumerProperties(
                                 apiSpec.id(),
                                 "do-things-in",
-                                kafkaContainer.getBootstrapServers(),
-                                schemaRegistryContainer.getUrl(),
+                                KAFKA_ENV.kafkaBootstrapServers(),
+                                KAFKA_ENV.schemeRegistryServer(),
                                 LongDeserializer.class,
                                 KafkaAvroDeserializer.class,
                                 true,
@@ -159,8 +172,8 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
                         producerProperties(
                                 apiSpec.id(),
                                 "do-things-user-info",
-                                kafkaContainer.getBootstrapServers(),
-                                schemaRegistryContainer.getUrl(),
+                                KAFKA_ENV.kafkaBootstrapServers(),
+                                KAFKA_ENV.schemeRegistryServer(),
                                 LongSerializer.class,
                                 KafkaProtobufSerializer.class,
                                 false,
@@ -183,8 +196,8 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
                         consumerProperties(
                                 apiSpec.id(),
                                 "do-things-user-info-in",
-                                kafkaContainer.getBootstrapServers(),
-                                schemaRegistryContainer.getUrl(),
+                                KAFKA_ENV.kafkaBootstrapServers(),
+                                KAFKA_ENV.schemeRegistryServer(),
                                 LongDeserializer.class,
                                 KafkaProtobufDeserializer.class,
                                 true,
@@ -226,8 +239,8 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
                 Clients.kstreamsProperties(
                         apiSpec.id(),
                         "streams-appid-service-thing",
-                        kafkaContainer.getBootstrapServers(),
-                        schemaRegistryContainer.getUrl(),
+                        KAFKA_ENV.kafkaBootstrapServers(),
+                        KAFKA_ENV.schemeRegistryServer(),
                         Serdes.LongSerde.class,
                         KafkaProtobufSerde.class,
                         false,
@@ -272,8 +285,8 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
                         producerProperties(
                                 apiSpec.id(),
                                 "do-things-user-info",
-                                kafkaContainer.getBootstrapServers(),
-                                schemaRegistryContainer.getUrl(),
+                                KAFKA_ENV.kafkaBootstrapServers(),
+                                KAFKA_ENV.schemeRegistryServer(),
                                 LongSerializer.class,
                                 KafkaProtobufSerializer.class,
                                 false,
@@ -296,8 +309,8 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
                         consumerProperties(
                                 apiSpec.id(),
                                 "streams-consumer-validate",
-                                kafkaContainer.getBootstrapServers(),
-                                schemaRegistryContainer.getUrl(),
+                                KAFKA_ENV.kafkaBootstrapServers(),
+                                KAFKA_ENV.schemeRegistryServer(),
                                 LongDeserializer.class,
                                 KafkaProtobufDeserializer.class,
                                 true,
@@ -345,7 +358,7 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
         properties.putAll(Provisioner.clientAuthProperties(principle, secret));
         properties.put(AdminClientConfig.CLIENT_ID_CONFIG, apiSpec.id());
         properties.put(
-                AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
+                AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_ENV.kafkaBootstrapServers());
 
         return properties;
     }
