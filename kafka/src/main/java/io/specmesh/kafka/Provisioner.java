@@ -41,25 +41,30 @@ public final class Provisioner {
      * @param adminClient
      *            admin client for the Kafka cluster.
      * @return number of topics created
-     * @throws InterruptedException
-     *             on interrupt
-     * @throws ExecutionException
-     *             on remote API call failure
-     * @throws TimeoutException
-     *             on timeout
+     * @throws ProvisioningException
+     *             on provision failure
      */
     public static int provisionTopics(final KafkaApiSpec apiSpec, final AdminClient adminClient)
-            throws InterruptedException, ExecutionException, TimeoutException {
+            throws ProvisioningException {
 
         final var domainTopics = apiSpec.listDomainOwnedTopics();
 
-        final var existingTopics = adminClient.listTopics().listings().get(REQUEST_TIMEOUT, TimeUnit.SECONDS).stream()
-                .map(TopicListing::name).collect(Collectors.toList());
+        final List<String> existingTopics;
+        try {
+            existingTopics = adminClient.listTopics().listings().get(REQUEST_TIMEOUT, TimeUnit.SECONDS).stream()
+                    .map(TopicListing::name).collect(Collectors.toList());
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new ProvisioningException(e);
+        }
 
         final var newTopicsToCreate = domainTopics.stream()
                 .filter(newTopic -> !existingTopics.contains(newTopic.name())).collect(Collectors.toList());
 
-        adminClient.createTopics(newTopicsToCreate).all().get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
+        try {
+            adminClient.createTopics(newTopicsToCreate).all().get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new ProvisioningException(e);
+        }
         return newTopicsToCreate.size();
     }
 
@@ -106,17 +111,17 @@ public final class Provisioner {
      *            the api spec.
      * @param adminClient
      *            th admin client for the cluster.
-     * @throws InterruptedException
+     * @throws ProvisioningException
      *             on interrupt
-     * @throws ExecutionException
-     *             on remote API call failure
-     * @throws TimeoutException
-     *             on timeout
      */
     public static void provisionAcls(final KafkaApiSpec apiSpec, final AdminClient adminClient)
-            throws ExecutionException, InterruptedException, TimeoutException {
+            throws ProvisioningException {
         final List<AclBinding> allAcls = apiSpec.listACLsForDomainOwnedTopics();
-        adminClient.createAcls(allAcls).all().get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
+        try {
+            adminClient.createAcls(allAcls).all().get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new ProvisioningException(e);
+        }
     }
 
     static ParsedSchema getSchema(final String topicName, final String schemaRef, final String path,
@@ -145,16 +150,12 @@ public final class Provisioner {
      *            kafka admin client
      * @param schemaRegistryClient
      *            sr client
-     * @throws ExecutionException
-     *             when cant provision topics
-     * @throws InterruptedException
-     *             process interrupted
-     * @throws TimeoutException
-     *             stalled
+     * @throws ProvisioningException
+     *             when cant provision resources
      */
     public static void provision(final KafkaApiSpec apiSpec, final String schemaResources,
             final AdminClient adminClient, final SchemaRegistryClient schemaRegistryClient)
-            throws ExecutionException, InterruptedException, TimeoutException {
+            throws ProvisioningException {
         provisionTopics(apiSpec, adminClient);
         provisionSchemas(apiSpec, schemaResources, schemaRegistryClient);
         provisionAcls(apiSpec, adminClient);
@@ -188,12 +189,15 @@ public final class Provisioner {
      *            other user
      * @param otherDomainSecret
      *            their secret
+     * @param otherConfig
+     *            other config needed for the env map
      * @return env map for broker
+     *
      */
     public static Map<String, String> testAuthorizerConfig(final String domainUser, final String domainSecret,
-            final String otherDomainUser, final String otherDomainSecret) {
+            final String otherDomainUser, final String otherDomainSecret, final Map<String, String> otherConfig) {
         final Map<String, String> env = new LinkedHashMap<>();
-        env.put("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "false");
+        // must be 'true' for cluster metadata init - otherwise needs better sec config
         env.put("KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND", "true");
         env.put("KAFKA_AUTHORIZER_CLASS_NAME", "kafka.security.authorizer.AclAuthorizer");
         env.put("KAFKA_SUPER_USERS", "User:OnlySuperUser");
@@ -209,6 +213,14 @@ public final class Provisioner {
 
         env.put("KAFKA_SASL_JAAS_CONFIG", "org.apache.kafka.common.security.plain.PlainLoginModule required "
                 + "username=\"admin\" " + "password=\"admin-secret\";");
+        env.putAll(otherConfig);
         return env;
+    }
+
+    public static class ProvisioningException extends Exception {
+
+        public ProvisioningException(final Exception e) {
+            super(e);
+        }
     }
 }

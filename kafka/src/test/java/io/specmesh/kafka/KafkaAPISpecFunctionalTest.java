@@ -13,9 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -49,17 +47,14 @@ public class KafkaAPISpecFunctionalTest {
     @Container
     public static final KafkaContainer kafka = getKafkaContainer();
 
-    private AdminClient adminClient;
-
-    public KafkaAPISpecFunctionalTest() throws ExecutionException, InterruptedException, TimeoutException {
+    public KafkaAPISpecFunctionalTest() {
         System.out.println("createAllTheThings BROKER URL:" + kafka.getBootstrapServers());
-        adminClient = AdminClient.create(getClientProperties());
+        AdminClient adminClient = AdminClient.create(getClientProperties());
         try {
             Provisioner.provisionTopics(apiSpec, adminClient);
             Provisioner.provisionAcls(apiSpec, adminClient);
         } catch (Throwable t) {
             // note: I will look a repeatable ops/deltas in next PR
-
         }
     }
 

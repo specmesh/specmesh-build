@@ -3,6 +3,7 @@ package io.specmesh.kafka;
 
 import io.specmesh.kafka.schema.SchemaRegistryContainer;
 import java.time.Duration;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.Network;
@@ -27,7 +28,8 @@ abstract class AbstractContainerTest {
             kafkaContainer = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:" + CFLT_VERSION))
                     .withNetwork(network).withStartupTimeout(Duration.ofSeconds(90))
                     .withEnv(Provisioner.testAuthorizerConfig("simple.schema_demo", "simple.schema_demo-secret",
-                            "foreignDomain", "foreignDomain-secret"));
+                            "foreignDomain", "foreignDomain-secret",
+                            Map.of("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "false")));
 
             schemaRegistryContainer = new SchemaRegistryContainer(CFLT_VERSION).withNetwork(network)
                     .withKafka(kafkaContainer).withStartupTimeout(Duration.ofSeconds(90));

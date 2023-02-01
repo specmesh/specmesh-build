@@ -26,9 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import org.apache.commons.collections.MapUtils;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -55,13 +53,11 @@ import simple.schema_demo._public.user_signed_up_value.UserSignedUp;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ClientsFunctionalDemoTest extends AbstractContainerTest {
     private static final KafkaApiSpec apiSpec = new KafkaApiSpec(getAPISpecFromResource());
-    private final AdminClient adminClient;
     private final SchemaRegistryClient schemaRegistryClient;
 
-    ClientsFunctionalDemoTest() throws ExecutionException, InterruptedException, TimeoutException {
-        adminClient = AdminClient.create(getClientProperties("admin", "admin-secret"));
+    ClientsFunctionalDemoTest() throws Exception {
+        AdminClient adminClient = AdminClient.create(getClientProperties("admin", "admin-secret"));
         schemaRegistryClient = new CachedSchemaRegistryClient(schemaRegistryContainer.getUrl(), 1000);
-
         Provisioner.provision(apiSpec, "./build/resources/test", adminClient, schemaRegistryClient);
     }
 
