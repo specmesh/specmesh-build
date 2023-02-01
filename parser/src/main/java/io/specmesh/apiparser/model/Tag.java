@@ -24,17 +24,13 @@ import lombok.NoArgsConstructor;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
-/**
- * Pojo representing a tag
- */
+/** Pojo representing a tag */
 @Value
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 public class Tag {
-    @JsonProperty
-    String name;
+    @JsonProperty String name;
 
-    @JsonProperty
-    String description;
+    @JsonProperty String description;
 }

@@ -28,5 +28,4 @@ public class UserSignedUp {
     String fullName;
     String email;
     int age;
-
 }

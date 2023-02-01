@@ -46,11 +46,14 @@ public class KafkaAPISpecTest {
 
         assertThat(acls, iterableWithSize(6));
 
-        assertThat("Protected ACL was not created", acls.get(0).toString(),
-                is("(pattern=ResourcePattern(resourceType=TOPIC, "
-                        + "name=london.hammersmith.olympia.bigdatalondon._protected.retail.subway.food.purchase, "
-                        + "patternType=PREFIXED), entry=(principal=User:.some.other.domain.root, host=*, operation=READ, "
-                        + "permissionType=ALLOW))"));
+        assertThat(
+                "Protected ACL was not created",
+                acls.get(0).toString(),
+                is(
+                        "(pattern=ResourcePattern(resourceType=TOPIC, "
+                                + "name=london.hammersmith.olympia.bigdatalondon._protected.retail.subway.food.purchase, "
+                                + "patternType=PREFIXED), entry=(principal=User:.some.other.domain.root, host=*, operation=READ, "
+                                + "permissionType=ALLOW))"));
         // For adminClient.createAcls(acls);
     }
 
@@ -65,10 +68,12 @@ public class KafkaAPISpecTest {
     private ApiSpec getAPISpecFromResource() {
         try {
             return new AsyncApiParser()
-                    .loadResource(getClass().getClassLoader().getResourceAsStream("bigdatalondon-api.yaml"));
+                    .loadResource(
+                            getClass()
+                                    .getClassLoader()
+                                    .getResourceAsStream("bigdatalondon-api.yaml"));
         } catch (Throwable t) {
             throw new RuntimeException("Failed to load test resource", t);
         }
     }
-
 }

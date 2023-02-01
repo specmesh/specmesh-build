@@ -72,8 +72,10 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
     private final SchemaRegistryClient schemaRegistryClient;
 
     ClientsFunctionalDemoTest() throws Exception {
-        final AdminClient adminClient = AdminClient.create(getClientProperties("admin", "admin-secret"));
-        schemaRegistryClient = new CachedSchemaRegistryClient(schemaRegistryContainer.getUrl(), 1000);
+        final AdminClient adminClient =
+                AdminClient.create(getClientProperties("admin", "admin-secret"));
+        schemaRegistryClient =
+                new CachedSchemaRegistryClient(schemaRegistryContainer.getUrl(), 1000);
         Provisioner.provision(apiSpec, "./build/resources/test", adminClient, schemaRegistryClient);
     }
 
@@ -82,31 +84,57 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
     void shouldProvisionProduceAndConsumeUsingAvroWithSpeccy() throws Exception {
 
         final var domainTopics = apiSpec.listDomainOwnedTopics();
-        final var userSignedUpTopic = domainTopics.stream()
-                .filter(topic -> topic.name().endsWith("_public.user_signed_up")).findFirst()
-                .orElseThrow(() -> new RuntimeException("user_signed_up topic not found")).name();
+        final var userSignedUpTopic =
+                domainTopics.stream()
+                        .filter(topic -> topic.name().endsWith("_public.user_signed_up"))
+                        .findFirst()
+                        .orElseThrow(() -> new RuntimeException("user_signed_up topic not found"))
+                        .name();
 
         /*
          * Produce on the schema
          */
-        final KafkaProducer<Long, UserSignedUp> producer = producer(Long.class, UserSignedUp.class,
-                producerProperties(apiSpec.id(), "do-things", kafkaContainer.getBootstrapServers(),
-                        schemaRegistryContainer.getUrl(), LongSerializer.class, KafkaAvroSerializer.class, false,
-                        Provisioner.clientAuthProperties("simple.schema_demo", "simple.schema_demo-secret")));
+        final KafkaProducer<Long, UserSignedUp> producer =
+                producer(
+                        Long.class,
+                        UserSignedUp.class,
+                        producerProperties(
+                                apiSpec.id(),
+                                "do-things",
+                                kafkaContainer.getBootstrapServers(),
+                                schemaRegistryContainer.getUrl(),
+                                LongSerializer.class,
+                                KafkaAvroSerializer.class,
+                                false,
+                                Provisioner.clientAuthProperties(
+                                        "simple.schema_demo", "simple.schema_demo-secret")));
         final var sentRecord = new UserSignedUp("joe blogs", "blogy@twasmail.com", 100);
 
-        producer.send(new ProducerRecord<>(userSignedUpTopic, 1000L, sentRecord)).get(60, TimeUnit.SECONDS);
+        producer.send(new ProducerRecord<>(userSignedUpTopic, 1000L, sentRecord))
+                .get(60, TimeUnit.SECONDS);
 
-        final KafkaConsumer<Long, UserSignedUp> consumer = consumer(Long.class, UserSignedUp.class,
-                consumerProperties(apiSpec.id(), "do-things-in", kafkaContainer.getBootstrapServers(),
-                        schemaRegistryContainer.getUrl(), LongDeserializer.class, KafkaAvroDeserializer.class, true,
-                        Provisioner.clientAuthProperties("simple.schema_demo", "simple.schema_demo-secret")));
+        final KafkaConsumer<Long, UserSignedUp> consumer =
+                consumer(
+                        Long.class,
+                        UserSignedUp.class,
+                        consumerProperties(
+                                apiSpec.id(),
+                                "do-things-in",
+                                kafkaContainer.getBootstrapServers(),
+                                schemaRegistryContainer.getUrl(),
+                                LongDeserializer.class,
+                                KafkaAvroDeserializer.class,
+                                true,
+                                Provisioner.clientAuthProperties(
+                                        "simple.schema_demo", "simple.schema_demo-secret")));
         consumer.subscribe(Collections.singleton(userSignedUpTopic));
 
-        final ConsumerRecords<Long, UserSignedUp> consumerRecords = consumer.poll(Duration.ofSeconds(10));
+        final ConsumerRecords<Long, UserSignedUp> consumerRecords =
+                consumer.poll(Duration.ofSeconds(10));
         assertThat(consumerRecords, is(notNullValue()));
         assertThat(consumerRecords.count(), is(1));
-        MatcherAssert.assertThat(consumerRecords.iterator().next().value(), Matchers.is(sentRecord));
+        MatcherAssert.assertThat(
+                consumerRecords.iterator().next().value(), Matchers.is(sentRecord));
     }
 
     @Order(2)
@@ -114,30 +142,63 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
     void shouldProvisionProduceAndConsumeProtoWithSpeccyClient() throws Exception {
 
         final List<NewTopic> domainTopics = apiSpec.listDomainOwnedTopics();
-        final var userInfoTopic = domainTopics.stream().filter(topic -> topic.name().endsWith("_public.user_info"))
-                .findFirst().orElseThrow().name();
+        final var userInfoTopic =
+                domainTopics.stream()
+                        .filter(topic -> topic.name().endsWith("_public.user_info"))
+                        .findFirst()
+                        .orElseThrow()
+                        .name();
 
         /*
          * Produce on the schema
          */
-        final KafkaProducer<Long, UserInfo> producer = producer(Long.class, UserInfo.class,
-                producerProperties(apiSpec.id(), "do-things-user-info", kafkaContainer.getBootstrapServers(),
-                        schemaRegistryContainer.getUrl(), LongSerializer.class, KafkaProtobufSerializer.class, false,
-                        Provisioner.clientAuthProperties("simple.schema_demo", "simple.schema_demo-secret")));
-        final var userSam = UserInfo.newBuilder().setFullName("sam fteex").setEmail("hello-sam@bahamas.island")
-                .setAge(52).build();
+        final KafkaProducer<Long, UserInfo> producer =
+                producer(
+                        Long.class,
+                        UserInfo.class,
+                        producerProperties(
+                                apiSpec.id(),
+                                "do-things-user-info",
+                                kafkaContainer.getBootstrapServers(),
+                                schemaRegistryContainer.getUrl(),
+                                LongSerializer.class,
+                                KafkaProtobufSerializer.class,
+                                false,
+                                Provisioner.clientAuthProperties(
+                                        "simple.schema_demo", "simple.schema_demo-secret")));
+        final var userSam =
+                UserInfo.newBuilder()
+                        .setFullName("sam fteex")
+                        .setEmail("hello-sam@bahamas.island")
+                        .setAge(52)
+                        .build();
 
-        producer.send(new ProducerRecord<>(userInfoTopic, 1000L, userSam)).get(60, TimeUnit.SECONDS);
+        producer.send(new ProducerRecord<>(userInfoTopic, 1000L, userSam))
+                .get(60, TimeUnit.SECONDS);
 
-        final KafkaConsumer<Long, UserInfo> consumer = consumer(Long.class, UserInfo.class, consumerProperties(
-                apiSpec.id(), "do-things-user-info-in", kafkaContainer.getBootstrapServers(),
-                schemaRegistryContainer.getUrl(), LongDeserializer.class, KafkaProtobufDeserializer.class, true,
-                Clients.mergeMaps(Provisioner.clientAuthProperties("simple.schema_demo", "simple.schema_demo-secret"),
-                        Map.of(KafkaProtobufDeserializerConfig.SPECIFIC_PROTOBUF_VALUE_TYPE, UserInfo.class.getName()))
+        final KafkaConsumer<Long, UserInfo> consumer =
+                consumer(
+                        Long.class,
+                        UserInfo.class,
+                        consumerProperties(
+                                apiSpec.id(),
+                                "do-things-user-info-in",
+                                kafkaContainer.getBootstrapServers(),
+                                schemaRegistryContainer.getUrl(),
+                                LongDeserializer.class,
+                                KafkaProtobufDeserializer.class,
+                                true,
+                                Clients.mergeMaps(
+                                        Provisioner.clientAuthProperties(
+                                                "simple.schema_demo", "simple.schema_demo-secret"),
+                                        Map.of(
+                                                KafkaProtobufDeserializerConfig
+                                                        .SPECIFIC_PROTOBUF_VALUE_TYPE,
+                                                UserInfo.class.getName()))));
 
-        ));
         consumer.subscribe(Collections.singleton(userInfoTopic));
-        final ConsumerRecords<Long, UserInfo> consumerRecords = consumer.poll(Duration.ofSeconds(10));
+        final ConsumerRecords<Long, UserInfo> consumerRecords =
+                consumer.poll(Duration.ofSeconds(10));
         assertThat(consumerRecords, is(notNullValue()));
         assertThat(consumerRecords.count(), is(1));
         MatcherAssert.assertThat(consumerRecords.iterator().next().value(), Matchers.is(userSam));
@@ -148,53 +209,109 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
     void shouldProvisionInfraAndStreamStuffUsingProtoAndSpeccyClient() throws Exception {
 
         final var domainTopics = apiSpec.listDomainOwnedTopics();
-        final var userInfoTopic = domainTopics.stream().filter(topic -> topic.name().endsWith("_public.user_info"))
-                .findFirst().orElseThrow().name();
-        final var userInfoEnrichedTopic = domainTopics.stream()
-                .filter(topic -> topic.name().endsWith("_public.user_info_enriched")).findFirst().orElseThrow().name();
+        final var userInfoTopic =
+                domainTopics.stream()
+                        .filter(topic -> topic.name().endsWith("_public.user_info"))
+                        .findFirst()
+                        .orElseThrow()
+                        .name();
+        final var userInfoEnrichedTopic =
+                domainTopics.stream()
+                        .filter(topic -> topic.name().endsWith("_public.user_info_enriched"))
+                        .findFirst()
+                        .orElseThrow()
+                        .name();
 
-        final var streamsConfiguration = Clients.kstreamsProperties(apiSpec.id(), "streams-appid-service-thing",
-                kafkaContainer.getBootstrapServers(), schemaRegistryContainer.getUrl(), Serdes.LongSerde.class,
-                KafkaProtobufSerde.class, false,
-                Clients.mergeMaps(Provisioner.clientAuthProperties("simple.schema_demo", "simple.schema_demo-secret"),
-                        Map.of(KafkaProtobufDeserializerConfig.SPECIFIC_PROTOBUF_VALUE_TYPE,
-                                UserInfo.class.getName())));
+        final var streamsConfiguration =
+                Clients.kstreamsProperties(
+                        apiSpec.id(),
+                        "streams-appid-service-thing",
+                        kafkaContainer.getBootstrapServers(),
+                        schemaRegistryContainer.getUrl(),
+                        Serdes.LongSerde.class,
+                        KafkaProtobufSerde.class,
+                        false,
+                        Clients.mergeMaps(
+                                Provisioner.clientAuthProperties(
+                                        "simple.schema_demo", "simple.schema_demo-secret"),
+                                Map.of(
+                                        KafkaProtobufDeserializerConfig
+                                                .SPECIFIC_PROTOBUF_VALUE_TYPE,
+                                        UserInfo.class.getName())));
 
         final var builder = new StreamsBuilder();
 
         final KStream<Long, UserInfo> userInfos = builder.stream(userInfoTopic);
 
-        final var enrichedUsersStream = userInfos.mapValues(userInfo -> UserInfoEnriched.newBuilder()
-                .setAddress("hiding in the bahamas").setAge(userInfo.getAge()).setEmail(userInfo.getEmail()).build());
+        final var enrichedUsersStream =
+                userInfos.mapValues(
+                        userInfo ->
+                                UserInfoEnriched.newBuilder()
+                                        .setAddress("hiding in the bahamas")
+                                        .setAge(userInfo.getAge())
+                                        .setEmail(userInfo.getEmail())
+                                        .build());
 
-        enrichedUsersStream.to(userInfoEnrichedTopic,
-                with(Serdes.Long(), new KafkaProtobufSerde(schemaRegistryClient, UserInfoEnriched.class)));
+        enrichedUsersStream.to(
+                userInfoEnrichedTopic,
+                with(
+                        Serdes.Long(),
+                        new KafkaProtobufSerde(schemaRegistryClient, UserInfoEnriched.class)));
 
-        final var streams = new KafkaStreams(builder.build(), MapUtils.toProperties(streamsConfiguration));
+        final var streams =
+                new KafkaStreams(builder.build(), MapUtils.toProperties(streamsConfiguration));
         streams.start();
 
         /*
          * Run it
          */
-        final KafkaProducer<Long, UserInfo> producer = producer(Long.class, UserInfo.class,
-                producerProperties(apiSpec.id(), "do-things-user-info", kafkaContainer.getBootstrapServers(),
-                        schemaRegistryContainer.getUrl(), LongSerializer.class, KafkaProtobufSerializer.class, false,
-                        Provisioner.clientAuthProperties("simple.schema_demo", "simple.schema_demo-secret")));
+        final KafkaProducer<Long, UserInfo> producer =
+                producer(
+                        Long.class,
+                        UserInfo.class,
+                        producerProperties(
+                                apiSpec.id(),
+                                "do-things-user-info",
+                                kafkaContainer.getBootstrapServers(),
+                                schemaRegistryContainer.getUrl(),
+                                LongSerializer.class,
+                                KafkaProtobufSerializer.class,
+                                false,
+                                Provisioner.clientAuthProperties(
+                                        "simple.schema_demo", "simple.schema_demo-secret")));
 
-        final var userSam = UserInfo.newBuilder().setFullName("sam fteex").setEmail("hello-sam@bahamas.island")
-                .setAge(52).build();
-        producer.send(new ProducerRecord<>(userInfoTopic, 1000L, userSam)).get(60, TimeUnit.SECONDS);
+        final var userSam =
+                UserInfo.newBuilder()
+                        .setFullName("sam fteex")
+                        .setEmail("hello-sam@bahamas.island")
+                        .setAge(52)
+                        .build();
+        producer.send(new ProducerRecord<>(userInfoTopic, 1000L, userSam))
+                .get(60, TimeUnit.SECONDS);
 
-        final KafkaConsumer<Long, UserInfoEnriched> consumer = consumer(Long.class, UserInfoEnriched.class,
-                consumerProperties(apiSpec.id(), "streams-consumer-validate", kafkaContainer.getBootstrapServers(),
-                        schemaRegistryContainer.getUrl(), LongDeserializer.class, KafkaProtobufDeserializer.class, true,
-                        Clients.mergeMaps(
-                                Provisioner.clientAuthProperties("simple.schema_demo", "simple.schema_demo-secret"),
-                                Map.of(KafkaProtobufDeserializerConfig.SPECIFIC_PROTOBUF_VALUE_TYPE,
-                                        UserInfoEnriched.class.getName()))));
+        final KafkaConsumer<Long, UserInfoEnriched> consumer =
+                consumer(
+                        Long.class,
+                        UserInfoEnriched.class,
+                        consumerProperties(
+                                apiSpec.id(),
+                                "streams-consumer-validate",
+                                kafkaContainer.getBootstrapServers(),
+                                schemaRegistryContainer.getUrl(),
+                                LongDeserializer.class,
+                                KafkaProtobufDeserializer.class,
+                                true,
+                                Clients.mergeMaps(
+                                        Provisioner.clientAuthProperties(
+                                                "simple.schema_demo", "simple.schema_demo-secret"),
+                                        Map.of(
+                                                KafkaProtobufDeserializerConfig
+                                                        .SPECIFIC_PROTOBUF_VALUE_TYPE,
+                                                UserInfoEnriched.class.getName()))));
 
         consumer.subscribe(Collections.singleton(userInfoEnrichedTopic));
-        final ConsumerRecords<Long, UserInfoEnriched> consumerRecords = consumer.poll(Duration.ofSeconds(10));
+        final ConsumerRecords<Long, UserInfoEnriched> consumerRecords =
+                consumer.poll(Duration.ofSeconds(10));
 
         final var consumerRecordStream = Stream.generate(consumerRecords.iterator()::next);
 
@@ -202,15 +319,22 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
          * Verify
          */
         assertThat(consumerRecords, is(notNullValue()));
-        final var foundIt = consumerRecordStream
-                .filter((record) -> record.value().getAddress().equals("hiding in the bahamas")).findFirst();
+        final var foundIt =
+                consumerRecordStream
+                        .filter(
+                                (record) ->
+                                        record.value().getAddress().equals("hiding in the bahamas"))
+                        .findFirst();
         assertThat(foundIt.isPresent(), is(true));
     }
 
     private static ApiSpec getAPISpecFromResource() {
         try {
-            return new AsyncApiParser().loadResource(ClientsFunctionalDemoTest.class.getClassLoader()
-                    .getResourceAsStream("simple_schema_demo-api.yaml"));
+            return new AsyncApiParser()
+                    .loadResource(
+                            ClientsFunctionalDemoTest.class
+                                    .getClassLoader()
+                                    .getResourceAsStream("simple_schema_demo-api.yaml"));
         } catch (Throwable t) {
             throw new RuntimeException("Failed to load test resource", t);
         }
@@ -220,7 +344,8 @@ class ClientsFunctionalDemoTest extends AbstractContainerTest {
         final Properties properties = new Properties();
         properties.putAll(Provisioner.clientAuthProperties(principle, secret));
         properties.put(AdminClientConfig.CLIENT_ID_CONFIG, apiSpec.id());
-        properties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
+        properties.put(
+                AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
 
         return properties;
     }

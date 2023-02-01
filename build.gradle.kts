@@ -136,7 +136,7 @@ subprojects {
 
     spotless {
         java {
-            eclipse()
+            googleJavaFormat("1.15.0").aosp()
             indentWithSpaces()
             importOrder()
             removeUnusedImports()

@@ -25,18 +25,18 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 @SuppressWarnings("all")
 @SuppressFBWarnings
 public final class SimpleSchemaDemoPublicUserInfoEnriched {
-    private SimpleSchemaDemoPublicUserInfoEnriched() {
-    }
-    public static void registerAllExtensions(com.google.protobuf.ExtensionRegistryLite registry) {
-    }
+    private SimpleSchemaDemoPublicUserInfoEnriched() {}
+
+    public static void registerAllExtensions(com.google.protobuf.ExtensionRegistryLite registry) {}
 
     public static void registerAllExtensions(com.google.protobuf.ExtensionRegistry registry) {
         registerAllExtensions((com.google.protobuf.ExtensionRegistryLite) registry);
     }
+
     public interface UserInfoEnrichedOrBuilder
             extends
-                // @@protoc_insertion_point(interface_extends:io.specmesh.kafka.schema.UserInfoEnriched)
-                com.google.protobuf.MessageOrBuilder {
+            // @@protoc_insertion_point(interface_extends:io.specmesh.kafka.schema.UserInfoEnriched)
+            com.google.protobuf.MessageOrBuilder {
 
         /**
          * <code>string fullName = 1;</code>
@@ -84,18 +84,17 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
          */
         int getAge();
     }
-    /**
-     * Protobuf type {@code io.specmesh.kafka.schema.UserInfoEnriched}
-     */
+    /** Protobuf type {@code io.specmesh.kafka.schema.UserInfoEnriched} */
     public static final class UserInfoEnriched extends com.google.protobuf.GeneratedMessageV3
             implements
-                // @@protoc_insertion_point(message_implements:io.specmesh.kafka.schema.UserInfoEnriched)
-                UserInfoEnrichedOrBuilder {
+            // @@protoc_insertion_point(message_implements:io.specmesh.kafka.schema.UserInfoEnriched)
+            UserInfoEnrichedOrBuilder {
         private static final long serialVersionUID = 0L;
         // Use UserInfoEnriched.newBuilder() to construct.
         private UserInfoEnriched(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
             super(builder);
         }
+
         private UserInfoEnriched() {
             fullName_ = "";
             email_ = "";
@@ -112,18 +111,24 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
         public final com.google.protobuf.UnknownFieldSet getUnknownFields() {
             return this.unknownFields;
         }
+
         public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
-            return SimpleSchemaDemoPublicUserInfoEnriched.internal_static_io_specmesh_kafka_schema_UserInfoEnriched_descriptor;
+            return SimpleSchemaDemoPublicUserInfoEnriched
+                    .internal_static_io_specmesh_kafka_schema_UserInfoEnriched_descriptor;
         }
 
         @java.lang.Override
-        protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable internalGetFieldAccessorTable() {
-            return SimpleSchemaDemoPublicUserInfoEnriched.internal_static_io_specmesh_kafka_schema_UserInfoEnriched_fieldAccessorTable
-                    .ensureFieldAccessorsInitialized(SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.class,
+        protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+                internalGetFieldAccessorTable() {
+            return SimpleSchemaDemoPublicUserInfoEnriched
+                    .internal_static_io_specmesh_kafka_schema_UserInfoEnriched_fieldAccessorTable
+                    .ensureFieldAccessorsInitialized(
+                            SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.class,
                             SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.Builder.class);
         }
 
         public static final int FULLNAME_FIELD_NUMBER = 1;
+
         @SuppressWarnings("serial")
         private volatile java.lang.Object fullName_ = "";
         /**
@@ -152,7 +157,8 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
         public com.google.protobuf.ByteString getFullNameBytes() {
             java.lang.Object ref = fullName_;
             if (ref instanceof java.lang.String) {
-                com.google.protobuf.ByteString b = com.google.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
                 fullName_ = b;
                 return b;
             } else {
@@ -161,6 +167,7 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
         }
 
         public static final int EMAIL_FIELD_NUMBER = 2;
+
         @SuppressWarnings("serial")
         private volatile java.lang.Object email_ = "";
         /**
@@ -189,7 +196,8 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
         public com.google.protobuf.ByteString getEmailBytes() {
             java.lang.Object ref = email_;
             if (ref instanceof java.lang.String) {
-                com.google.protobuf.ByteString b = com.google.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
                 email_ = b;
                 return b;
             } else {
@@ -198,6 +206,7 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
         }
 
         public static final int ADDRESS_FIELD_NUMBER = 3;
+
         @SuppressWarnings("serial")
         private volatile java.lang.Object address_ = "";
         /**
@@ -226,7 +235,8 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
         public com.google.protobuf.ByteString getAddressBytes() {
             java.lang.Object ref = address_;
             if (ref instanceof java.lang.String) {
-                com.google.protobuf.ByteString b = com.google.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
                 address_ = b;
                 return b;
             } else {
@@ -247,20 +257,20 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
         }
 
         private byte memoizedIsInitialized = -1;
+
         @java.lang.Override
         public final boolean isInitialized() {
             byte isInitialized = memoizedIsInitialized;
-            if (isInitialized == 1)
-                return true;
-            if (isInitialized == 0)
-                return false;
+            if (isInitialized == 1) return true;
+            if (isInitialized == 0) return false;
 
             memoizedIsInitialized = 1;
             return true;
         }
 
         @java.lang.Override
-        public void writeTo(com.google.protobuf.CodedOutputStream output) throws java.io.IOException {
+        public void writeTo(com.google.protobuf.CodedOutputStream output)
+                throws java.io.IOException {
             if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(fullName_)) {
                 com.google.protobuf.GeneratedMessageV3.writeString(output, 1, fullName_);
             }
@@ -279,8 +289,7 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
         @java.lang.Override
         public int getSerializedSize() {
             int size = memoizedSize;
-            if (size != -1)
-                return size;
+            if (size != -1) return size;
 
             size = 0;
             if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(fullName_)) {
@@ -308,18 +317,14 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             if (!(obj instanceof SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched)) {
                 return super.equals(obj);
             }
-            SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched other = (SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched) obj;
+            SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched other =
+                    (SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched) obj;
 
-            if (!getFullName().equals(other.getFullName()))
-                return false;
-            if (!getEmail().equals(other.getEmail()))
-                return false;
-            if (!getAddress().equals(other.getAddress()))
-                return false;
-            if (getAge() != other.getAge())
-                return false;
-            if (!getUnknownFields().equals(other.getUnknownFields()))
-                return false;
+            if (!getFullName().equals(other.getFullName())) return false;
+            if (!getEmail().equals(other.getEmail())) return false;
+            if (!getAddress().equals(other.getAddress())) return false;
+            if (getAge() != other.getAge()) return false;
+            if (!getUnknownFields().equals(other.getUnknownFields())) return false;
             return true;
         }
 
@@ -343,109 +348,138 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             return hash;
         }
 
-        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(java.nio.ByteBuffer data)
+        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
+                java.nio.ByteBuffer data)
                 throws com.google.protobuf.InvalidProtocolBufferException {
             return PARSER.parseFrom(data);
         }
-        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(java.nio.ByteBuffer data,
+
+        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
+                java.nio.ByteBuffer data,
                 com.google.protobuf.ExtensionRegistryLite extensionRegistry)
                 throws com.google.protobuf.InvalidProtocolBufferException {
             return PARSER.parseFrom(data, extensionRegistry);
         }
+
         public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
-                com.google.protobuf.ByteString data) throws com.google.protobuf.InvalidProtocolBufferException {
+                com.google.protobuf.ByteString data)
+                throws com.google.protobuf.InvalidProtocolBufferException {
             return PARSER.parseFrom(data);
         }
+
         public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
-                com.google.protobuf.ByteString data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                com.google.protobuf.ByteString data,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
                 throws com.google.protobuf.InvalidProtocolBufferException {
             return PARSER.parseFrom(data, extensionRegistry);
         }
+
         public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(byte[] data)
                 throws com.google.protobuf.InvalidProtocolBufferException {
             return PARSER.parseFrom(data);
         }
-        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(byte[] data,
-                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+
+        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
+                byte[] data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
                 throws com.google.protobuf.InvalidProtocolBufferException {
             return PARSER.parseFrom(data, extensionRegistry);
         }
-        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(java.io.InputStream input)
-                throws java.io.IOException {
+
+        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
+                java.io.InputStream input) throws java.io.IOException {
             return com.google.protobuf.GeneratedMessageV3.parseWithIOException(PARSER, input);
         }
-        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(java.io.InputStream input,
-                com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
-            return com.google.protobuf.GeneratedMessageV3.parseWithIOException(PARSER, input, extensionRegistry);
+
+        public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
+                java.io.InputStream input,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws java.io.IOException {
+            return com.google.protobuf.GeneratedMessageV3.parseWithIOException(
+                    PARSER, input, extensionRegistry);
         }
+
         public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseDelimitedFrom(
                 java.io.InputStream input) throws java.io.IOException {
-            return com.google.protobuf.GeneratedMessageV3.parseDelimitedWithIOException(PARSER, input);
+            return com.google.protobuf.GeneratedMessageV3.parseDelimitedWithIOException(
+                    PARSER, input);
         }
+
         public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseDelimitedFrom(
-                java.io.InputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                java.io.InputStream input,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
                 throws java.io.IOException {
-            return com.google.protobuf.GeneratedMessageV3.parseDelimitedWithIOException(PARSER, input,
-                    extensionRegistry);
+            return com.google.protobuf.GeneratedMessageV3.parseDelimitedWithIOException(
+                    PARSER, input, extensionRegistry);
         }
+
         public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
                 com.google.protobuf.CodedInputStream input) throws java.io.IOException {
             return com.google.protobuf.GeneratedMessageV3.parseWithIOException(PARSER, input);
         }
+
         public static SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched parseFrom(
-                com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                com.google.protobuf.CodedInputStream input,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
                 throws java.io.IOException {
-            return com.google.protobuf.GeneratedMessageV3.parseWithIOException(PARSER, input, extensionRegistry);
+            return com.google.protobuf.GeneratedMessageV3.parseWithIOException(
+                    PARSER, input, extensionRegistry);
         }
 
         @java.lang.Override
         public Builder newBuilderForType() {
             return newBuilder();
         }
+
         public static Builder newBuilder() {
             return DEFAULT_INSTANCE.toBuilder();
         }
-        public static Builder newBuilder(SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched prototype) {
+
+        public static Builder newBuilder(
+                SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched prototype) {
             return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
         }
+
         @java.lang.Override
         public Builder toBuilder() {
             return this == DEFAULT_INSTANCE ? new Builder() : new Builder().mergeFrom(this);
         }
 
         @java.lang.Override
-        protected Builder newBuilderForType(com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        protected Builder newBuilderForType(
+                com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
             Builder builder = new Builder(parent);
             return builder;
         }
-        /**
-         * Protobuf type {@code io.specmesh.kafka.schema.UserInfoEnriched}
-         */
-        public static final class Builder extends com.google.protobuf.GeneratedMessageV3.Builder<Builder>
+        /** Protobuf type {@code io.specmesh.kafka.schema.UserInfoEnriched} */
+        public static final class Builder
+                extends com.google.protobuf.GeneratedMessageV3.Builder<Builder>
                 implements
-                    // @@protoc_insertion_point(builder_implements:io.specmesh.kafka.schema.UserInfoEnriched)
-                    SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnrichedOrBuilder {
+                // @@protoc_insertion_point(builder_implements:io.specmesh.kafka.schema.UserInfoEnriched)
+                SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnrichedOrBuilder {
             public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
-                return SimpleSchemaDemoPublicUserInfoEnriched.internal_static_io_specmesh_kafka_schema_UserInfoEnriched_descriptor;
+                return SimpleSchemaDemoPublicUserInfoEnriched
+                        .internal_static_io_specmesh_kafka_schema_UserInfoEnriched_descriptor;
             }
 
             @java.lang.Override
-            protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable internalGetFieldAccessorTable() {
-                return SimpleSchemaDemoPublicUserInfoEnriched.internal_static_io_specmesh_kafka_schema_UserInfoEnriched_fieldAccessorTable
-                        .ensureFieldAccessorsInitialized(SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.class,
-                                SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.Builder.class);
+            protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+                    internalGetFieldAccessorTable() {
+                return SimpleSchemaDemoPublicUserInfoEnriched
+                        .internal_static_io_specmesh_kafka_schema_UserInfoEnriched_fieldAccessorTable
+                        .ensureFieldAccessorsInitialized(
+                                SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.class,
+                                SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.Builder
+                                        .class);
             }
 
             // Construct using
             // io.specmesh.kafka.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.newBuilder()
-            private Builder() {
-
-            }
+            private Builder() {}
 
             private Builder(com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
                 super(parent);
-
             }
+
             @java.lang.Override
             public Builder clear() {
                 super.clear();
@@ -459,11 +493,13 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
 
             @java.lang.Override
             public com.google.protobuf.Descriptors.Descriptor getDescriptorForType() {
-                return SimpleSchemaDemoPublicUserInfoEnriched.internal_static_io_specmesh_kafka_schema_UserInfoEnriched_descriptor;
+                return SimpleSchemaDemoPublicUserInfoEnriched
+                        .internal_static_io_specmesh_kafka_schema_UserInfoEnriched_descriptor;
             }
 
             @java.lang.Override
-            public SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched getDefaultInstanceForType() {
+            public SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched
+                    getDefaultInstanceForType() {
                 return SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.getDefaultInstance();
             }
 
@@ -478,8 +514,8 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
 
             @java.lang.Override
             public SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched buildPartial() {
-                SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched result = new SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched(
-                        this);
+                SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched result =
+                        new SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched(this);
                 if (bitField0_ != 0) {
                     buildPartial0(result);
                 }
@@ -487,7 +523,8 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
                 return result;
             }
 
-            private void buildPartial0(SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched result) {
+            private void buildPartial0(
+                    SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched result) {
                 int from_bitField0_ = bitField0_;
                 if (((from_bitField0_ & 0x00000001) != 0)) {
                     result.fullName_ = fullName_;
@@ -507,41 +544,53 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             public Builder clone() {
                 return super.clone();
             }
+
             @java.lang.Override
-            public Builder setField(com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value) {
+            public Builder setField(
+                    com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value) {
                 return super.setField(field, value);
             }
+
             @java.lang.Override
             public Builder clearField(com.google.protobuf.Descriptors.FieldDescriptor field) {
                 return super.clearField(field);
             }
+
             @java.lang.Override
             public Builder clearOneof(com.google.protobuf.Descriptors.OneofDescriptor oneof) {
                 return super.clearOneof(oneof);
             }
+
             @java.lang.Override
-            public Builder setRepeatedField(com.google.protobuf.Descriptors.FieldDescriptor field, int index,
+            public Builder setRepeatedField(
+                    com.google.protobuf.Descriptors.FieldDescriptor field,
+                    int index,
                     java.lang.Object value) {
                 return super.setRepeatedField(field, index, value);
             }
+
             @java.lang.Override
-            public Builder addRepeatedField(com.google.protobuf.Descriptors.FieldDescriptor field,
-                    java.lang.Object value) {
+            public Builder addRepeatedField(
+                    com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value) {
                 return super.addRepeatedField(field, value);
             }
+
             @java.lang.Override
             public Builder mergeFrom(com.google.protobuf.Message other) {
                 if (other instanceof SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched) {
-                    return mergeFrom((SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched) other);
+                    return mergeFrom(
+                            (SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched) other);
                 } else {
                     super.mergeFrom(other);
                     return this;
                 }
             }
 
-            public Builder mergeFrom(SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched other) {
-                if (other == SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched.getDefaultInstance())
-                    return this;
+            public Builder mergeFrom(
+                    SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched other) {
+                if (other
+                        == SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched
+                                .getDefaultInstance()) return this;
                 if (!other.getFullName().isEmpty()) {
                     fullName_ = other.fullName_;
                     bitField0_ |= 0x00000001;
@@ -571,8 +620,10 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             }
 
             @java.lang.Override
-            public Builder mergeFrom(com.google.protobuf.CodedInputStream input,
-                    com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+            public Builder mergeFrom(
+                    com.google.protobuf.CodedInputStream input,
+                    com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                    throws java.io.IOException {
                 if (extensionRegistry == null) {
                     throw new java.lang.NullPointerException();
                 }
@@ -581,35 +632,40 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
                     while (!done) {
                         int tag = input.readTag();
                         switch (tag) {
-                            case 0 :
+                            case 0:
                                 done = true;
                                 break;
-                            case 10 : {
-                                fullName_ = input.readStringRequireUtf8();
-                                bitField0_ |= 0x00000001;
-                                break;
-                            } // case 10
-                            case 18 : {
-                                email_ = input.readStringRequireUtf8();
-                                bitField0_ |= 0x00000002;
-                                break;
-                            } // case 18
-                            case 26 : {
-                                address_ = input.readStringRequireUtf8();
-                                bitField0_ |= 0x00000004;
-                                break;
-                            } // case 26
-                            case 32 : {
-                                age_ = input.readInt32();
-                                bitField0_ |= 0x00000008;
-                                break;
-                            } // case 32
-                            default : {
-                                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
-                                    done = true; // was an endgroup tag
-                                }
-                                break;
-                            } // default:
+                            case 10:
+                                {
+                                    fullName_ = input.readStringRequireUtf8();
+                                    bitField0_ |= 0x00000001;
+                                    break;
+                                } // case 10
+                            case 18:
+                                {
+                                    email_ = input.readStringRequireUtf8();
+                                    bitField0_ |= 0x00000002;
+                                    break;
+                                } // case 18
+                            case 26:
+                                {
+                                    address_ = input.readStringRequireUtf8();
+                                    bitField0_ |= 0x00000004;
+                                    break;
+                                } // case 26
+                            case 32:
+                                {
+                                    age_ = input.readInt32();
+                                    bitField0_ |= 0x00000008;
+                                    break;
+                                } // case 32
+                            default:
+                                {
+                                    if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                                        done = true; // was an endgroup tag
+                                    }
+                                    break;
+                                } // default:
                         } // switch (tag)
                     } // while (!done)
                 } catch (com.google.protobuf.InvalidProtocolBufferException e) {
@@ -619,6 +675,7 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
                 } // finally
                 return this;
             }
+
             private int bitField0_;
 
             private java.lang.Object fullName_ = "";
@@ -646,8 +703,8 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             public com.google.protobuf.ByteString getFullNameBytes() {
                 java.lang.Object ref = fullName_;
                 if (ref instanceof String) {
-                    com.google.protobuf.ByteString b = com.google.protobuf.ByteString
-                            .copyFromUtf8((java.lang.String) ref);
+                    com.google.protobuf.ByteString b =
+                            com.google.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
                     fullName_ = b;
                     return b;
                 } else {
@@ -657,8 +714,7 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             /**
              * <code>string fullName = 1;</code>
              *
-             * @param value
-             *            The fullName to set.
+             * @param value The fullName to set.
              * @return This builder for chaining.
              */
             public Builder setFullName(java.lang.String value) {
@@ -684,8 +740,7 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             /**
              * <code>string fullName = 1;</code>
              *
-             * @param value
-             *            The bytes for fullName to set.
+             * @param value The bytes for fullName to set.
              * @return This builder for chaining.
              */
             public Builder setFullNameBytes(com.google.protobuf.ByteString value) {
@@ -724,8 +779,8 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             public com.google.protobuf.ByteString getEmailBytes() {
                 java.lang.Object ref = email_;
                 if (ref instanceof String) {
-                    com.google.protobuf.ByteString b = com.google.protobuf.ByteString
-                            .copyFromUtf8((java.lang.String) ref);
+                    com.google.protobuf.ByteString b =
+                            com.google.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
                     email_ = b;
                     return b;
                 } else {
@@ -735,8 +790,7 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             /**
              * <code>string email = 2;</code>
              *
-             * @param value
-             *            The email to set.
+             * @param value The email to set.
              * @return This builder for chaining.
              */
             public Builder setEmail(java.lang.String value) {
@@ -762,8 +816,7 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             /**
              * <code>string email = 2;</code>
              *
-             * @param value
-             *            The bytes for email to set.
+             * @param value The bytes for email to set.
              * @return This builder for chaining.
              */
             public Builder setEmailBytes(com.google.protobuf.ByteString value) {
@@ -802,8 +855,8 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             public com.google.protobuf.ByteString getAddressBytes() {
                 java.lang.Object ref = address_;
                 if (ref instanceof String) {
-                    com.google.protobuf.ByteString b = com.google.protobuf.ByteString
-                            .copyFromUtf8((java.lang.String) ref);
+                    com.google.protobuf.ByteString b =
+                            com.google.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
                     address_ = b;
                     return b;
                 } else {
@@ -813,8 +866,7 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             /**
              * <code>string address = 3;</code>
              *
-             * @param value
-             *            The address to set.
+             * @param value The address to set.
              * @return This builder for chaining.
              */
             public Builder setAddress(java.lang.String value) {
@@ -840,8 +892,7 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             /**
              * <code>string address = 3;</code>
              *
-             * @param value
-             *            The bytes for address to set.
+             * @param value The bytes for address to set.
              * @return This builder for chaining.
              */
             public Builder setAddressBytes(com.google.protobuf.ByteString value) {
@@ -868,8 +919,7 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             /**
              * <code>int32 age = 4;</code>
              *
-             * @param value
-             *            The age to set.
+             * @param value The age to set.
              * @return This builder for chaining.
              */
             public Builder setAge(int value) {
@@ -890,13 +940,16 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
                 onChanged();
                 return this;
             }
+
             @java.lang.Override
-            public final Builder setUnknownFields(final com.google.protobuf.UnknownFieldSet unknownFields) {
+            public final Builder setUnknownFields(
+                    final com.google.protobuf.UnknownFieldSet unknownFields) {
                 return super.setUnknownFields(unknownFields);
             }
 
             @java.lang.Override
-            public final Builder mergeUnknownFields(final com.google.protobuf.UnknownFieldSet unknownFields) {
+            public final Builder mergeUnknownFields(
+                    final com.google.protobuf.UnknownFieldSet unknownFields) {
                 return super.mergeUnknownFields(unknownFields);
             }
 
@@ -904,7 +957,9 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
         }
 
         // @@protoc_insertion_point(class_scope:io.specmesh.kafka.schema.UserInfoEnriched)
-        private static final SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched DEFAULT_INSTANCE;
+        private static final SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched
+                DEFAULT_INSTANCE;
+
         static {
             DEFAULT_INSTANCE = new SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched();
         }
@@ -913,25 +968,28 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
             return DEFAULT_INSTANCE;
         }
 
-        private static final com.google.protobuf.Parser<UserInfoEnriched> PARSER = new com.google.protobuf.AbstractParser<UserInfoEnriched>() {
-            @java.lang.Override
-            public UserInfoEnriched parsePartialFrom(com.google.protobuf.CodedInputStream input,
-                    com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-                    throws com.google.protobuf.InvalidProtocolBufferException {
-                Builder builder = newBuilder();
-                try {
-                    builder.mergeFrom(input, extensionRegistry);
-                } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-                    throw e.setUnfinishedMessage(builder.buildPartial());
-                } catch (com.google.protobuf.UninitializedMessageException e) {
-                    throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
-                } catch (java.io.IOException e) {
-                    throw new com.google.protobuf.InvalidProtocolBufferException(e)
-                            .setUnfinishedMessage(builder.buildPartial());
-                }
-                return builder.buildPartial();
-            }
-        };
+        private static final com.google.protobuf.Parser<UserInfoEnriched> PARSER =
+                new com.google.protobuf.AbstractParser<UserInfoEnriched>() {
+                    @java.lang.Override
+                    public UserInfoEnriched parsePartialFrom(
+                            com.google.protobuf.CodedInputStream input,
+                            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                            throws com.google.protobuf.InvalidProtocolBufferException {
+                        Builder builder = newBuilder();
+                        try {
+                            builder.mergeFrom(input, extensionRegistry);
+                        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+                            throw e.setUnfinishedMessage(builder.buildPartial());
+                        } catch (com.google.protobuf.UninitializedMessageException e) {
+                            throw e.asInvalidProtocolBufferException()
+                                    .setUnfinishedMessage(builder.buildPartial());
+                        } catch (java.io.IOException e) {
+                            throw new com.google.protobuf.InvalidProtocolBufferException(e)
+                                    .setUnfinishedMessage(builder.buildPartial());
+                        }
+                        return builder.buildPartial();
+                    }
+                };
 
         public static com.google.protobuf.Parser<UserInfoEnriched> parser() {
             return PARSER;
@@ -946,28 +1004,38 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
         public SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched getDefaultInstanceForType() {
             return DEFAULT_INSTANCE;
         }
-
     }
 
-    private static final com.google.protobuf.Descriptors.Descriptor internal_static_io_specmesh_kafka_schema_UserInfoEnriched_descriptor;
-    private static final com.google.protobuf.GeneratedMessageV3.FieldAccessorTable internal_static_io_specmesh_kafka_schema_UserInfoEnriched_fieldAccessorTable;
+    private static final com.google.protobuf.Descriptors.Descriptor
+            internal_static_io_specmesh_kafka_schema_UserInfoEnriched_descriptor;
+    private static final com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+            internal_static_io_specmesh_kafka_schema_UserInfoEnriched_fieldAccessorTable;
 
     public static com.google.protobuf.Descriptors.FileDescriptor getDescriptor() {
         return descriptor;
     }
+
     private static com.google.protobuf.Descriptors.FileDescriptor descriptor;
+
     static {
         java.lang.String[] descriptorData = {
-                "\n3simple.schema_demo._public.user_info_e" + "nriched.proto\022\030io.specmesh.kafka.schema\""
-                        + "Q\n\020UserInfoEnriched\022\020\n\010fullName\030\001 \001(\t\022\r\n"
-                        + "\005email\030\002 \001(\t\022\017\n\007address\030\003 \001(\t\022\013\n\003age\030\004 \001"
-                        + "(\005b\006proto3"};
-        descriptor = com.google.protobuf.Descriptors.FileDescriptor.internalBuildGeneratedFileFrom(descriptorData,
-                new com.google.protobuf.Descriptors.FileDescriptor[]{});
-        internal_static_io_specmesh_kafka_schema_UserInfoEnriched_descriptor = getDescriptor().getMessageTypes().get(0);
-        internal_static_io_specmesh_kafka_schema_UserInfoEnriched_fieldAccessorTable = new com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
-                internal_static_io_specmesh_kafka_schema_UserInfoEnriched_descriptor,
-                new java.lang.String[]{"FullName", "Email", "Address", "Age",});
+            "\n3simple.schema_demo._public.user_info_e"
+                    + "nriched.proto\022\030io.specmesh.kafka.schema\""
+                    + "Q\n\020UserInfoEnriched\022\020\n\010fullName\030\001 \001(\t\022\r\n"
+                    + "\005email\030\002 \001(\t\022\017\n\007address\030\003 \001(\t\022\013\n\003age\030\004 \001"
+                    + "(\005b\006proto3"
+        };
+        descriptor =
+                com.google.protobuf.Descriptors.FileDescriptor.internalBuildGeneratedFileFrom(
+                        descriptorData, new com.google.protobuf.Descriptors.FileDescriptor[] {});
+        internal_static_io_specmesh_kafka_schema_UserInfoEnriched_descriptor =
+                getDescriptor().getMessageTypes().get(0);
+        internal_static_io_specmesh_kafka_schema_UserInfoEnriched_fieldAccessorTable =
+                new com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+                        internal_static_io_specmesh_kafka_schema_UserInfoEnriched_descriptor,
+                        new java.lang.String[] {
+                            "FullName", "Email", "Address", "Age",
+                        });
     }
 
     // @@protoc_insertion_point(outer_class_scope)

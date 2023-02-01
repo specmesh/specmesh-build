@@ -32,17 +32,14 @@ import org.apache.kafka.common.resource.PatternType;
 import org.apache.kafka.common.resource.ResourcePattern;
 import org.apache.kafka.common.resource.ResourceType;
 
-/**
- * Kafka entity mappings from the AsyncAPISpec
- */
+/** Kafka entity mappings from the AsyncAPISpec */
 public class KafkaApiSpec {
     private final ApiSpec apiSpec;
 
     /**
      * KafkaAPISpec
      *
-     * @param apiSpec
-     *            the api spec
+     * @param apiSpec the api spec
      */
     public KafkaApiSpec(final ApiSpec apiSpec) {
         this.apiSpec = apiSpec;
@@ -69,26 +66,39 @@ public class KafkaApiSpec {
 
         final String id = apiSpec.id();
 
-        return apiSpec.channels().entrySet().stream().filter(e -> e.getKey().startsWith(id))
-                .map(e -> new NewTopic(e.getKey(), e.getValue().bindings().kafka().partitions(),
-                        (short) e.getValue().bindings().kafka().replicas())
-                                .configs(e.getValue().bindings().kafka().configs()))
+        return apiSpec.channels().entrySet().stream()
+                .filter(e -> e.getKey().startsWith(id))
+                .map(
+                        e ->
+                                new NewTopic(
+                                                e.getKey(),
+                                                e.getValue().bindings().kafka().partitions(),
+                                                (short) e.getValue().bindings().kafka().replicas())
+                                        .configs(e.getValue().bindings().kafka().configs()))
                 .collect(Collectors.toList());
     }
 
     private void validateTopicConfig() {
         final String id = apiSpec.id();
-        apiSpec.channels().forEach((k, v) -> {
-            if (k.startsWith(id) && v.publish() != null && (v.bindings() == null || v.bindings().kafka() == null)) {
-                throw new IllegalStateException(
-                        "Kafka bindings are missing from channel: [" + k + "] Domain owner: [" + id + "]");
-            }
-        });
+        apiSpec.channels()
+                .forEach(
+                        (k, v) -> {
+                            if (k.startsWith(id)
+                                    && v.publish() != null
+                                    && (v.bindings() == null || v.bindings().kafka() == null)) {
+                                throw new IllegalStateException(
+                                        "Kafka bindings are missing from channel: ["
+                                                + k
+                                                + "] Domain owner: ["
+                                                + id
+                                                + "]");
+                            }
+                        });
     }
 
     /**
-     * Create an ACL for the domain-id principle that allows writing to any topic
-     * prefixed with the Id Prevent non ACL'd ones from writing to it (somehow)
+     * Create an ACL for the domain-id principle that allows writing to any topic prefixed with the
+     * Id Prevent non ACL'd ones from writing to it (somehow)
      *
      * @return Acl bindings for owned topics
      */
@@ -98,54 +108,106 @@ public class KafkaApiSpec {
         final String id = apiSpec.id();
         final String principle = apiSpec.id();
 
-        final List<Map.Entry<String, String>> grantAccessTo = apiSpec.channels().entrySet().stream()
-                .filter(e -> e.getKey().startsWith(id + "._protected.")
-                        && e.getValue().publish().tags().toString().contains("grant-access:"))
-                .flatMap(v -> v.getValue().publish().tags().stream()
-                        .filter(tag -> tag.name().startsWith("grant-access:"))
-                        .map(item -> new AbstractMap.SimpleImmutableEntry<>(item.name(), v.getKey())))
-                .collect(Collectors.toList());
+        final List<Map.Entry<String, String>> grantAccessTo =
+                apiSpec.channels().entrySet().stream()
+                        .filter(
+                                e ->
+                                        e.getKey().startsWith(id + "._protected.")
+                                                && e.getValue()
+                                                        .publish()
+                                                        .tags()
+                                                        .toString()
+                                                        .contains("grant-access:"))
+                        .flatMap(
+                                v ->
+                                        v.getValue().publish().tags().stream()
+                                                .filter(
+                                                        tag ->
+                                                                tag.name()
+                                                                        .startsWith(
+                                                                                "grant-access:"))
+                                                .map(
+                                                        item ->
+                                                                new AbstractMap
+                                                                        .SimpleImmutableEntry<>(
+                                                                        item.name(), v.getKey())))
+                        .collect(Collectors.toList());
 
-        final List<AclBinding> protectedAccessAcls = grantAccessTo.stream()
-                .map(e -> new AclBinding(new ResourcePattern(ResourceType.TOPIC, e.getValue(), PatternType.PREFIXED),
-                        new AccessControlEntry("User:" + e.getKey().substring("grant-access:".length()), "*",
-                                AclOperation.READ, AclPermissionType.ALLOW))
+        final List<AclBinding> protectedAccessAcls =
+                grantAccessTo.stream()
+                        .map(
+                                e ->
+                                        new AclBinding(
+                                                new ResourcePattern(
+                                                        ResourceType.TOPIC,
+                                                        e.getValue(),
+                                                        PatternType.PREFIXED),
+                                                new AccessControlEntry(
+                                                        "User:"
+                                                                + e.getKey()
+                                                                        .substring(
+                                                                                "grant-access:"
+                                                                                        .length()),
+                                                        "*",
+                                                        AclOperation.READ,
+                                                        AclPermissionType.ALLOW)))
+                        .collect(Collectors.toList());
 
-                ).collect(Collectors.toList());
+        protectedAccessAcls.addAll(
+                List.of(
+                        // unrestricted access to public topics
+                        new AclBinding(
+                                new ResourcePattern(
+                                        ResourceType.TOPIC, id + ".public", PatternType.PREFIXED),
+                                new AccessControlEntry(
+                                        "User:*", "*", AclOperation.READ, AclPermissionType.ALLOW)),
+                        new AclBinding(
+                                new ResourcePattern(
+                                        ResourceType.TOPIC, id + "._public", PatternType.PREFIXED),
+                                new AccessControlEntry(
+                                        "User:*", "*", AclOperation.READ, AclPermissionType.ALLOW)),
 
-        protectedAccessAcls.addAll(List.of(
-                // unrestricted access to public topics
-                new AclBinding(new ResourcePattern(ResourceType.TOPIC, id + ".public", PatternType.PREFIXED),
-                        new AccessControlEntry("User:*", "*", AclOperation.READ, AclPermissionType.ALLOW)),
-
-                new AclBinding(new ResourcePattern(ResourceType.TOPIC, id + "._public", PatternType.PREFIXED),
-                        new AccessControlEntry("User:*", "*", AclOperation.READ, AclPermissionType.ALLOW)),
-
-                // READ, WRITE to owned topics
-                new AclBinding(new ResourcePattern(ResourceType.TOPIC, id, PatternType.PREFIXED),
-                        new AccessControlEntry(formatPrinciple(principle), "*", AclOperation.READ,
-                                AclPermissionType.ALLOW)),
-                new AclBinding(new ResourcePattern(ResourceType.TOPIC, id, PatternType.PREFIXED),
-                        new AccessControlEntry(formatPrinciple(principle), "*", AclOperation.WRITE,
-                                AclPermissionType.ALLOW)),
-                new AclBinding(new ResourcePattern(ResourceType.TOPIC, id, PatternType.PREFIXED),
-                        new AccessControlEntry(formatPrinciple(principle), "*", AclOperation.IDEMPOTENT_WRITE,
-                                AclPermissionType.ALLOW))));
+                        // READ, WRITE to owned topics
+                        new AclBinding(
+                                new ResourcePattern(ResourceType.TOPIC, id, PatternType.PREFIXED),
+                                new AccessControlEntry(
+                                        formatPrinciple(principle),
+                                        "*",
+                                        AclOperation.READ,
+                                        AclPermissionType.ALLOW)),
+                        new AclBinding(
+                                new ResourcePattern(ResourceType.TOPIC, id, PatternType.PREFIXED),
+                                new AccessControlEntry(
+                                        formatPrinciple(principle),
+                                        "*",
+                                        AclOperation.WRITE,
+                                        AclPermissionType.ALLOW)),
+                        new AclBinding(
+                                new ResourcePattern(ResourceType.TOPIC, id, PatternType.PREFIXED),
+                                new AccessControlEntry(
+                                        formatPrinciple(principle),
+                                        "*",
+                                        AclOperation.IDEMPOTENT_WRITE,
+                                        AclPermissionType.ALLOW))));
         return protectedAccessAcls;
     }
 
     /**
      * Get schema info for the supplied {@code topicName}
      *
-     * @param topicName
-     *            the name of the topic
+     * @param topicName the name of the topic
      * @return the schema info.
      */
     public SchemaInfo schemaInfoForTopic(final String topicName) {
 
         final List<NewTopic> myTopics = listDomainOwnedTopics();
-        myTopics.stream().filter(topic -> topic.name().equals(topicName)).findFirst()
-                .orElseThrow(() -> new IllegalStateException("Could not find 'owned' topic for:" + topicName));
+        myTopics.stream()
+                .filter(topic -> topic.name().equals(topicName))
+                .findFirst()
+                .orElseThrow(
+                        () ->
+                                new IllegalStateException(
+                                        "Could not find 'owned' topic for:" + topicName));
 
         return apiSpec.channels().get(topicName).publish().schemaInfo();
     }
@@ -153,8 +215,7 @@ public class KafkaApiSpec {
     /**
      * Format the principle
      *
-     * @param domainIdAsUsername
-     *            the domain id
+     * @param domainIdAsUsername the domain id
      * @return the principle
      */
     public static String formatPrinciple(final String domainIdAsUsername) {

@@ -24,25 +24,18 @@ import lombok.NoArgsConstructor;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
-/**
- * Pojo representing a channel
- */
+/** Pojo representing a channel */
 @Value
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 public class Channel {
 
-    @JsonProperty
-    String description;
+    @JsonProperty String description;
 
-    @JsonProperty
-    Bindings bindings;
+    @JsonProperty Bindings bindings;
 
-    @JsonProperty
-    Operation publish;
+    @JsonProperty Operation publish;
 
-    @JsonProperty
-    Operation subscribe;
-
+    @JsonProperty Operation subscribe;
 }
