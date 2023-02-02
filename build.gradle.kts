@@ -77,7 +77,7 @@ subprojects {
         set("junitPioneerVersion", "1.9.1")
         set("spotBugsVersion", "4.7.3")
         set("hamcrestVersion", "1.3")
-        set("log4jVersion", "2.14.0")
+        set("log4jVersion", "2.18.0")
         set("classGraphVersion", "4.8.21")
         set("testcontainersVersion", "1.17.6")
         set("lombokVersion", "1.18.24")
