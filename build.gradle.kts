@@ -75,7 +75,7 @@ subprojects {
         set("junitVersion", "5.9.2")
         set("mockitoVersion", "3.4.6")
         set("junitPioneerVersion", "0.9.0")
-        set("spotBugsVersion", "4.2.0")
+        set("spotBugsVersion", "4.7.3")
         set("hamcrestVersion", "1.3")
         set("log4jVersion", "2.14.0")
         set("classGraphVersion", "4.8.21")
