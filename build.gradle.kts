@@ -73,7 +73,7 @@ subprojects {
         set("jacksonVersion", "2.14.2")
         set("medeiaValidatorVersion", "1.1.0")
         set("junitVersion", "5.9.2")
-        set("mockitoVersion", "3.4.6")
+        set("mockitoVersion", "5.1.1")
         set("junitPioneerVersion", "1.9.1")
         set("spotBugsVersion", "4.7.3")
         set("hamcrestVersion", "1.3")
