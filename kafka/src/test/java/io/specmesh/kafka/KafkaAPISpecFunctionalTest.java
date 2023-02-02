@@ -24,8 +24,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.specmesh.apiparser.AsyncApiParser;
-import io.specmesh.apiparser.model.ApiSpec;
+import io.specmesh.test.TestSpecLoader;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -54,7 +53,8 @@ import org.junitpioneer.jupiter.cartesian.CartesianTest.MethodFactory;
         justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positive")
 class KafkaAPISpecFunctionalTest {
 
-    private static final KafkaApiSpec API_SPEC = new KafkaApiSpec(getAPISpecFromResource());
+    private static final KafkaApiSpec API_SPEC =
+            TestSpecLoader.loadFromClassPath("apispec-functional-test-app.yaml");
 
     private enum Topic {
         PUBLIC(API_SPEC.listDomainOwnedTopics().get(0).name()),
@@ -171,18 +171,6 @@ class KafkaAPISpecFunctionalTest {
             throw e;
         } catch (Exception e) {
             throw new AssertionError(e);
-        }
-    }
-
-    private static ApiSpec getAPISpecFromResource() {
-        try {
-            return new AsyncApiParser()
-                    .loadResource(
-                            KafkaAPISpecFunctionalTest.class
-                                    .getClassLoader()
-                                    .getResourceAsStream("apispec-functional-test-app.yaml"));
-        } catch (Throwable t) {
-            throw new RuntimeException("Failed to load test resource", t);
         }
     }
 

@@ -33,11 +33,9 @@ import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializerConfig;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
 import io.confluent.kafka.streams.serdes.protobuf.KafkaProtobufSerde;
-import io.specmesh.apiparser.AsyncApiParser;
-import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfo.UserInfo;
 import io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched;
-import java.io.IOException;
+import io.specmesh.test.TestSpecLoader;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -71,7 +69,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import simple.schema_demo._public.user_signed_up_value.UserSignedUp;
 
 class ClientsFunctionalDemoTest {
-    private static final KafkaApiSpec apiSpec = new KafkaApiSpec(getAPISpecFromResource());
+
+    private static final KafkaApiSpec API_SPEC =
+            TestSpecLoader.loadFromClassPath("simple_schema_demo-api.yaml");
 
     private static final String ADMIN_USER = "admin";
     private static final String ADMIN_PASSWORD = "admin-secret";
@@ -103,7 +103,7 @@ class ClientsFunctionalDemoTest {
             final SchemaRegistryClient schemaRegistryClient =
                     new CachedSchemaRegistryClient(KAFKA_ENV.schemeRegistryServer(), 5);
             Provisioner.provision(
-                    apiSpec, "./build/resources/test", adminClient, schemaRegistryClient);
+                    API_SPEC, "./build/resources/test", adminClient, schemaRegistryClient);
         }
     }
 
@@ -231,22 +231,10 @@ class ClientsFunctionalDemoTest {
         }
     }
 
-    private static ApiSpec getAPISpecFromResource() {
-        try {
-            return new AsyncApiParser()
-                    .loadResource(
-                            ClientsFunctionalDemoTest.class
-                                    .getClassLoader()
-                                    .getResourceAsStream("simple_schema_demo-api.yaml"));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load api spec", e);
-        }
-    }
-
     private static AdminClient adminClient() {
         final Map<String, Object> properties =
                 new HashMap<>(Provisioner.clientSaslAuthProperties(ADMIN_USER, ADMIN_PASSWORD));
-        properties.put(AdminClientConfig.CLIENT_ID_CONFIG, apiSpec.id());
+        properties.put(AdminClientConfig.CLIENT_ID_CONFIG, API_SPEC.id());
         properties.put(
                 AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_ENV.kafkaBootstrapServers());
         properties.putAll(Provisioner.clientSaslAuthProperties(ADMIN_USER, ADMIN_PASSWORD));
@@ -260,7 +248,7 @@ class ClientsFunctionalDemoTest {
             final Map<String, Object> additionalProps) {
         final Map<String, Object> props =
                 Clients.consumerProperties(
-                        apiSpec.id(),
+                        API_SPEC.id(),
                         UUID.randomUUID().toString(),
                         KAFKA_ENV.kafkaBootstrapServers(),
                         KAFKA_ENV.schemeRegistryServer(),
@@ -304,7 +292,7 @@ class ClientsFunctionalDemoTest {
             final Map<String, Object> additionalProps) {
         final Map<String, Object> props =
                 producerProperties(
-                        apiSpec.id(),
+                        API_SPEC.id(),
                         UUID.randomUUID().toString(),
                         KAFKA_ENV.kafkaBootstrapServers(),
                         KAFKA_ENV.schemeRegistryServer(),
@@ -341,7 +329,7 @@ class ClientsFunctionalDemoTest {
     }
 
     private static String topicName(final String topicSuffix) {
-        return apiSpec.listDomainOwnedTopics().stream()
+        return API_SPEC.listDomainOwnedTopics().stream()
                 .filter(topic -> topic.name().endsWith(topicSuffix))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Topic " + topicSuffix + " not found"))
@@ -352,7 +340,7 @@ class ClientsFunctionalDemoTest {
             final String userInfoTopic, final String userInfoEnrichedTopic) {
         final var props =
                 Clients.kstreamsProperties(
-                        apiSpec.id(),
+                        API_SPEC.id(),
                         "streams-appid-service-thing",
                         KAFKA_ENV.kafkaBootstrapServers(),
                         KAFKA_ENV.schemeRegistryServer(),

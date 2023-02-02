@@ -23,6 +23,7 @@ val lombokVersion : String by extra
 val junitVersion : String by extra
 
 dependencies {
+    implementation(project(":parser"))
     implementation(project(":kafka"))
     implementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
 
