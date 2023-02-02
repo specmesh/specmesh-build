@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-// CHECKSTYLE_RULES.OFF: FinalLocalVariable
-// CHECKSTYLE_RULES.OFF: FinalParameters
 package io.specmesh.kafka;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 import com.google.common.collect.Sets;
 import java.time.Duration;
@@ -74,7 +72,6 @@ class SASLPlainPrincipleTest {
                     .withKafkaAcls()
                     .build();
 
-    private Admin adminClient;
     private Producer<Long, String> domainProducer;
     private Consumer<Long, String> domainConsumer;
     private Consumer<Long, String> foreignConsumer;
@@ -97,8 +94,8 @@ class SASLPlainPrincipleTest {
                         + ADMIN_USER
                         + "-secret\";");
 
-        adminClient = AdminClient.create(adminClientProperties);
-        CreateTopicsResult topics =
+        final Admin adminClient = AdminClient.create(adminClientProperties);
+        final CreateTopicsResult topics =
                 adminClient.createTopics(
                         Sets.newHashSet(
                                 new NewTopic(
@@ -192,21 +189,21 @@ class SASLPlainPrincipleTest {
                 .get();
 
         domainConsumer.subscribe(Collections.singleton(DOMAIN_ROOT + PUBLIC_LIGHT_MEASURED));
-        ConsumerRecords<Long, String> poll =
+        final ConsumerRecords<Long, String> poll =
                 domainConsumer.poll(Duration.of(30, TimeUnit.SECONDS.toChronoUnit()));
 
         assertThat("Didnt get Record", poll.count(), is(1));
 
         foreignConsumer.subscribe(Collections.singleton(DOMAIN_ROOT + PUBLIC_LIGHT_MEASURED));
-        ConsumerRecords<Long, String> pollForeign =
+        final ConsumerRecords<Long, String> pollForeign =
                 foreignConsumer.poll(Duration.of(30, TimeUnit.SECONDS.toChronoUnit()));
 
         assertThat("Didnt get Record", pollForeign.count(), is(1));
     }
 
     private Properties cloneProperties(
-            Properties adminClientProperties, Map<String, String> entries) {
-        Properties results = new Properties();
+            final Properties adminClientProperties, final Map<String, String> entries) {
+        final Properties results = new Properties();
         results.putAll(adminClientProperties);
         results.putAll(entries);
         return results;
