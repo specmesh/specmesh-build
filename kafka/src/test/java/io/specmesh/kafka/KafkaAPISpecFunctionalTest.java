@@ -113,9 +113,9 @@ class KafkaAPISpecFunctionalTest {
 
     @Test
     void shouldHaveInitializedEnumsCorrectly() {
-        assertThat(Topic.PUBLIC.topicName, is(API_SPEC.listDomainOwnedTopics().get(0)));
-        assertThat(Topic.PROTECTED.topicName, is(API_SPEC.listDomainOwnedTopics().get(1)));
-        assertThat(Topic.PRIVATE.topicName, is(API_SPEC.listDomainOwnedTopics().get(2)));
+        assertThat(Topic.PUBLIC.topicName, is(API_SPEC.listDomainOwnedTopics().get(0).name()));
+        assertThat(Topic.PROTECTED.topicName, is(API_SPEC.listDomainOwnedTopics().get(1).name()));
+        assertThat(Topic.PRIVATE.topicName, is(API_SPEC.listDomainOwnedTopics().get(2).name()));
         assertThat(Domain.SELF.domainId, is(API_SPEC.id()));
     }
 
