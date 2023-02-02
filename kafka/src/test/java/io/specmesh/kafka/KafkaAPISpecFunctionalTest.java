@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.apiparser.model.ApiSpec;
 import java.time.Duration;
@@ -48,6 +49,9 @@ import org.junitpioneer.jupiter.cartesian.ArgumentSets;
 import org.junitpioneer.jupiter.cartesian.CartesianTest;
 import org.junitpioneer.jupiter.cartesian.CartesianTest.MethodFactory;
 
+@SuppressFBWarnings(
+        value = "IC_INIT_CIRCULARITY",
+        justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positive")
 class KafkaAPISpecFunctionalTest {
 
     private static final KafkaApiSpec API_SPEC = new KafkaApiSpec(getAPISpecFromResource());
@@ -112,6 +116,14 @@ class KafkaAPISpecFunctionalTest {
         assertThat(Topic.PUBLIC.topicName, containsString("._public."));
         assertThat(Topic.PROTECTED.topicName, containsString("._protected."));
         assertThat(Topic.PRIVATE.topicName, containsString("._private."));
+    }
+
+    @Test
+    void shouldHaveInitializedEnumsCorrectly() {
+        assertThat(Topic.PUBLIC.topicName, is(API_SPEC.listDomainOwnedTopics().get(0)));
+        assertThat(Topic.PROTECTED.topicName, is(API_SPEC.listDomainOwnedTopics().get(1)));
+        assertThat(Topic.PRIVATE.topicName, is(API_SPEC.listDomainOwnedTopics().get(2)));
+        assertThat(Domain.SELF.domainId, is(API_SPEC.id()));
     }
 
     @CartesianTest
