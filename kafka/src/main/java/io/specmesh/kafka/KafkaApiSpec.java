@@ -167,7 +167,7 @@ public class KafkaApiSpec {
      * <ul>
      *   <li>Acls for everyone to consume the spec's public topics
      *   <li>Acls for configured domains to consume the spec's protected topics
-     *   <li>Acls for the spec's domain to produce & consume its topics
+     *   <li>Acls for the spec's domain to produce and consume its topics
      *   <li>Acls for the spec's domain to use its consumer groups
      * </ul>
      *
