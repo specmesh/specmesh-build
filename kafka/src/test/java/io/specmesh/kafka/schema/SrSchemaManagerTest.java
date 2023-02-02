@@ -100,11 +100,11 @@ class SrSchemaManagerTest {
                         true,
                         KafkaJsonDeserializerConfig.JSON_VALUE_TYPE,
                         UserCheckout.class.getName());
-        final var serializer = new KafkaJsonSchemaSerializer(schemaRegistryClient, props);
+        final var serializer = new KafkaJsonSchemaSerializer<>(schemaRegistryClient, props);
 
         final byte[] bytess = serializer.serialize(topicSubject, userCheckout);
 
-        final var deserializer = new KafkaJsonSchemaDeserializer(schemaRegistryClient, props);
+        final var deserializer = new KafkaJsonSchemaDeserializer<>(schemaRegistryClient, props);
         final var deserialize = (UserCheckout) deserializer.deserialize(topicSubject, bytess);
 
         assertThat(deserialize, is(userCheckout));

@@ -17,18 +17,18 @@
 package io.specmesh.kafka.schema;
 
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
-import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
 
 /** Test container for the Schema Registry */
-public class SchemaRegistryContainer extends GenericContainer<SchemaRegistryContainer> {
+public final class SchemaRegistryContainer extends GenericContainer<SchemaRegistryContainer> {
 
-    private static final String SCHEMA_REGISTRY_DOCKER_IMAGE_NAME =
-            "confluentinc/cp-schema-registry:6.0.2";
-    private static final DockerImageName SCHEMA_REGISTRY_DOCKER_IMAGE =
-            DockerImageName.parse(SCHEMA_REGISTRY_DOCKER_IMAGE_NAME);
+    private static final int KAFKA_INSECURE_BROKER_CONNECTION = 9092;
+    private static final DockerImageName DEFAULT_IMAGE_NAME =
+            DockerImageName.parse("confluentinc/cp-schema-registry:7.3.1");
 
     /** Port the SR will listen on. */
     public static final int SCHEMA_REGISTRY_PORT = 8081;
@@ -36,40 +36,78 @@ public class SchemaRegistryContainer extends GenericContainer<SchemaRegistryCont
     /**
      * @param version docker image version of schema registry
      */
+    @Deprecated
     public SchemaRegistryContainer(final String version) {
-        super(SCHEMA_REGISTRY_DOCKER_IMAGE.withTag(version));
-        withExposedPorts(SCHEMA_REGISTRY_PORT);
+        this(DEFAULT_IMAGE_NAME.withTag(version));
     }
 
     /**
-     * Link to Kafka container
+     * @param dockerImageName docker image version of schema registry
+     */
+    public SchemaRegistryContainer(final DockerImageName dockerImageName) {
+        super(dockerImageName);
+        dockerImageName.assertCompatibleWith(DEFAULT_IMAGE_NAME);
+        withExposedPorts(SCHEMA_REGISTRY_PORT)
+                .withEnv("SCHEMA_REGISTRY_LISTENERS", "http://0.0.0.0:" + SCHEMA_REGISTRY_PORT);
+    }
+
+    @Override
+    public SchemaRegistryContainer withNetworkAliases(final String... aliases) {
+        super.withNetworkAliases(aliases);
+        if (aliases.length > 0) {
+            withEnv("SCHEMA_REGISTRY_HOST_NAME", aliases[0]);
+        }
+
+        return this;
+    }
+
+    /**
+     * Link to Kafka container and its network.
      *
      * @param kafka kafka container
      * @return self.
      */
     public SchemaRegistryContainer withKafka(final KafkaContainer kafka) {
-        return withKafka(kafka.getNetwork(), kafka.getNetworkAliases().get(0) + ":9092");
+        withNetwork(kafka.getNetwork());
+        withEnv(
+                "SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS",
+                "PLAINTEXT://"
+                        + kafka.getNetworkAliases().get(0)
+                        + ":"
+                        + KAFKA_INSECURE_BROKER_CONNECTION);
+        dependsOn(kafka);
+        return this;
     }
 
     /**
-     * Link to Network with Kafka
-     *
-     * @param network the network Kafka is running on
-     * @param bootstrapServers the Kafka bootstrap servers
-     * @return self.
+     * @return the URL of the SR
+     * @deprecated use {@link #hostNetworkUrl()}
      */
-    public SchemaRegistryContainer withKafka(final Network network, final String bootstrapServers) {
-        withNetwork(network);
-        withEnv("SCHEMA_REGISTRY_HOST_NAME", "schema-registry");
-        withEnv("SCHEMA_REGISTRY_LISTENERS", "http://0.0.0.0:" + SCHEMA_REGISTRY_PORT);
-        withEnv("SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS", "PLAINTEXT://" + bootstrapServers);
-        return self();
-    }
-
-    /**
-     * @return Url of the SR.
-     */
+    @Deprecated
     public String getUrl() {
-        return "http://" + getHost() + ":" + getMappedPort(SCHEMA_REGISTRY_PORT);
+        return hostNetworkUrl().toString();
+    }
+
+    /**
+     * @return the URL of the SR instance, accessible from the host network.
+     */
+    public URL hostNetworkUrl() {
+        try {
+            return new URL("http", getHost(), getMappedPort(SCHEMA_REGISTRY_PORT), "");
+        } catch (MalformedURLException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Override
+    protected void doStart() {
+        ensureHostNameSet();
+        super.doStart();
+    }
+
+    private void ensureHostNameSet() {
+        if (!getEnvMap().containsKey("SCHEMA_REGISTRY_HOST_NAME")) {
+            withEnv("SCHEMA_REGISTRY_HOST_NAME", getNetworkAliases().get(0));
+        }
     }
 }

@@ -19,17 +19,14 @@ package io.specmesh.kafka;
 
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroSerializerConfig;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.streams.StreamsConfig;
-import org.jetbrains.annotations.NotNull;
 
 /** Factory for Kafka clients */
 public final class Clients {
@@ -62,11 +59,11 @@ public final class Clients {
      * @param keySerializerClass type of key serializer
      * @param valueSerializerClass type of value serializer
      * @param acksAll require acks from all replicas?
-     * @param providedProperties additional props
+     * @param additionalProperties additional props
      * @return props
      */
     @SuppressWarnings("checkstyle:ParameterNumber")
-    @NotNull
+    @SafeVarargs
     public static Map<String, Object> producerProperties(
             final String domainId,
             final String serviceId,
@@ -75,9 +72,9 @@ public final class Clients {
             final Class<?> keySerializerClass,
             final Class<?> valueSerializerClass,
             final boolean acksAll,
-            final Map<String, Object> providedProperties) {
-        return mergeMaps(
-                getClientProperties(domainId, bootstrapServers),
+            final Map<String, Object>... additionalProperties) {
+        final Map<String, Object> props = clientProperties(domainId, bootstrapServers);
+        props.putAll(
                 Map.of(
                         AdminClientConfig.CLIENT_ID_CONFIG,
                         domainId + "." + serviceId + ".producer",
@@ -99,8 +96,9 @@ public final class Clients {
                         KafkaAvroSerializerConfig.SCHEMA_REFLECTION_CONFIG,
                         "true",
                         KafkaAvroSerializerConfig.USE_LATEST_VERSION,
-                        "true"),
-                providedProperties);
+                        "true"));
+        addAdditional(props, additionalProperties);
+        return props;
     }
 
     /**
@@ -113,11 +111,11 @@ public final class Clients {
      * @param keySerdeClass type of key serde
      * @param valueSerdeClass type of value serde
      * @param acksAll require acks from all replicas?
-     * @param providedProperties additional props
+     * @param additionalProperties additional properties
      * @return the streams properties.
      */
     @SuppressWarnings("checkstyle:ParameterNumber")
-    @NotNull
+    @SafeVarargs
     public static Map<String, Object> kstreamsProperties(
             final String domainId,
             final String serviceId,
@@ -126,10 +124,10 @@ public final class Clients {
             final Class<?> keySerdeClass,
             final Class<?> valueSerdeClass,
             final boolean acksAll,
-            final Map<String, Object> providedProperties) {
+            final Map<String, Object>... additionalProperties) {
 
-        return mergeMaps(
-                getClientProperties(domainId, bootstrapServers),
+        final Map<String, Object> props = clientProperties(domainId, bootstrapServers);
+        props.putAll(
                 Map.of(
                         StreamsConfig.APPLICATION_ID_CONFIG,
                         domainId + "." + serviceId,
@@ -157,8 +155,9 @@ public final class Clients {
                         KafkaAvroSerializerConfig.SCHEMA_REFLECTION_CONFIG,
                         "true",
                         KafkaAvroSerializerConfig.USE_LATEST_VERSION,
-                        "true"),
-                providedProperties);
+                        "true"));
+        addAdditional(props, additionalProperties);
+        return props;
     }
 
     /**
@@ -188,11 +187,11 @@ public final class Clients {
      * @param keyDeserializerClass type of key deserializer
      * @param valueDeserializerClass type of value deserializer
      * @param autoOffsetResetEarliest reset to earliest offset if no stored offsets?
-     * @param providedProperties additional props
+     * @param additionalProperties additional properties
      * @return props
      */
     @SuppressWarnings("checkstyle:ParameterNumber")
-    @NotNull
+    @SafeVarargs
     public static Map<String, Object> consumerProperties(
             final String domainId,
             final String serviceId,
@@ -201,9 +200,9 @@ public final class Clients {
             final Class<?> keyDeserializerClass,
             final Class<?> valueDeserializerClass,
             final boolean autoOffsetResetEarliest,
-            final Map<String, Object> providedProperties) {
-        return mergeMaps(
-                getClientProperties(domainId, bootstrapServers),
+            final Map<String, Object>... additionalProperties) {
+        final Map<String, Object> props = clientProperties(domainId, bootstrapServers);
+        props.putAll(
                 Map.of(
                         ConsumerConfig.CLIENT_ID_CONFIG,
                         domainId + "." + serviceId + ".consumer",
@@ -218,28 +217,24 @@ public final class Clients {
                         AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG,
                         schemaRegistryUrl,
                         AbstractKafkaSchemaSerDeConfig.SCHEMA_REFLECTION_CONFIG,
-                        "true"),
-                providedProperties);
+                        "true"));
+        addAdditional(props, additionalProperties);
+        return props;
     }
 
-    private static Properties getClientProperties(
+    private static Map<String, Object> clientProperties(
             final String domainId, final String bootstrapServers) {
-        final Properties adminClientProperties = new Properties();
-        adminClientProperties.put(AdminClientConfig.CLIENT_ID_CONFIG, domainId);
-        adminClientProperties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        return adminClientProperties;
+        final Map<String, Object> basicProps = new HashMap<>();
+        basicProps.put(AdminClientConfig.CLIENT_ID_CONFIG, domainId);
+        basicProps.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        return basicProps;
     }
 
-    /**
-     * Merges Maps
-     *
-     * @param manyMaps - maps to merge
-     * @return merged maps
-     */
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public static Map<String, Object> mergeMaps(final Map... manyMaps) {
-        final HashMap<String, Object> mutableMap = new HashMap<>();
-        Arrays.stream(manyMaps).forEach(mutableMap::putAll);
-        return mutableMap;
+    @SafeVarargs
+    private static void addAdditional(
+            final Map<String, Object> props, final Map<String, Object>... additionalProperties) {
+        for (final Map<String, Object> additional : additionalProperties) {
+            props.putAll(additional);
+        }
     }
 }

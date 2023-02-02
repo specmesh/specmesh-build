@@ -18,15 +18,13 @@ plugins {
     `java-library`
 }
 
-val kafkaVersion : String by extra
-val spotBugsVersion : String by extra
-val jacksonVersion : String by extra
 val testcontainersVersion : String by extra
 val lombokVersion : String by extra
-val confluentVersion : String by extra
+val junitVersion : String by extra
 
 dependencies {
     implementation(project(":kafka"))
+    implementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
 
     compileOnly("org.projectlombok:lombok:$lombokVersion")
     annotationProcessor("org.projectlombok:lombok:$lombokVersion")
