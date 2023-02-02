@@ -112,18 +112,18 @@ class KafkaAPISpecFunctionalTest {
     }
 
     @Test
-    void shouldHavePickedRightTopicsOutOfSpec() {
-        assertThat(Topic.PUBLIC.topicName, containsString("._public."));
-        assertThat(Topic.PROTECTED.topicName, containsString("._protected."));
-        assertThat(Topic.PRIVATE.topicName, containsString("._private."));
-    }
-
-    @Test
     void shouldHaveInitializedEnumsCorrectly() {
         assertThat(Topic.PUBLIC.topicName, is(API_SPEC.listDomainOwnedTopics().get(0)));
         assertThat(Topic.PROTECTED.topicName, is(API_SPEC.listDomainOwnedTopics().get(1)));
         assertThat(Topic.PRIVATE.topicName, is(API_SPEC.listDomainOwnedTopics().get(2)));
         assertThat(Domain.SELF.domainId, is(API_SPEC.id()));
+    }
+
+    @Test
+    void shouldHavePickedRightTopicsOutOfSpec() {
+        assertThat(Topic.PUBLIC.topicName, containsString("._public."));
+        assertThat(Topic.PROTECTED.topicName, containsString("._protected."));
+        assertThat(Topic.PRIVATE.topicName, containsString("._private."));
     }
 
     @CartesianTest
