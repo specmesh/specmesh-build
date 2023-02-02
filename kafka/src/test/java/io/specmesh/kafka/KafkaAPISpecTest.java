@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-// CHECKSTYLE_RULES.OFF: FinalLocalVariable
-// CHECKSTYLE_RULES.OFF: FinalParameters
 package io.specmesh.kafka;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.iterableWithSize;
 
 import io.specmesh.apiparser.AsyncApiParser;
