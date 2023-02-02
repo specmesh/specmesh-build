@@ -18,6 +18,7 @@ package io.specmesh.apiparser;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import io.specmesh.apiparser.model.ApiSpec;
@@ -27,12 +28,13 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class AsyncApiSchemaParserTest {
-    final ApiSpec apiSpec = getAPISpecFromResource();
+    private static final ApiSpec API_SPEC =
+            TestSpecLoader.loadFromClassPath("simple_schema_demo-api.yaml");
 
     @Test
     public void shouldReturnProducerMessageSchema() {
-        final Map<String, Channel> channelsMap = apiSpec.channels();
-        assertThat(channelsMap.size(), is(2));
+        final Map<String, Channel> channelsMap = API_SPEC.channels();
+        assertThat(channelsMap.entrySet(), hasSize(2));
         assertThat(
                 "Should have assembled 'id + channelname'",
                 channelsMap.keySet(),
@@ -52,8 +54,8 @@ public class AsyncApiSchemaParserTest {
 
     @Test
     public void shouldReturnSubscriberMessageSchema() {
-        final Map<String, Channel> channelsMap = apiSpec.channels();
-        assertThat(channelsMap.size(), is(2));
+        final Map<String, Channel> channelsMap = API_SPEC.channels();
+        assertThat(channelsMap.entrySet(), hasSize(2));
         assertThat(
                 "Should have assembled 'id + channelname'",
                 channelsMap.keySet(),
@@ -69,17 +71,5 @@ public class AsyncApiSchemaParserTest {
                 is("application/vnd.apache.avro+json;version=1.9.0"));
         assertThat(subscribe.message().contentType(), is("application/octet-stream"));
         assertThat(subscribe.message().bindings().kafka().schemaIdLocation(), is("header"));
-    }
-
-    private ApiSpec getAPISpecFromResource() {
-        try {
-            return new AsyncApiParser()
-                    .loadResource(
-                            getClass()
-                                    .getClassLoader()
-                                    .getResourceAsStream("simple_schema_demo-api.yaml"));
-        } catch (Throwable t) {
-            throw new RuntimeException("Failed to load test resource", t);
-        }
     }
 }

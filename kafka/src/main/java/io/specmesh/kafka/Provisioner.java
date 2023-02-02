@@ -26,6 +26,7 @@ import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientExcept
 import io.confluent.kafka.schemaregistry.json.JsonSchema;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchema;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,7 @@ import org.apache.kafka.common.security.plain.PlainLoginModule;
 /** Provisions Kafka and SR resources */
 public final class Provisioner {
 
-    private static final int REQUEST_TIMEOUT = 10;
+    private static final int REQUEST_TIMEOUT = 60;
 
     private Provisioner() {}
 
@@ -106,12 +107,13 @@ public final class Provisioner {
                 (topic -> {
                     final var schemaInfo = apiSpec.schemaInfoForTopic(topic.name());
                     final var schemaRef = schemaInfo.schemaRef();
+                    final Path schemaPath = Paths.get(baseResourcePath, schemaRef);
                     final String schemaContent;
                     try {
-                        schemaContent =
-                                readString(Paths.get(baseResourcePath + "/" + schemaRef), UTF_8);
+                        schemaContent = readString(schemaPath, UTF_8);
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        throw new ProvisioningException(
+                                "Failed to read schema from: " + schemaPath, e);
                     }
                     final ParsedSchema someSchema =
                             getSchema(topic.name(), schemaRef, baseResourcePath, schemaContent);
@@ -120,7 +122,12 @@ public final class Provisioner {
                     try {
                         schemaRegistryClient.register(topic.name() + "-value", someSchema);
                     } catch (IOException | RestClientException e) {
-                        throw new RuntimeException(e);
+                        throw new ProvisioningException(
+                                "Failed to register schema. topic: "
+                                        + topic.name()
+                                        + ", schema:"
+                                        + schemaPath,
+                                e);
                     }
                 }));
     }
@@ -156,7 +163,8 @@ public final class Provisioner {
         if (schemaRef.endsWith(".proto")) {
             return new ProtobufSchema(content);
         }
-        throw new RuntimeException("Failed to handle topic:" + topicName + " schema: " + path);
+        throw new ProvisioningException(
+                "Unsupported schema type for:" + topicName + ", schema: " + path);
     }
 
     /**
@@ -207,6 +215,10 @@ public final class Provisioner {
     }
 
     private static class ProvisioningException extends RuntimeException {
+
+        ProvisioningException(final String msg) {
+            super(msg);
+        }
 
         ProvisioningException(final String msg, final Throwable cause) {
             super(msg, cause);

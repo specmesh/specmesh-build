@@ -18,6 +18,7 @@ package io.specmesh.apiparser;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import io.specmesh.apiparser.model.ApiSpec;
@@ -29,17 +30,18 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 public class AsyncApiParserTest {
-    final ApiSpec apiSpec = getAPISpecFromResource();
+    private static final ApiSpec API_SPEC =
+            TestSpecLoader.loadFromClassPath("test-streetlights-simple-api.yaml");
 
     @Test
     public void shouldReturnRootIdWithDelimiter() {
-        assertThat(apiSpec.id(), is("simple.streetlights"));
+        assertThat(API_SPEC.id(), is("simple.streetlights"));
     }
 
     @Test
     public void shouldReturnCanonicalChannelNames() {
-        final Map<String, Channel> channelsMap = apiSpec.channels();
-        assertThat(channelsMap.size(), is(2));
+        final Map<String, Channel> channelsMap = API_SPEC.channels();
+        assertThat(channelsMap.entrySet(), hasSize(2));
         assertThat(
                 "Should have assembled id + channelname",
                 channelsMap.keySet(),
@@ -52,8 +54,8 @@ public class AsyncApiParserTest {
 
     @Test
     public void shouldReturnKafkaBindingsForCreation() {
-        final Map<String, Channel> channelsMap = apiSpec.channels();
-        assertThat(channelsMap.size(), is(2));
+        final Map<String, Channel> channelsMap = API_SPEC.channels();
+        assertThat(channelsMap.entrySet(), hasSize(2));
         assertThat(
                 "Should have assembled id + channelname",
                 channelsMap.keySet(),
@@ -73,8 +75,8 @@ public class AsyncApiParserTest {
 
     @Test
     public void shouldReturnOperationTags() {
-        final Map<String, Channel> channelsMap = apiSpec.channels();
-        assertThat(channelsMap.size(), is(2));
+        final Map<String, Channel> channelsMap = API_SPEC.channels();
+        assertThat(channelsMap.entrySet(), hasSize(2));
         assertThat(
                 "Should have assembled 'id + channelname'",
                 channelsMap.keySet(),
@@ -82,21 +84,21 @@ public class AsyncApiParserTest {
 
         final Bindings producerBindings =
                 channelsMap.get("simple.streetlights.public.light.measured").bindings();
-        assertThat(producerBindings.kafka().configs().size(), is(2));
+        assertThat(producerBindings.kafka().configs().entrySet(), hasSize(2));
         assertThat(
                 producerBindings.kafka().configs().keySet(),
                 is(Set.of("cleanup.policy", "retention.ms")));
-        assertThat(producerBindings.kafka().envs().size(), is(2));
+        assertThat(producerBindings.kafka().envs(), hasSize(2));
 
         assertThat(
                 channelsMap.values().iterator().next().publish().message().tags(),
-                Matchers.iterableWithSize(2));
+                Matchers.hasSize(2));
     }
 
     @Test
     public void shouldReturnProducerMessageSchema() {
-        final Map<String, Channel> channelsMap = apiSpec.channels();
-        assertThat(channelsMap.size(), is(2));
+        final Map<String, Channel> channelsMap = API_SPEC.channels();
+        assertThat(channelsMap.entrySet(), hasSize(2));
         assertThat(
                 "Should have assembled 'id + channelname'",
                 channelsMap.keySet(),
@@ -104,26 +106,14 @@ public class AsyncApiParserTest {
 
         final Bindings producerBindings =
                 channelsMap.get("simple.streetlights.public.light.measured").bindings();
-        assertThat(producerBindings.kafka().configs().size(), is(2));
+        assertThat(producerBindings.kafka().configs().entrySet(), hasSize(2));
         assertThat(
                 producerBindings.kafka().configs().keySet(),
                 is(Set.of("cleanup.policy", "retention.ms")));
-        assertThat(producerBindings.kafka().envs().size(), is(2));
+        assertThat(producerBindings.kafka().envs(), hasSize(2));
 
         assertThat(
                 channelsMap.values().iterator().next().publish().message().tags(),
-                Matchers.iterableWithSize(2));
-    }
-
-    private ApiSpec getAPISpecFromResource() {
-        try {
-            return new AsyncApiParser()
-                    .loadResource(
-                            getClass()
-                                    .getClassLoader()
-                                    .getResourceAsStream("test-streetlights-simple-api.yaml"));
-        } catch (Throwable t) {
-            throw new RuntimeException("Failed to load test resource", t);
-        }
+                Matchers.hasSize(2));
     }
 }
