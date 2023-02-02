@@ -16,6 +16,9 @@
 
 package io.specmesh.kafka;
 
+
+import org.apache.kafka.clients.admin.Admin;
+
 /**
  * A Kafka environment.
  *
@@ -32,4 +35,9 @@ public interface KafkaEnvironment {
      * @return Connection string for connecting to Schema Registry.
      */
     String schemeRegistryServer();
+
+    /**
+     * @return Returns an admin client for the Kafka cluster. Caller is responsible for closing.
+     */
+    Admin adminClient();
 }

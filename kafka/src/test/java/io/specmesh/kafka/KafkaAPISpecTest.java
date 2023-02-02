@@ -17,12 +17,15 @@
 package io.specmesh.kafka;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import io.specmesh.apiparser.model.SchemaInfo;
 import io.specmesh.test.TestSpecLoader;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.acl.AclBinding;
 import org.junit.jupiter.api.Test;
@@ -39,19 +42,77 @@ public class KafkaAPISpecTest {
     }
 
     @Test
-    public void shouldGenerateACLsSoDomainOwnersCanWrite() {
-        final List<AclBinding> acls = API_SPEC.listACLsForDomainOwnedTopics();
-
-        assertThat(acls, hasSize(6));
+    public void shouldGenerateAclToAllowAnyOneToConsumePublicTopics() {
+        final Set<AclBinding> acls = API_SPEC.requiredAcls();
 
         assertThat(
-                "Protected ACL was not created",
-                acls.get(0).toString(),
-                is(
-                        "(pattern=ResourcePattern(resourceType=TOPIC, "
-                                + "name=london.hammersmith.olympia.bigdatalondon._protected.retail.subway.food.purchase, "
-                                + "patternType=PREFIXED), entry=(principal=User:.some.other.domain.root, host=*, operation=READ, "
-                                + "permissionType=ALLOW))"));
+                acls.stream().map(Object::toString).collect(Collectors.toSet()),
+                hasItems(
+                        "(pattern=ResourcePattern(resourceType=TOPIC,"
+                                + " name=london.hammersmith.olympia.bigdatalondon._public,"
+                                + " patternType=PREFIXED), entry=(principal=User:*, host=*,"
+                                + " operation=READ, permissionType=ALLOW))",
+                        "(pattern=ResourcePattern(resourceType=TOPIC,"
+                                + " name=london.hammersmith.olympia.bigdatalondon._public,"
+                                + " patternType=PREFIXED), entry=(principal=User:*, host=*,"
+                                + " operation=DESCRIBE, permissionType=ALLOW))"));
+    }
+
+    @Test
+    public void shouldGenerateAclToAllowSpecificUsersToConsumeProtectedTopics() {
+        final Set<AclBinding> acls = API_SPEC.requiredAcls();
+
+        assertThat(
+                acls.stream().map(Object::toString).collect(Collectors.toSet()),
+                hasItems(
+                        "(pattern=ResourcePattern(resourceType=TOPIC,"
+                            + " name=london.hammersmith.olympia.bigdatalondon._protected.retail.subway.food.purchase,"
+                            + " patternType=LITERAL),"
+                            + " entry=(principal=User:.some.other.domain.root, host=*,"
+                            + " operation=READ, permissionType=ALLOW))",
+                        "(pattern=ResourcePattern(resourceType=TOPIC,"
+                            + " name=london.hammersmith.olympia.bigdatalondon._protected.retail.subway.food.purchase,"
+                            + " patternType=LITERAL),"
+                            + " entry=(principal=User:.some.other.domain.root, host=*,"
+                            + " operation=DESCRIBE, permissionType=ALLOW))"));
+    }
+
+    @Test
+    public void shouldGenerateAclToAllowSelfControlOfPrivateTopics() {
+        final Set<AclBinding> acls = API_SPEC.requiredAcls();
+
+        assertThat(
+                acls.stream().map(Object::toString).collect(Collectors.toSet()),
+                hasItems(
+                        "(pattern=ResourcePattern(resourceType=TOPIC,"
+                                + " name=london.hammersmith.olympia.bigdatalondon,"
+                                + " patternType=PREFIXED),"
+                                + " entry=(principal=User:london.hammersmith.olympia.bigdatalondon,"
+                                + " host=*, operation=DESCRIBE, permissionType=ALLOW))",
+                        "(pattern=ResourcePattern(resourceType=TOPIC,"
+                                + " name=london.hammersmith.olympia.bigdatalondon,"
+                                + " patternType=PREFIXED),"
+                                + " entry=(principal=User:london.hammersmith.olympia.bigdatalondon,"
+                                + " host=*, operation=READ, permissionType=ALLOW))",
+                        "(pattern=ResourcePattern(resourceType=TOPIC,"
+                                + " name=london.hammersmith.olympia.bigdatalondon,"
+                                + " patternType=PREFIXED),"
+                                + " entry=(principal=User:london.hammersmith.olympia.bigdatalondon,"
+                                + " host=*, operation=WRITE, permissionType=ALLOW))"));
+    }
+
+    @Test
+    public void shouldGenerateAclsToAllowSelfToUseConsumerGroups() {
+        final Set<AclBinding> acls = API_SPEC.requiredAcls();
+
+        assertThat(
+                acls.stream().map(Object::toString).collect(Collectors.toSet()),
+                hasItems(
+                        "(pattern=ResourcePattern(resourceType=GROUP,"
+                                + " name=london.hammersmith.olympia.bigdatalondon,"
+                                + " patternType=PREFIXED),"
+                                + " entry=(principal=User:london.hammersmith.olympia.bigdatalondon,"
+                                + " host=*, operation=READ, permissionType=ALLOW))"));
     }
 
     @Test

@@ -20,11 +20,23 @@ import static java.util.Objects.requireNonNull;
 
 import io.specmesh.kafka.schema.SchemaRegistryContainer;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -33,6 +45,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.lifecycle.Startable;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -51,6 +64,7 @@ import org.testcontainers.utility.DockerImageName;
  * The `KAFKA_ENV` can then be queried for the {@link #kafkaBootstrapServers() Kafka endpoint} and
  * ths {@link #schemeRegistryServer() Schema Registry endpoint}.
  */
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class DockerKafkaEnvironment
         implements KafkaEnvironment,
                 BeforeAllCallback,
@@ -64,6 +78,8 @@ public final class DockerKafkaEnvironment
     private final Map<String, String> kafkaEnv;
     private final Optional<DockerImageName> srDockerImage;
     private final Map<String, String> srEnv;
+    private final Set<AclBinding> aclBindings;
+    private final Optional<Credentials> adminUser;
 
     private Network network;
     private KafkaContainer kafkaBroker;
@@ -77,19 +93,24 @@ public final class DockerKafkaEnvironment
         return new Builder();
     }
 
+    @SuppressWarnings("checkstyle:ParameterNumber") // justification: it's private
     private DockerKafkaEnvironment(
             final int startUpAttempts,
             final Duration startUpTimeout,
             final DockerImageName kafkaDockerImage,
             final Map<String, String> kafkaEnv,
             final Optional<DockerImageName> srDockerImage,
-            final Map<String, String> srEnv) {
+            final Map<String, String> srEnv,
+            final Set<AclBinding> aclBindings,
+            final Optional<Credentials> adminUser) {
         this.startUpTimeout = requireNonNull(startUpTimeout, "startUpTimeout");
         this.startUpAttempts = startUpAttempts;
         this.kafkaDockerImage = requireNonNull(kafkaDockerImage, "kafkaDockerImage");
         this.kafkaEnv = Map.copyOf(requireNonNull(kafkaEnv, "kafkaEnv"));
         this.srDockerImage = requireNonNull(srDockerImage, "srDockerImage");
         this.srEnv = Map.copyOf(requireNonNull(srEnv, "srEnv"));
+        this.aclBindings = Set.copyOf(requireNonNull(aclBindings, "aclBindings"));
+        this.adminUser = requireNonNull(adminUser, "credentials");
         tearDown();
     }
 
@@ -132,6 +153,19 @@ public final class DockerKafkaEnvironment
         return schemaRegistry.hostNetworkUrl().toString();
     }
 
+    @Override
+    public Admin adminClient() {
+        final Map<String, Object> properties = new HashMap<>();
+        properties.put(AdminClientConfig.CLIENT_ID_CONFIG, UUID.randomUUID().toString());
+        properties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootstrapServers());
+        adminUser.ifPresent(
+                creds ->
+                        properties.putAll(
+                                Provisioner.clientSaslAuthProperties(
+                                        creds.userName, creds.password)));
+        return AdminClient.create(properties);
+    }
+
     private void setUp() {
         network = Network.newNetwork();
 
@@ -143,20 +177,23 @@ public final class DockerKafkaEnvironment
                         .withStartupTimeout(startUpTimeout)
                         .withEnv(kafkaEnv);
 
-        if (srDockerImage.isEmpty()) {
-            kafkaBroker.start();
-            return;
-        }
+        final Startable startable =
+                srDockerImage
+                        .map(
+                                image ->
+                                        schemaRegistry =
+                                                new SchemaRegistryContainer(srDockerImage.get())
+                                                        .withKafka(kafkaBroker)
+                                                        .withNetworkAliases("schema-registry")
+                                                        .withStartupAttempts(startUpAttempts)
+                                                        .withStartupTimeout(startUpTimeout)
+                                                        .withEnv(srEnv))
+                        .map(container -> (Startable) container)
+                        .orElse(kafkaBroker);
 
-        schemaRegistry =
-                new SchemaRegistryContainer(srDockerImage.get())
-                        .withKafka(kafkaBroker)
-                        .withNetworkAliases("schema-registry")
-                        .withStartupAttempts(startUpAttempts)
-                        .withStartupTimeout(startUpTimeout)
-                        .withEnv(srEnv);
+        startable.start();
 
-        schemaRegistry.start();
+        installAcls();
     }
 
     private void tearDown() {
@@ -176,6 +213,14 @@ public final class DockerKafkaEnvironment
         }
 
         invokedStatically = false;
+    }
+
+    private void installAcls() {
+        try (Admin adminClient = adminClient()) {
+            adminClient.createAcls(aclBindings).all().get(30, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new AssertionError("Failed to create ACLs", e);
+        }
     }
 
     /** Builder of {@link DockerKafkaEnvironment}. */
@@ -200,6 +245,8 @@ public final class DockerKafkaEnvironment
                 Optional.of(DockerImageName.parse(DEFAULT_SCHEMA_REG_IMAGE));
         private final Map<String, String> srEnv = new HashMap<>();
         private final Map<String, String> userPasswords = new LinkedHashMap<>();
+        private boolean enableAcls = false;
+        private final Set<AclBinding> aclBindings = new HashSet<>();
 
         /**
          * Customise the startup count.
@@ -319,7 +366,7 @@ public final class DockerKafkaEnvironment
                 final String... additionalUsers) {
             if (additionalUsers.length % 2 != 0) {
                 throw new IllegalArgumentException(
-                        "additional users must be in format user1, password1, ... userN, passwordN");
+                        "additional users format user1, password1, ... userN, passwordN");
             }
             this.userPasswords.put(adminUser, adminPassword);
             for (int i = 0; i < additionalUsers.length; i++) {
@@ -331,12 +378,22 @@ public final class DockerKafkaEnvironment
         /**
          * Enables ACLs on the Kafka cluster.
          *
+         * @param aclBindings ACL bindings to set.
          * @return self.
          */
-        public Builder withKafkaAcls() {
-            withKafkaEnv("KAFKA_SUPER_USERS", "User:admin");
-            withKafkaEnv("KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND", "true");
-            withKafkaEnv("KAFKA_AUTHORIZER_CLASS_NAME", "kafka.security.authorizer.AclAuthorizer");
+        public Builder withKafkaAcls(final AclBinding... aclBindings) {
+            return withKafkaAcls(List.of(aclBindings));
+        }
+
+        /**
+         * Enables ACLs on the Kafka cluster.
+         *
+         * @param aclBindings ACL bindings to set.
+         * @return self.
+         */
+        public Builder withKafkaAcls(final Collection<? extends AclBinding> aclBindings) {
+            enableAcls = true;
+            this.aclBindings.addAll(aclBindings);
             return this;
         }
 
@@ -345,26 +402,57 @@ public final class DockerKafkaEnvironment
          */
         public DockerKafkaEnvironment build() {
             maybeEnableSasl();
+            maybeEnableAcls();
+
             return new DockerKafkaEnvironment(
-                    startUpAttempts, startUpTimeout, kafkaDockerImage, kafkaEnv, srImage, srEnv);
+                    startUpAttempts,
+                    startUpTimeout,
+                    kafkaDockerImage,
+                    kafkaEnv,
+                    srImage,
+                    srEnv,
+                    aclBindings,
+                    adminUser());
+        }
+
+        private Optional<Credentials> adminUser() {
+            if (userPasswords.isEmpty()) {
+                return Optional.empty();
+            }
+
+            final Map.Entry<String, String> admin = userPasswords.entrySet().iterator().next();
+            return Optional.of(new Credentials(admin.getKey(), admin.getValue()));
+        }
+
+        private void maybeEnableAcls() {
+            if (!enableAcls) {
+                return;
+            }
+
+            final String adminUser = adminUser().map(u -> "User:" + u.userName + ";").orElse("");
+            withKafkaEnv("KAFKA_SUPER_USERS", adminUser + "User:ANONYMOUS");
+            withKafkaEnv("KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND", "false");
+            withKafkaEnv("KAFKA_AUTHORIZER_CLASS_NAME", "kafka.security.authorizer.AclAuthorizer");
         }
 
         private void maybeEnableSasl() {
-            if (userPasswords.isEmpty()) {
+            final Optional<Credentials> adminUser = adminUser();
+            if (adminUser.isEmpty()) {
                 return;
             }
 
             withKafkaEnv(
                     "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP",
                     "BROKER:PLAINTEXT,PLAINTEXT:SASL_PLAINTEXT");
-            withKafkaEnv("KAFKA_LISTENER_NAME_PLAINTEXT_PLAIN_SASL_JAAS_CONFIG", buildJaasConfig());
+            withKafkaEnv(
+                    "KAFKA_LISTENER_NAME_PLAINTEXT_PLAIN_SASL_JAAS_CONFIG",
+                    buildJaasConfig(adminUser.get()));
             withKafkaEnv("KAFKA_LISTENER_NAME_PLAINTEXT_SASL_ENABLED_MECHANISMS", "PLAIN");
         }
 
-        private String buildJaasConfig() {
-            final Map.Entry<String, String> admin = userPasswords.entrySet().iterator().next();
+        private String buildJaasConfig(final Credentials adminUser) {
             final String basicJaas =
-                    Provisioner.clientSaslAuthProperties(admin.getKey(), admin.getValue())
+                    Provisioner.clientSaslAuthProperties(adminUser.userName, adminUser.password)
                             .get(SaslConfigs.SASL_JAAS_CONFIG)
                             .toString();
             return basicJaas.substring(0, basicJaas.length() - 1)
@@ -372,6 +460,16 @@ public final class DockerKafkaEnvironment
                             .map(e -> " user_" + e.getKey() + "=\"" + e.getValue() + "\"")
                             .collect(Collectors.joining())
                     + ";";
+        }
+    }
+
+    private static class Credentials {
+        final String userName;
+        final String password;
+
+        Credentials(final String userName, final String password) {
+            this.userName = requireNonNull(userName, "userName");
+            this.password = requireNonNull(password, "password");
         }
     }
 }
