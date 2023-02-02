@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.apiparser.model.ApiSpec;
 import java.time.Duration;
@@ -34,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
-import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -45,12 +45,44 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junitpioneer.jupiter.cartesian.ArgumentSets;
+import org.junitpioneer.jupiter.cartesian.CartesianTest;
+import org.junitpioneer.jupiter.cartesian.CartesianTest.MethodFactory;
 
+@SuppressFBWarnings(
+        value = "IC_INIT_CIRCULARITY",
+        justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positive")
 class KafkaAPISpecFunctionalTest {
 
     private static final KafkaApiSpec API_SPEC = new KafkaApiSpec(getAPISpecFromResource());
-    private static final String FOREIGN_DOMAIN = ".london.hammersmith.transport";
-    private static final String SOME_OTHER_DOMAIN_ROOT = ".some.other.domain.root";
+
+    private enum Topic {
+        PUBLIC(API_SPEC.listDomainOwnedTopics().get(0).name()),
+        PROTECTED(API_SPEC.listDomainOwnedTopics().get(1).name()),
+        PRIVATE(API_SPEC.listDomainOwnedTopics().get(2).name());
+
+        final String topicName;
+
+        Topic(final String name) {
+            this.topicName = name;
+        }
+    }
+
+    private enum Domain {
+        /** The domain associated with the spec. */
+        SELF(API_SPEC.id()),
+        /** An unrelated domain. */
+        UNRELATED(".london.hammersmith.transport"),
+        /** A domain granted access to the protected topic. */
+        LIMITED(".some.other.domain.root");
+
+        final String domainId;
+
+        Domain(final String name) {
+            this.domainId = name;
+        }
+    }
+
     private static final String ADMIN_USER = "admin";
 
     @RegisterExtension
@@ -60,12 +92,12 @@ class KafkaAPISpecFunctionalTest {
                     .withSaslAuthentication(
                             ADMIN_USER,
                             ADMIN_USER + "-secret",
-                            API_SPEC.id(),
-                            API_SPEC.id() + "-secret",
-                            FOREIGN_DOMAIN,
-                            FOREIGN_DOMAIN + "-secret",
-                            SOME_OTHER_DOMAIN_ROOT,
-                            SOME_OTHER_DOMAIN_ROOT + "-secret")
+                            Domain.SELF.domainId,
+                            Domain.SELF.domainId + "-secret",
+                            Domain.UNRELATED.domainId,
+                            Domain.UNRELATED.domainId + "-secret",
+                            Domain.LIMITED.domainId,
+                            Domain.LIMITED.domainId + "-secret")
                     .withKafkaAcls()
                     .build();
 
@@ -80,76 +112,48 @@ class KafkaAPISpecFunctionalTest {
     }
 
     @Test
-    public void shouldPublishAndConsumePublicTopics() {
-        final List<NewTopic> newTopics = API_SPEC.listDomainOwnedTopics();
-        final NewTopic publicTopic = newTopics.get(0);
-
-        assertThat("Expected 'public'", publicTopic.name(), containsString("._public."));
-        produceAndConsume(publicTopic.name(), API_SPEC.id(), API_SPEC.id());
+    void shouldHaveInitializedEnumsCorrectly() {
+        assertThat(Topic.PUBLIC.topicName, is(API_SPEC.listDomainOwnedTopics().get(0).name()));
+        assertThat(Topic.PROTECTED.topicName, is(API_SPEC.listDomainOwnedTopics().get(1).name()));
+        assertThat(Topic.PRIVATE.topicName, is(API_SPEC.listDomainOwnedTopics().get(2).name()));
+        assertThat(Domain.SELF.domainId, is(API_SPEC.id()));
     }
 
     @Test
-    public void shouldPublishAndConsumeProtectedTopics() {
-        final List<NewTopic> newTopics = API_SPEC.listDomainOwnedTopics();
-        final NewTopic protectedTopic = newTopics.get(1);
-
-        assertThat("Expected 'protected'", protectedTopic.name(), containsString("._protected."));
-        produceAndConsume(protectedTopic.name(), API_SPEC.id(), API_SPEC.id());
+    void shouldHavePickedRightTopicsOutOfSpec() {
+        assertThat(Topic.PUBLIC.topicName, containsString("._public."));
+        assertThat(Topic.PROTECTED.topicName, containsString("._protected."));
+        assertThat(Topic.PRIVATE.topicName, containsString("._private."));
     }
 
-    @Test
-    public void shouldPublishAndConsumePrivateTopics() {
-        final List<NewTopic> newTopics = API_SPEC.listDomainOwnedTopics();
-        final NewTopic privateTopic = newTopics.get(2);
+    @CartesianTest
+    @MethodFactory("testDimensions")
+    void shouldHandle(final Topic topic, final Domain producerDomain, final Domain consumerDomain) {
+        if (shouldSucceed(topic, producerDomain, consumerDomain)) {
+            produceAndConsume(topic, producerDomain, consumerDomain);
+        } else {
+            final Exception e =
+                    assertThrows(
+                            TopicAuthorizationException.class,
+                            () -> produceAndConsume(topic, producerDomain, consumerDomain));
 
-        assertThat("Expected 'private'", privateTopic.name(), containsString("._private."));
-        produceAndConsume(privateTopic.name(), API_SPEC.id(), API_SPEC.id());
-    }
-
-    @Test
-    public void shouldConsumePublicTopicByForeignConsumer() {
-        final List<NewTopic> newTopics = API_SPEC.listDomainOwnedTopics();
-        final NewTopic publicTopic = newTopics.get(0);
-
-        produceAndConsume(publicTopic.name(), API_SPEC.id(), FOREIGN_DOMAIN);
-    }
-
-    @Test
-    public void shouldNotConsumeProtectedTopicByForeignConsumer() {
-        final List<NewTopic> newTopics = API_SPEC.listDomainOwnedTopics();
-        final NewTopic protectedTopic = newTopics.get(1);
-
-        final Exception e =
-                assertThrows(
-                        TopicAuthorizationException.class,
-                        () ->
-                                produceAndConsume(
-                                        protectedTopic.name(), API_SPEC.id(), FOREIGN_DOMAIN));
-
-        assertThat(e.getMessage(), containsString("Not authorized to access topics"));
-        assertThat(e.getMessage(), containsString(protectedTopic.name()));
-    }
-
-    @Test
-    public void shouldGrantRestrictedAccessToProtectedTopic() {
-        final List<NewTopic> newTopics = API_SPEC.listDomainOwnedTopics();
-        final NewTopic publicTopic = newTopics.get(0);
-
-        produceAndConsume(publicTopic.name(), API_SPEC.id(), SOME_OTHER_DOMAIN_ROOT);
+            assertThat(e.getMessage(), containsString("Not authorized to access topics"));
+            assertThat(e.getMessage(), containsString(topic.topicName));
+        }
     }
 
     private void produceAndConsume(
-            final String topicName, final String producerDomain, final String consumerDomain) {
+            final Topic topic, final Domain producerDomain, final Domain consumerDomain) {
         // Given:
         try (KafkaConsumer<Long, String> domainConsumer = domainConsumer(consumerDomain);
                 KafkaProducer<Long, String> domainProducer = domainProducer(producerDomain)) {
 
-            domainConsumer.subscribe(List.of(topicName));
+            domainConsumer.subscribe(List.of(topic.topicName));
             domainConsumer.poll(Duration.ofSeconds(1));
 
             // When:
             domainProducer
-                    .send(new ProducerRecord<>(topicName, 100L, "got value"))
+                    .send(new ProducerRecord<>(topic.topicName, 100L, "got value"))
                     .get(30, TimeUnit.SECONDS);
 
             final ConsumerRecords<Long, String> records =
@@ -182,23 +186,25 @@ class KafkaAPISpecFunctionalTest {
         }
     }
 
-    private KafkaProducer<Long, String> domainProducer(final String domainId) {
+    private KafkaProducer<Long, String> domainProducer(final Domain domain) {
         final Map<String, Object> props = clientProperties();
-        props.putAll(Provisioner.clientSaslAuthProperties(domainId, domainId + "-secret"));
-        props.put(AdminClientConfig.CLIENT_ID_CONFIG, domainId + ".producer");
+        props.putAll(
+                Provisioner.clientSaslAuthProperties(domain.domainId, domain.domainId + "-secret"));
+        props.put(AdminClientConfig.CLIENT_ID_CONFIG, domain.domainId + ".producer");
 
         return new KafkaProducer<>(props, Serdes.Long().serializer(), Serdes.String().serializer());
     }
 
-    private KafkaConsumer<Long, String> domainConsumer(final String domainId) {
+    private KafkaConsumer<Long, String> domainConsumer(final Domain domain) {
         final Map<String, Object> props = clientProperties();
-        props.putAll(Provisioner.clientSaslAuthProperties(domainId, domainId + "-secret"));
+        props.putAll(
+                Provisioner.clientSaslAuthProperties(domain.domainId, domain.domainId + "-secret"));
         props.putAll(
                 Map.of(
                         ConsumerConfig.CLIENT_ID_CONFIG,
-                        domainId + ".consumer",
+                        domain.domainId + ".consumer",
                         ConsumerConfig.GROUP_ID_CONFIG,
-                        domainId + ".consumer-group",
+                        domain.domainId + ".consumer-group",
                         ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
                         "latest"));
 
@@ -208,8 +214,37 @@ class KafkaAPISpecFunctionalTest {
 
     private static Map<String, Object> clientProperties() {
         final Map<String, Object> props = new HashMap<>();
-        props.put(CLIENT_ID_CONFIG, API_SPEC.id());
+        props.put(CLIENT_ID_CONFIG, Domain.SELF.domainId);
         props.put(BOOTSTRAP_SERVERS_CONFIG, KAFKA_ENV.kafkaBootstrapServers());
         return props;
+    }
+
+    private boolean shouldSucceed(
+            final Topic topic, final Domain producerDomain, final Domain consumerDomain) {
+        return canProduce(producerDomain) && canConsume(topic, consumerDomain);
+    }
+
+    private boolean canProduce(final Domain producerDomain) {
+        return producerDomain == Domain.SELF;
+    }
+
+    private boolean canConsume(final Topic topic, final Domain consumerDomain) {
+        switch (topic) {
+            case PUBLIC:
+                return true;
+            case PROTECTED:
+                return consumerDomain == Domain.SELF || consumerDomain == Domain.LIMITED;
+            case PRIVATE:
+                return consumerDomain == Domain.SELF;
+            default:
+                return false;
+        }
+    }
+
+    @SuppressWarnings("unused") // Invoked by reflection
+    protected static ArgumentSets testDimensions() {
+        return ArgumentSets.argumentsForFirstParameter(Topic.values())
+                .argumentsForNextParameter(Domain.values())
+                .argumentsForNextParameter(Domain.values());
     }
 }
