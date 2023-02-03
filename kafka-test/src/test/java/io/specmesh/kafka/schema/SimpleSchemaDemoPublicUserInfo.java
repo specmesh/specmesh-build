@@ -878,10 +878,12 @@ public final class SimpleSchemaDemoPublicUserInfo {
 
     static {
         java.lang.String[] descriptorData = {
-            "\n*simple.schema_demo._public.user_info.p"
-                    + "roto\022\030io.specmesh.kafka.schema\"8\n\010UserIn"
-                    + "fo\022\020\n\010fullName\030\001 \001(\t\022\r\n\005email\030\002 \001(\t\022\013\n\003a"
-                    + "ge\030\003 \001(\005b\006proto3"
+            "\n"
+                + "*simple.schema_demo._public.user_info.proto\022\030io.specmesh.kafka.schema\"8\n"
+                + "\010UserInfo\022\020\n"
+                + "\010fullName\030\001 \001(\t\022\r\n"
+                + "\005email\030\002 \001(\t\022\013\n"
+                + "\003age\030\003 \001(\005b\006proto3"
         };
         descriptor =
                 com.google.protobuf.Descriptors.FileDescriptor.internalBuildGeneratedFileFrom(

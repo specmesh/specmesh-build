@@ -1019,11 +1019,14 @@ public final class SimpleSchemaDemoPublicUserInfoEnriched {
 
     static {
         java.lang.String[] descriptorData = {
-            "\n3simple.schema_demo._public.user_info_e"
-                    + "nriched.proto\022\030io.specmesh.kafka.schema\""
-                    + "Q\n\020UserInfoEnriched\022\020\n\010fullName\030\001 \001(\t\022\r\n"
-                    + "\005email\030\002 \001(\t\022\017\n\007address\030\003 \001(\t\022\013\n\003age\030\004 \001"
-                    + "(\005b\006proto3"
+            "\n"
+                    + "3simple.schema_demo._public.user_info_e"
+                    + "nriched.proto\022\030io.specmesh.kafka.schema\"Q\n"
+                    + "\020UserInfoEnriched\022\020\n"
+                    + "\010fullName\030\001 \001(\t\022\r\n"
+                    + "\005email\030\002 \001(\t\022\017\n"
+                    + "\007address\030\003 \001(\t\022\013\n"
+                    + "\003age\030\004 \001(\005b\006proto3"
         };
         descriptor =
                 com.google.protobuf.Descriptors.FileDescriptor.internalBuildGeneratedFileFrom(

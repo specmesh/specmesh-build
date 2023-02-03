@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -140,8 +141,8 @@ public final class Provisioner {
      * @throws ProvisioningException on interrupt
      */
     public static void provisionAcls(final KafkaApiSpec apiSpec, final Admin adminClient) {
-        final List<AclBinding> allAcls = apiSpec.listACLsForDomainOwnedTopics();
         try {
+            final Set<AclBinding> allAcls = apiSpec.requiredAcls();
             adminClient.createAcls(allAcls).all().get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new ProvisioningException("Failed to create ACLs", e);

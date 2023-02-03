@@ -18,6 +18,11 @@ package io.specmesh.kafka;
 
 import static io.specmesh.kafka.Clients.producerProperties;
 import static java.util.stream.Collectors.toList;
+import static org.apache.kafka.common.acl.AclOperation.ALL;
+import static org.apache.kafka.common.acl.AclPermissionType.ALLOW;
+import static org.apache.kafka.common.resource.PatternType.LITERAL;
+import static org.apache.kafka.common.resource.ResourceType.CLUSTER;
+import static org.apache.kafka.common.resource.ResourceType.GROUP;
 import static org.apache.kafka.streams.kstream.Produced.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -37,18 +42,17 @@ import io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfo.UserInfo;
 import io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched;
 import io.specmesh.test.TestSpecLoader;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.StreamSupport;
 import org.apache.commons.collections.MapUtils;
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -56,7 +60,10 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.acl.AccessControlEntry;
+import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.errors.TopicAuthorizationException;
+import org.apache.kafka.common.resource.ResourcePattern;
 import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.LongSerializer;
 import org.apache.kafka.common.serialization.Serdes;
@@ -73,33 +80,27 @@ class ClientsFunctionalDemoTest {
     private static final KafkaApiSpec API_SPEC =
             TestSpecLoader.loadFromClassPath("simple_schema_demo-api.yaml");
 
-    private static final String ADMIN_USER = "admin";
-    private static final String ADMIN_PASSWORD = "admin-secret";
-
     private static final String OWNER_USER = "simple.schema_demo";
-    private static final String OWNER_PASSWORD = "simple.schema_demo-secret";
-
     private static final String DIFFERENT_USER = "different-user";
-    private static final String DIFFERENT_PASSWORD = "something no one will guess... ever!";
 
     @RegisterExtension
     private static final KafkaEnvironment KAFKA_ENV =
             DockerKafkaEnvironment.builder()
                     .withSaslAuthentication(
-                            ADMIN_USER,
-                            ADMIN_PASSWORD,
+                            "admin",
+                            "admin-secret",
                             OWNER_USER,
-                            OWNER_PASSWORD,
+                            OWNER_USER + "-secret",
                             DIFFERENT_USER,
-                            DIFFERENT_PASSWORD)
-                    .withKafkaAcls()
+                            DIFFERENT_USER + "-secret")
+                    .withKafkaAcls(aclsForOtherDomain())
                     .build();
 
     private SchemaRegistryClient schemaRegistryClient;
 
     @BeforeAll
     public static void provision() {
-        try (Admin adminClient = adminClient()) {
+        try (Admin adminClient = KAFKA_ENV.adminClient()) {
             final SchemaRegistryClient schemaRegistryClient =
                     new CachedSchemaRegistryClient(KAFKA_ENV.schemeRegistryServer(), 5);
             Provisioner.provision(
@@ -118,9 +119,8 @@ class ClientsFunctionalDemoTest {
         final var userSignedUpTopic = topicName("_public.user_signed_up");
         final var sentRecord = new UserSignedUp("joe blogs", "blogy@twasmail.com", 100);
 
-        try (Consumer<Long, UserSignedUp> consumer =
-                        avroConsumer(UserSignedUp.class, userSignedUpTopic);
-                Producer<Long, UserSignedUp> producer = avroProducer(UserSignedUp.class)) {
+        try (Consumer<Long, UserSignedUp> consumer = avroConsumer(userSignedUpTopic, OWNER_USER);
+                Producer<Long, UserSignedUp> producer = avroProducer(OWNER_USER)) {
 
             // When:
             producer.send(new ProducerRecord<>(userSignedUpTopic, 1000L, sentRecord))
@@ -143,7 +143,7 @@ class ClientsFunctionalDemoTest {
                         .build();
 
         try (Consumer<Long, UserInfo> consumer = protoConsumer(UserInfo.class, userInfoTopic);
-                Producer<Long, UserInfo> producer = protoProducer(UserInfo.class)) {
+                Producer<Long, UserInfo> producer = protoProducer()) {
 
             // When:
             producer.send(new ProducerRecord<>(userInfoTopic, 1000L, userSam))
@@ -176,7 +176,7 @@ class ClientsFunctionalDemoTest {
         try (Consumer<Long, UserInfoEnriched> consumer =
                         protoConsumer(UserInfoEnriched.class, userInfoEnrichedTopic);
                 AutoCloseable streamsApp = streamsApp(userInfoTopic, userInfoEnrichedTopic);
-                Producer<Long, UserInfo> producer = protoProducer(UserInfo.class)) {
+                Producer<Long, UserInfo> producer = protoProducer()) {
 
             // When:
             producer.send(new ProducerRecord<>(userInfoTopic, 1000L, userSam))
@@ -193,11 +193,7 @@ class ClientsFunctionalDemoTest {
         final var userSignedUpTopic = topicName("_public.user_signed_up");
         final var sentRecord = new UserSignedUp("joe blogs", "blogy@twasmail.com", 100);
 
-        final Map<String, Object> differentUser =
-                Provisioner.clientSaslAuthProperties(DIFFERENT_USER, DIFFERENT_PASSWORD);
-
-        try (Producer<Long, UserSignedUp> producer =
-                avroProducer(UserSignedUp.class, differentUser)) {
+        try (Producer<Long, UserSignedUp> producer = avroProducer(DIFFERENT_USER)) {
 
             // When:
             final Future<RecordMetadata> f =
@@ -215,12 +211,9 @@ class ClientsFunctionalDemoTest {
         final var userSignedUpTopic = topicName("_public.user_signed_up");
         final var sentRecord = new UserSignedUp("joe blogs", "blogy@twasmail.com", 100);
 
-        final Map<String, Object> differentUser =
-                Provisioner.clientSaslAuthProperties(DIFFERENT_USER, DIFFERENT_PASSWORD);
-
         try (Consumer<Long, UserSignedUp> consumer =
-                        avroConsumer(UserSignedUp.class, userSignedUpTopic, differentUser);
-                Producer<Long, UserSignedUp> producer = avroProducer(UserSignedUp.class)) {
+                        avroConsumer(userSignedUpTopic, DIFFERENT_USER);
+                Producer<Long, UserSignedUp> producer = avroProducer(OWNER_USER)) {
 
             // When:
             producer.send(new ProducerRecord<>(userSignedUpTopic, 1000L, sentRecord))
@@ -231,21 +224,13 @@ class ClientsFunctionalDemoTest {
         }
     }
 
-    private static AdminClient adminClient() {
-        final Map<String, Object> properties =
-                new HashMap<>(Provisioner.clientSaslAuthProperties(ADMIN_USER, ADMIN_PASSWORD));
-        properties.put(AdminClientConfig.CLIENT_ID_CONFIG, API_SPEC.id());
-        properties.put(
-                AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_ENV.kafkaBootstrapServers());
-        properties.putAll(Provisioner.clientSaslAuthProperties(ADMIN_USER, ADMIN_PASSWORD));
-        return AdminClient.create(properties);
-    }
-
     private static <V> Consumer<Long, V> consumer(
             final Class<V> valueClass,
             final String topicName,
             final Class<?> valueDeserializer,
+            final String userName,
             final Map<String, Object> additionalProps) {
+
         final Map<String, Object> props =
                 Clients.consumerProperties(
                         API_SPEC.id(),
@@ -257,6 +242,9 @@ class ClientsFunctionalDemoTest {
                         false,
                         additionalProps);
 
+        props.putAll(Provisioner.clientSaslAuthProperties(userName, userName + "-secret"));
+        props.put(CommonClientConfigs.GROUP_ID_CONFIG, userName);
+
         final KafkaConsumer<Long, V> consumer = Clients.consumer(Long.class, valueClass, props);
         consumer.subscribe(List.of(topicName));
         consumer.poll(Duration.ofSeconds(1));
@@ -265,30 +253,24 @@ class ClientsFunctionalDemoTest {
 
     private static <V> Consumer<Long, V> protoConsumer(
             final Class<V> valueClass, final String topicName) {
-        final Map<String, Object> props =
-                new HashMap<>(Provisioner.clientSaslAuthProperties(OWNER_USER, OWNER_PASSWORD));
-        props.put(KafkaProtobufDeserializerConfig.SPECIFIC_PROTOBUF_VALUE_TYPE, valueClass);
-
-        return consumer(valueClass, topicName, KafkaProtobufDeserializer.class, props);
-    }
-
-    private <V> Consumer<Long, V> avroConsumer(
-            final Class<V> valueClass,
-            final String topicName,
-            final Map<String, Object> additionalProps) {
-        return consumer(valueClass, topicName, KafkaAvroDeserializer.class, additionalProps);
-    }
-
-    private <V> Consumer<Long, V> avroConsumer(final Class<V> valueClass, final String topicName) {
-        return avroConsumer(
+        return consumer(
                 valueClass,
                 topicName,
-                Provisioner.clientSaslAuthProperties(OWNER_USER, OWNER_PASSWORD));
+                KafkaProtobufDeserializer.class,
+                OWNER_USER,
+                Map.of(KafkaProtobufDeserializerConfig.SPECIFIC_PROTOBUF_VALUE_TYPE, valueClass));
+    }
+
+    private Consumer<Long, UserSignedUp> avroConsumer(
+            final String topicName, final String userName) {
+        return consumer(
+                UserSignedUp.class, topicName, KafkaAvroDeserializer.class, userName, Map.of());
     }
 
     private static <V> Producer<Long, V> producer(
             final Class<V> valueClass,
             final Class<?> valueSerializer,
+            final String userName,
             final Map<String, Object> additionalProps) {
         final Map<String, Object> props =
                 producerProperties(
@@ -301,24 +283,17 @@ class ClientsFunctionalDemoTest {
                         false,
                         additionalProps);
 
+        props.putAll(Provisioner.clientSaslAuthProperties(userName, userName + "-secret"));
+
         return Clients.producer(Long.class, valueClass, props);
     }
 
-    private static <V> Producer<Long, V> protoProducer(final Class<V> valueClass) {
-        return producer(
-                valueClass,
-                KafkaProtobufSerializer.class,
-                Provisioner.clientSaslAuthProperties(OWNER_USER, OWNER_PASSWORD));
+    private static Producer<Long, UserInfo> protoProducer() {
+        return producer(UserInfo.class, KafkaProtobufSerializer.class, OWNER_USER, Map.of());
     }
 
-    private static <V> Producer<Long, V> avroProducer(
-            final Class<V> valueClass, final Map<String, Object> additionalProps) {
-        return producer(valueClass, KafkaAvroSerializer.class, additionalProps);
-    }
-
-    private static <V> Producer<Long, V> avroProducer(final Class<V> valueClass) {
-        return avroProducer(
-                valueClass, Provisioner.clientSaslAuthProperties(OWNER_USER, OWNER_PASSWORD));
+    private static Producer<Long, UserSignedUp> avroProducer(final String user) {
+        return producer(UserSignedUp.class, KafkaAvroSerializer.class, user, Map.of());
     }
 
     private static <V> List<V> values(final Consumer<Long, V> consumer) {
@@ -347,7 +322,7 @@ class ClientsFunctionalDemoTest {
                         Serdes.LongSerde.class,
                         KafkaProtobufSerde.class,
                         false,
-                        Provisioner.clientSaslAuthProperties(OWNER_USER, OWNER_PASSWORD),
+                        Provisioner.clientSaslAuthProperties(OWNER_USER, OWNER_USER + "-secret"),
                         Map.of(
                                 KafkaProtobufDeserializerConfig.SPECIFIC_PROTOBUF_VALUE_TYPE,
                                 UserInfo.class));
@@ -372,5 +347,16 @@ class ClientsFunctionalDemoTest {
         final var streams = new KafkaStreams(builder.build(), MapUtils.toProperties(props));
         streams.start();
         return streams;
+    }
+
+    private static Set<AclBinding> aclsForOtherDomain() {
+        final String principal = "User:" + DIFFERENT_USER;
+        return Set.of(
+                new AclBinding(
+                        new ResourcePattern(CLUSTER, "kafka-cluster", LITERAL),
+                        new AccessControlEntry(principal, "*", ALL, ALLOW)),
+                new AclBinding(
+                        new ResourcePattern(GROUP, DIFFERENT_USER, LITERAL),
+                        new AccessControlEntry(principal, "*", ALL, ALLOW)));
     }
 }
