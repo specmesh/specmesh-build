@@ -21,6 +21,7 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.kafka.common.acl.AclOperation.ALL;
 import static org.apache.kafka.common.acl.AclPermissionType.ALLOW;
 import static org.apache.kafka.common.resource.PatternType.LITERAL;
+import static org.apache.kafka.common.resource.Resource.CLUSTER_NAME;
 import static org.apache.kafka.common.resource.ResourceType.CLUSTER;
 import static org.apache.kafka.common.resource.ResourceType.GROUP;
 import static org.apache.kafka.streams.kstream.Produced.with;
@@ -353,7 +354,7 @@ class ClientsFunctionalDemoTest {
         final String principal = "User:" + DIFFERENT_USER;
         return Set.of(
                 new AclBinding(
-                        new ResourcePattern(CLUSTER, "kafka-cluster", LITERAL),
+                        new ResourcePattern(CLUSTER, CLUSTER_NAME, LITERAL),
                         new AccessControlEntry(principal, "*", ALL, ALLOW)),
                 new AclBinding(
                         new ResourcePattern(GROUP, DIFFERENT_USER, LITERAL),
