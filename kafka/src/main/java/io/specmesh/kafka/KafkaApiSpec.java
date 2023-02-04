@@ -17,6 +17,7 @@
 package io.specmesh.kafka;
 
 import static java.util.Objects.requireNonNull;
+import static org.apache.kafka.common.acl.AclOperation.CREATE;
 import static org.apache.kafka.common.acl.AclOperation.DESCRIBE;
 import static org.apache.kafka.common.acl.AclOperation.IDEMPOTENT_WRITE;
 import static org.apache.kafka.common.acl.AclOperation.READ;
@@ -154,6 +155,7 @@ public class KafkaApiSpec {
         topicAcls.addAll(prefixedAcls(TOPIC, id + "._public", "User:*", DESCRIBE, READ));
         // Produce & consume owned topics:
         topicAcls.addAll(prefixedAcls(TOPIC, id, principal, DESCRIBE, READ, WRITE));
+        topicAcls.addAll(prefixedAcls(TOPIC, id + "._private", principal, CREATE));
 
         topicAcls.addAll(prefixedAcls(TOPIC, id, principal, IDEMPOTENT_WRITE));
         return topicAcls;

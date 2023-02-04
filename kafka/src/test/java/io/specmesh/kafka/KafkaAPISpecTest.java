@@ -98,7 +98,12 @@ public class KafkaAPISpecTest {
                                 + " name=london.hammersmith.olympia.bigdatalondon,"
                                 + " patternType=PREFIXED),"
                                 + " entry=(principal=User:london.hammersmith.olympia.bigdatalondon,"
-                                + " host=*, operation=WRITE, permissionType=ALLOW))"));
+                                + " host=*, operation=WRITE, permissionType=ALLOW))",
+                        "(pattern=ResourcePattern(resourceType=TOPIC,"
+                                + " name=london.hammersmith.olympia.bigdatalondon._private,"
+                                + " patternType=PREFIXED),"
+                                + " entry=(principal=User:london.hammersmith.olympia.bigdatalondon,"
+                                + " host=*, operation=CREATE, permissionType=ALLOW))"));
     }
 
     @Test

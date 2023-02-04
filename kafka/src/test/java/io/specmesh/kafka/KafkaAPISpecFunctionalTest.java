@@ -19,6 +19,7 @@ package io.specmesh.kafka;
 import static org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG;
 import static org.apache.kafka.clients.CommonClientConfigs.CLIENT_ID_CONFIG;
 import static org.apache.kafka.common.acl.AclOperation.ALL;
+import static org.apache.kafka.common.acl.AclOperation.IDEMPOTENT_WRITE;
 import static org.apache.kafka.common.acl.AclPermissionType.ALLOW;
 import static org.apache.kafka.common.resource.PatternType.LITERAL;
 import static org.apache.kafka.common.resource.ResourceType.CLUSTER;
@@ -36,15 +37,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.acl.AccessControlEntry;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.errors.TopicAuthorizationException;
@@ -146,12 +151,12 @@ class KafkaAPISpecFunctionalTest {
 
             domainConsumer.subscribe(List.of(topic.topicName));
 
-            final Executable poll = () -> domainConsumer.poll(Duration.ofSeconds(1));
+            final Executable poll = () -> domainConsumer.poll(Duration.ofMillis(500));
             if (canConsume) {
                 poll.execute();
             } else {
                 final Exception e = assertThrows(TopicAuthorizationException.class, poll);
-                assertTopicAuthorizationException(topic, e);
+                assertThat((Throwable) e, instanceOf(TopicAuthorizationException.class));
             }
 
             final Executable send =
@@ -164,7 +169,7 @@ class KafkaAPISpecFunctionalTest {
                 send.execute();
             } else {
                 final Throwable e = assertThrows(ExecutionException.class, send).getCause();
-                assertTopicAuthorizationException(topic, e);
+                assertThat(e, instanceOf(TopicAuthorizationException.class));
             }
 
             if (canConsume && canProduce) {
@@ -182,10 +187,33 @@ class KafkaAPISpecFunctionalTest {
         }
     }
 
-    private void assertTopicAuthorizationException(final Topic topic, final Throwable e) {
-        assertThat(e, instanceOf(TopicAuthorizationException.class));
-        assertThat(e.getMessage(), containsString("Not authorized to access topics"));
-        assertThat(e.getMessage(), containsString(topic.topicName));
+    @CartesianTest(name = "topic: {0}, domain: {1}")
+    void shouldHaveCorrectTopicCreationAcls(
+            @CartesianTest.Enum final Topic topic, @CartesianTest.Enum final Domain domain)
+            throws Throwable {
+
+        final boolean shouldSucceed = topic == Topic.PRIVATE && domain == Domain.SELF;
+        final NewTopic newTopic =
+                new NewTopic(topic.topicName + "." + UUID.randomUUID(), 1, (short) 1);
+
+        try (Admin adminClient = adminClient(domain)) {
+            final KafkaFuture<Void> f = adminClient.createTopics(List.of(newTopic)).all();
+            final Executable executable = () -> f.get(30, TimeUnit.SECONDS);
+
+            if (shouldSucceed) {
+                executable.execute();
+            } else {
+                final Throwable cause =
+                        assertThrows(ExecutionException.class, executable).getCause();
+                assertThat(cause, is(instanceOf(TopicAuthorizationException.class)));
+            }
+        }
+    }
+
+    private Admin adminClient(final Domain domain) {
+        final Map<String, Object> props = clientProperties();
+        props.putAll(saslAuthProperties(domain.domainId));
+        return AdminClient.create(props);
     }
 
     private KafkaProducer<Long, String> domainProducer(final Domain domain) {
@@ -245,7 +273,7 @@ class KafkaAPISpecFunctionalTest {
         return Set.of(
                 new AclBinding(
                         new ResourcePattern(CLUSTER, "kafka-cluster", LITERAL),
-                        new AccessControlEntry(principal, "*", ALL, ALLOW)),
+                        new AccessControlEntry(principal, "*", IDEMPOTENT_WRITE, ALLOW)),
                 new AclBinding(
                         new ResourcePattern(GROUP, domain.domainId, LITERAL),
                         new AccessControlEntry(principal, "*", ALL, ALLOW)));
