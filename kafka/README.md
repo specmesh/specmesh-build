@@ -15,6 +15,15 @@ making it trivial to trace back the topic name to its owning domain.
 
 ## Authorisation
 
+## Group authorisation
+
+The provisioner will set ACLs to allow the domain to use any consumer group prefixed with the domain id.
+It is recommended that, in most cases, domain services use a consumer group name of `<domain-id>-<service-name>`.
+
+## Transaction id authorisation
+
+The provisioner will set ACLs to allow the domain to use any transaction id prefixed with the domain id. 
+
 ## Topic authorisation
 
 The provisioner will set ACLs to enforce the following topic authorisation:

@@ -22,8 +22,11 @@ import static org.apache.kafka.common.acl.AclOperation.ALL;
 import static org.apache.kafka.common.acl.AclOperation.IDEMPOTENT_WRITE;
 import static org.apache.kafka.common.acl.AclPermissionType.ALLOW;
 import static org.apache.kafka.common.resource.PatternType.LITERAL;
+import static org.apache.kafka.common.resource.PatternType.PREFIXED;
+import static org.apache.kafka.common.resource.Resource.CLUSTER_NAME;
 import static org.apache.kafka.common.resource.ResourceType.CLUSTER;
 import static org.apache.kafka.common.resource.ResourceType.GROUP;
+import static org.apache.kafka.common.resource.ResourceType.TRANSACTIONAL_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -42,12 +45,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.acl.AccessControlEntry;
@@ -149,6 +152,8 @@ class KafkaAPISpecFunctionalTest {
         try (KafkaConsumer<Long, String> domainConsumer = domainConsumer(consumerDomain);
                 KafkaProducer<Long, String> domainProducer = domainProducer(producerDomain)) {
 
+            domainProducer.initTransactions();
+
             domainConsumer.subscribe(List.of(topic.topicName));
 
             final Executable poll = () -> domainConsumer.poll(Duration.ofMillis(500));
@@ -159,6 +164,8 @@ class KafkaAPISpecFunctionalTest {
                 assertThat((Throwable) e, instanceOf(TopicAuthorizationException.class));
             }
 
+            domainProducer.beginTransaction();
+
             final Executable send =
                     () ->
                             domainProducer
@@ -167,9 +174,11 @@ class KafkaAPISpecFunctionalTest {
 
             if (canProduce) {
                 send.execute();
+                domainProducer.commitTransaction();
             } else {
                 final Throwable e = assertThrows(ExecutionException.class, send).getCause();
                 assertThat(e, instanceOf(TopicAuthorizationException.class));
+                domainProducer.abortTransaction();
             }
 
             if (canConsume && canProduce) {
@@ -219,7 +228,8 @@ class KafkaAPISpecFunctionalTest {
     private KafkaProducer<Long, String> domainProducer(final Domain domain) {
         final Map<String, Object> props = clientProperties();
         props.putAll(saslAuthProperties(domain.domainId));
-        props.put(AdminClientConfig.CLIENT_ID_CONFIG, domain.domainId + ".producer");
+        props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
+        props.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, domain.domainId + ".txId");
 
         return new KafkaProducer<>(props, Serdes.Long().serializer(), Serdes.String().serializer());
     }
@@ -229,8 +239,6 @@ class KafkaAPISpecFunctionalTest {
         props.putAll(saslAuthProperties(domain.domainId));
         props.putAll(
                 Map.of(
-                        ConsumerConfig.CLIENT_ID_CONFIG,
-                        domain.domainId + ".consumer",
                         ConsumerConfig.GROUP_ID_CONFIG,
                         domain.domainId,
                         ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
@@ -272,10 +280,13 @@ class KafkaAPISpecFunctionalTest {
         final String principal = "User:" + domain.domainId;
         return Set.of(
                 new AclBinding(
-                        new ResourcePattern(CLUSTER, "kafka-cluster", LITERAL),
+                        new ResourcePattern(CLUSTER, CLUSTER_NAME, LITERAL),
                         new AccessControlEntry(principal, "*", IDEMPOTENT_WRITE, ALLOW)),
                 new AclBinding(
                         new ResourcePattern(GROUP, domain.domainId, LITERAL),
+                        new AccessControlEntry(principal, "*", ALL, ALLOW)),
+                new AclBinding(
+                        new ResourcePattern(TRANSACTIONAL_ID, domain.domainId, PREFIXED),
                         new AccessControlEntry(principal, "*", ALL, ALLOW)));
     }
 }

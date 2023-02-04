@@ -22,8 +22,11 @@ import static org.apache.kafka.common.acl.AclOperation.DESCRIBE;
 import static org.apache.kafka.common.acl.AclOperation.IDEMPOTENT_WRITE;
 import static org.apache.kafka.common.acl.AclOperation.READ;
 import static org.apache.kafka.common.acl.AclOperation.WRITE;
+import static org.apache.kafka.common.resource.Resource.CLUSTER_NAME;
+import static org.apache.kafka.common.resource.ResourceType.CLUSTER;
 import static org.apache.kafka.common.resource.ResourceType.GROUP;
 import static org.apache.kafka.common.resource.ResourceType.TOPIC;
+import static org.apache.kafka.common.resource.ResourceType.TRANSACTIONAL_ID;
 
 import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.apiparser.model.SchemaInfo;
@@ -101,10 +104,11 @@ public class KafkaApiSpec {
 
         final List<AclBinding> topicAcls = new ArrayList<>();
         topicAcls.addAll(ownTopicAcls());
+        topicAcls.addAll(ownTransactionIdsAcls());
         topicAcls.addAll(publicTopicAcls());
         topicAcls.addAll(protectedTopicAcls());
         topicAcls.addAll(privateTopicAcls());
-        topicAcls.addAll(prefixedAcls(TOPIC, id(), principal(), IDEMPOTENT_WRITE));
+        topicAcls.addAll(prefixedAcls(CLUSTER, CLUSTER_NAME, principal(), IDEMPOTENT_WRITE));
         return topicAcls;
     }
 
@@ -119,6 +123,7 @@ public class KafkaApiSpec {
      *   <li>The spec's domain to be able to create ad-hoc private topics
      *   <li>The spec's domain to produce and consume its topics
      *   <li>The spec's domain to use its own consumer groups
+     *   <li>The spec's domain to use its own transaction ids
      * </ul>
      *
      * @return returns the set of required acls.
@@ -196,6 +201,10 @@ public class KafkaApiSpec {
 
     private Set<AclBinding> ownTopicAcls() {
         return prefixedAcls(TOPIC, id(), principal(), DESCRIBE, READ, WRITE);
+    }
+
+    private Set<AclBinding> ownTransactionIdsAcls() {
+        return prefixedAcls(TRANSACTIONAL_ID, id(), principal(), DESCRIBE, WRITE);
     }
 
     private Set<AclBinding> publicTopicAcls() {
