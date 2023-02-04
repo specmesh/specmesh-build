@@ -2,6 +2,17 @@
 
 Extends SpecMesh with the concept of public, protected and public topics.
 
+## Topic structure
+
+Topic names in the spec come under the `channel` section. Their names either:
+
+ * start with `_public`, `_protected` or `_private` for topics _owned_ by the domain, or
+ * are the fully qualified topic name of some other (domain's) topic.
+ 
+For topic's owned by the domain, their full topic name is that used in the spec, prefixed with the spec's domain id, 
+i.e. `<domain-id>.<channel-name>`.  In this way, all topics owned by the domain and also prefixed by the domain name,
+making it trivial to trace back the topic name to its owning domain. 
+
 ## Authorisation
 
 ## Topic authorisation
