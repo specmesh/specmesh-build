@@ -46,10 +46,12 @@ import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.KafkaFuture;
@@ -57,7 +59,10 @@ import org.apache.kafka.common.acl.AccessControlEntry;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.errors.TopicAuthorizationException;
 import org.apache.kafka.common.resource.ResourcePattern;
-import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.serialization.LongDeserializer;
+import org.apache.kafka.common.serialization.LongSerializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -149,8 +154,8 @@ class KafkaAPISpecFunctionalTest {
         final boolean canConsume = canConsume(topic, consumerDomain);
         final boolean canProduce = canProduce(producerDomain);
 
-        try (KafkaConsumer<Long, String> domainConsumer = domainConsumer(consumerDomain);
-                KafkaProducer<Long, String> domainProducer = domainProducer(producerDomain)) {
+        try (Consumer<Long, String> domainConsumer = domainConsumer(consumerDomain);
+                Producer<Long, String> domainProducer = domainProducer(producerDomain)) {
 
             domainProducer.initTransactions();
 
@@ -225,16 +230,16 @@ class KafkaAPISpecFunctionalTest {
         return AdminClient.create(props);
     }
 
-    private KafkaProducer<Long, String> domainProducer(final Domain domain) {
+    private Producer<Long, String> domainProducer(final Domain domain) {
         final Map<String, Object> props = clientProperties();
         props.putAll(saslAuthProperties(domain.domainId));
         props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
         props.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, domain.domainId + ".txId");
 
-        return new KafkaProducer<>(props, Serdes.Long().serializer(), Serdes.String().serializer());
+        return new KafkaProducer<>(props, new LongSerializer(), new StringSerializer());
     }
 
-    private KafkaConsumer<Long, String> domainConsumer(final Domain domain) {
+    private Consumer<Long, String> domainConsumer(final Domain domain) {
         final Map<String, Object> props = clientProperties();
         props.putAll(saslAuthProperties(domain.domainId));
         props.putAll(
@@ -244,8 +249,7 @@ class KafkaAPISpecFunctionalTest {
                         ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
                         "latest"));
 
-        return new KafkaConsumer<>(
-                props, Serdes.Long().deserializer(), Serdes.String().deserializer());
+        return new KafkaConsumer<>(props, new LongDeserializer(), new StringDeserializer());
     }
 
     private static Map<String, Object> clientProperties() {

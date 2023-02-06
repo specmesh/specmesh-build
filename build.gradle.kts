@@ -161,13 +161,13 @@ subprojects {
     spotbugs {
         tasks.spotbugsMain {
             reports.create("html") {
-                isEnabled = true
+                required.set(true)
                 setStylesheet("fancy-hist.xsl")
             }
         }
         tasks.spotbugsTest {
             reports.create("html") {
-                isEnabled = true
+                required.set(true)
                 setStylesheet("fancy-hist.xsl")
             }
         }
