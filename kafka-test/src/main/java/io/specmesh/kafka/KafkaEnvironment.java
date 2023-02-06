@@ -16,7 +16,6 @@
 
 package io.specmesh.kafka;
 
-
 import org.apache.kafka.clients.admin.Admin;
 
 /**

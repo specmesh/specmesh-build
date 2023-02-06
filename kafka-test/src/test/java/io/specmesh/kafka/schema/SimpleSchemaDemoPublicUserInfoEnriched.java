@@ -19,7 +19,6 @@
 
 package io.specmesh.kafka.schema;
 
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 @SuppressWarnings("all")

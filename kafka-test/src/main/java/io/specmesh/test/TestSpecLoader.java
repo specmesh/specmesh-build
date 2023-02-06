@@ -16,7 +16,6 @@
 
 package io.specmesh.test;
 
-
 import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.kafka.KafkaApiSpec;
 import java.io.IOException;
