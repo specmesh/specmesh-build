@@ -18,13 +18,14 @@ package io.specmesh.kafka;
 
 
 import org.apache.kafka.clients.admin.Admin;
+import org.junit.jupiter.api.extension.Extension;
 
 /**
  * A Kafka environment.
  *
  * <p>Consisting of a single Kafka cluster, and the associated Schema Registry.
  */
-public interface KafkaEnvironment {
+public interface KafkaEnvironment extends Extension {
 
     /**
      * @return Connection string for connecting to the Kafka cluster.
