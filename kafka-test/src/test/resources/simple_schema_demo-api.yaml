@@ -91,7 +91,7 @@ channels:
         schemaFormat: "application/json;version=1.9.0"
         contentType: "application/json"
         payload:
-          $ref: "/schema/simple.schema_demo._public.user_info.proto"
+          $ref: "/simple.schema_demo._public.user_info.proto"
   # PRODUCER/OWNER build pipe will publish schema to SR
   _public/user_info_enriched:
     # publish bindings to instruct topic configuration per environment
@@ -116,7 +116,7 @@ channels:
         schemaFormat: "application/json;version=1.9.0"
         contentType: "application/json"
         payload:
-          $ref: "/schema/simple.schema_demo._public.user_info_enriched.proto"
+          $ref: "/simple.schema_demo._public.user_info_enriched.proto"
 # SUBSCRIBER WILL REQUEST SCHEMA from SR and CodeGen required classes. Header will be used for Id
   /london/hammersmith/transport/_public/tube:
     subscribe:

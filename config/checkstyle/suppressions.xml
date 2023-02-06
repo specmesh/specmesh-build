@@ -24,4 +24,6 @@
  SUPPRESSION COMMENTS OR @SuppressWarnings(..)
 -->
 <suppressions>
+    <!-- Exclude generated sources   -->
+    <suppress files="[\\/]build[\\/]generated[\\/]source" checks=".*"/>
 </suppressions>
