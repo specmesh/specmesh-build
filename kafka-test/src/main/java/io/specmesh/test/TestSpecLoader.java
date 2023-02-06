@@ -18,7 +18,9 @@ package io.specmesh.test;
 
 import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.kafka.KafkaApiSpec;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 
 /** Util class for use in tests to load ApiSpecs. */
 public final class TestSpecLoader {
@@ -43,11 +45,13 @@ public final class TestSpecLoader {
      * @return returns the loaded spec.
      */
     public static KafkaApiSpec loadFromClassPath(final String spec, final ClassLoader classLoader) {
-        try {
-            return new KafkaApiSpec(
-                    new AsyncApiParser().loadResource(classLoader.getResourceAsStream(spec)));
+        try (InputStream s = classLoader.getResourceAsStream(spec)) {
+            if (s == null) {
+                throw new FileNotFoundException("Resource not found: " + spec);
+            }
+            return new KafkaApiSpec(new AsyncApiParser().loadResource(s));
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load api spec", e);
+            throw new RuntimeException("Failed to load api spec: " + spec, e);
         }
     }
 }

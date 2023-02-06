@@ -17,15 +17,20 @@
 package io.specmesh.kafka;
 
 import static java.util.Objects.requireNonNull;
+import static org.apache.kafka.common.acl.AclOperation.CREATE;
 import static org.apache.kafka.common.acl.AclOperation.DESCRIBE;
 import static org.apache.kafka.common.acl.AclOperation.IDEMPOTENT_WRITE;
 import static org.apache.kafka.common.acl.AclOperation.READ;
 import static org.apache.kafka.common.acl.AclOperation.WRITE;
+import static org.apache.kafka.common.resource.Resource.CLUSTER_NAME;
+import static org.apache.kafka.common.resource.ResourceType.CLUSTER;
 import static org.apache.kafka.common.resource.ResourceType.GROUP;
 import static org.apache.kafka.common.resource.ResourceType.TOPIC;
+import static org.apache.kafka.common.resource.ResourceType.TRANSACTIONAL_ID;
 
 import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.apiparser.model.SchemaInfo;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -43,6 +48,9 @@ import org.apache.kafka.common.resource.ResourceType;
 
 /** Kafka entity mappings from the AsyncAPISpec */
 public class KafkaApiSpec {
+
+    private static final String GRANT_ACCESS_TAG = "grant-access:";
+
     private final ApiSpec apiSpec;
 
     /**
@@ -72,7 +80,7 @@ public class KafkaApiSpec {
      */
     public List<NewTopic> listDomainOwnedTopics() {
         return apiSpec.channels().entrySet().stream()
-                .filter(e -> e.getKey().startsWith(apiSpec.id()))
+                .filter(e -> e.getKey().startsWith(id()))
                 .map(
                         e ->
                                 new NewTopic(
@@ -81,24 +89,6 @@ public class KafkaApiSpec {
                                                 (short) e.getValue().bindings().kafka().replicas())
                                         .configs(e.getValue().bindings().kafka().configs()))
                 .collect(Collectors.toList());
-    }
-
-    private void validateTopicConfig() {
-        final String id = apiSpec.id();
-        apiSpec.channels()
-                .forEach(
-                        (k, v) -> {
-                            if (k.startsWith(id)
-                                    && v.publish() != null
-                                    && (v.bindings() == null || v.bindings().kafka() == null)) {
-                                throw new IllegalStateException(
-                                        "Kafka bindings are missing from channel: ["
-                                                + k
-                                                + "] Domain owner: ["
-                                                + id
-                                                + "]");
-                            }
-                        });
     }
 
     /**
@@ -112,73 +102,35 @@ public class KafkaApiSpec {
     public List<AclBinding> listACLsForDomainOwnedTopics() {
         validateTopicConfig();
 
-        final String id = apiSpec.id();
-        final String principal = formatPrincipal(apiSpec.id());
-
-        final List<AclBinding> topicAcls =
-                apiSpec.channels().entrySet().stream()
-                        .filter(
-                                e ->
-                                        e.getKey().startsWith(id + "._protected.")
-                                                && e.getValue()
-                                                        .publish()
-                                                        .tags()
-                                                        .toString()
-                                                        .contains("grant-access:"))
-                        .flatMap(
-                                v ->
-                                        v.getValue().publish().tags().stream()
-                                                .filter(
-                                                        tag ->
-                                                                tag.name()
-                                                                        .startsWith(
-                                                                                "grant-access:"))
-                                                .map(
-                                                        tag ->
-                                                                tag.name()
-                                                                        .substring(
-                                                                                "grant-access:"
-                                                                                        .length()))
-                                                .map(
-                                                        user ->
-                                                                literalAcls(
-                                                                        TOPIC,
-                                                                        v.getKey(),
-                                                                        formatPrincipal(user),
-                                                                        DESCRIBE,
-                                                                        READ))
-                                                .flatMap(Collection::stream))
-                        .collect(Collectors.toList());
-
-        // Unrestricted access to all for public topics:
-        topicAcls.addAll(prefixedAcls(TOPIC, id + "._public", "User:*", DESCRIBE, READ));
-        // Produce & consume owned topics:
-        topicAcls.addAll(prefixedAcls(TOPIC, id, principal, DESCRIBE, READ, WRITE));
-
-        topicAcls.addAll(prefixedAcls(TOPIC, id, principal, IDEMPOTENT_WRITE));
+        final List<AclBinding> topicAcls = new ArrayList<>();
+        topicAcls.addAll(ownTopicAcls());
+        topicAcls.addAll(ownTransactionIdsAcls());
+        topicAcls.addAll(publicTopicAcls());
+        topicAcls.addAll(protectedTopicAcls());
+        topicAcls.addAll(privateTopicAcls());
+        topicAcls.addAll(prefixedAcls(CLUSTER, CLUSTER_NAME, principal(), IDEMPOTENT_WRITE));
         return topicAcls;
     }
 
     /**
-     * Get the set of required ACLs.
+     * Get the set of required ACLs for this domain spec.
      *
-     * <p>This includes ACLs for:
+     * <p>This includes {@code ALLOW} ACLs for:
      *
      * <ul>
-     *   <li>Acls for everyone to consume the spec's public topics
-     *   <li>Acls for configured domains to consume the spec's protected topics
-     *   <li>Acls for the spec's domain to produce and consume its topics
-     *   <li>Acls for the spec's domain to use its consumer groups
+     *   <li>Everyone to consume the spec's public topics
+     *   <li>Specifically configured domains to consume the spec's protected topics
+     *   <li>The spec's domain to be able to create ad-hoc private topics
+     *   <li>The spec's domain to produce and consume its topics
+     *   <li>The spec's domain to use its own consumer groups
+     *   <li>The spec's domain to use its own transaction ids
      * </ul>
      *
      * @return returns the set of required acls.
      */
     public Set<AclBinding> requiredAcls() {
-        final String id = apiSpec.id();
-        final String principal = formatPrincipal(apiSpec.id());
-
         final Set<AclBinding> acls = new HashSet<>();
-        acls.addAll(prefixedAcls(GROUP, id, principal, READ));
+        acls.addAll(ownGroupAcls());
         acls.addAll(listACLsForDomainOwnedTopics());
         return acls;
     }
@@ -194,10 +146,7 @@ public class KafkaApiSpec {
         myTopics.stream()
                 .filter(topic -> topic.name().equals(topicName))
                 .findFirst()
-                .orElseThrow(
-                        () ->
-                                new IllegalArgumentException(
-                                        "Could not find 'owned' topic for:" + topicName));
+                .orElseThrow(() -> new IllegalArgumentException("Not a domain topic:" + topicName));
 
         return apiSpec.channels().get(topicName).publish().schemaInfo();
     }
@@ -222,6 +171,69 @@ public class KafkaApiSpec {
      */
     public static String formatPrincipal(final String domainIdAsUsername) {
         return "User:" + domainIdAsUsername;
+    }
+
+    private void validateTopicConfig() {
+        apiSpec.channels()
+                .forEach(
+                        (name, channel) -> {
+                            if (name.startsWith(id())
+                                    && channel.publish() != null
+                                    && (channel.bindings() == null
+                                            || channel.bindings().kafka() == null)) {
+                                throw new IllegalStateException(
+                                        "Kafka bindings are missing from channel: ["
+                                                + name
+                                                + "] Domain owner: ["
+                                                + id()
+                                                + "]");
+                            }
+                        });
+    }
+
+    private String principal() {
+        return formatPrincipal(id());
+    }
+
+    private Set<AclBinding> ownGroupAcls() {
+        return prefixedAcls(GROUP, id(), principal(), READ);
+    }
+
+    private Set<AclBinding> ownTopicAcls() {
+        return prefixedAcls(TOPIC, id(), principal(), DESCRIBE, READ, WRITE);
+    }
+
+    private Set<AclBinding> ownTransactionIdsAcls() {
+        return prefixedAcls(TRANSACTIONAL_ID, id(), principal(), DESCRIBE, WRITE);
+    }
+
+    private Set<AclBinding> publicTopicAcls() {
+        return prefixedAcls(TOPIC, id() + "._public", "User:*", DESCRIBE, READ);
+    }
+
+    private List<AclBinding> protectedTopicAcls() {
+        return apiSpec.channels().entrySet().stream()
+                .filter(e -> e.getKey().startsWith(id() + "._protected."))
+                .filter(e -> e.getValue().publish().tags().toString().contains(GRANT_ACCESS_TAG))
+                .flatMap(
+                        e ->
+                                e.getValue().publish().tags().stream()
+                                        .filter(tag -> tag.name().startsWith(GRANT_ACCESS_TAG))
+                                        .map(tag -> tag.name().substring(GRANT_ACCESS_TAG.length()))
+                                        .map(
+                                                user ->
+                                                        literalAcls(
+                                                                TOPIC,
+                                                                e.getKey(),
+                                                                formatPrincipal(user),
+                                                                DESCRIBE,
+                                                                READ))
+                                        .flatMap(Collection::stream))
+                .collect(Collectors.toList());
+    }
+
+    private Set<AclBinding> privateTopicAcls() {
+        return prefixedAcls(TOPIC, id() + "._private", principal(), CREATE);
     }
 
     private static Set<AclBinding> literalAcls(

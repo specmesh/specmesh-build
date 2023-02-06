@@ -19,10 +19,14 @@ package io.specmesh.kafka;
 import static org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG;
 import static org.apache.kafka.clients.CommonClientConfigs.CLIENT_ID_CONFIG;
 import static org.apache.kafka.common.acl.AclOperation.ALL;
+import static org.apache.kafka.common.acl.AclOperation.IDEMPOTENT_WRITE;
 import static org.apache.kafka.common.acl.AclPermissionType.ALLOW;
 import static org.apache.kafka.common.resource.PatternType.LITERAL;
+import static org.apache.kafka.common.resource.PatternType.PREFIXED;
+import static org.apache.kafka.common.resource.Resource.CLUSTER_NAME;
 import static org.apache.kafka.common.resource.ResourceType.CLUSTER;
 import static org.apache.kafka.common.resource.ResourceType.GROUP;
+import static org.apache.kafka.common.resource.ResourceType.TRANSACTIONAL_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -36,20 +40,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.admin.Admin;
-import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.acl.AccessControlEntry;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.errors.TopicAuthorizationException;
 import org.apache.kafka.common.resource.ResourcePattern;
-import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.serialization.LongDeserializer;
+import org.apache.kafka.common.serialization.LongSerializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -141,18 +154,22 @@ class KafkaAPISpecFunctionalTest {
         final boolean canConsume = canConsume(topic, consumerDomain);
         final boolean canProduce = canProduce(producerDomain);
 
-        try (KafkaConsumer<Long, String> domainConsumer = domainConsumer(consumerDomain);
-                KafkaProducer<Long, String> domainProducer = domainProducer(producerDomain)) {
+        try (Consumer<Long, String> domainConsumer = domainConsumer(consumerDomain);
+                Producer<Long, String> domainProducer = domainProducer(producerDomain)) {
+
+            domainProducer.initTransactions();
 
             domainConsumer.subscribe(List.of(topic.topicName));
 
-            final Executable poll = () -> domainConsumer.poll(Duration.ofSeconds(1));
+            final Executable poll = () -> domainConsumer.poll(Duration.ofMillis(500));
             if (canConsume) {
                 poll.execute();
             } else {
                 final Exception e = assertThrows(TopicAuthorizationException.class, poll);
-                assertTopicAuthorizationException(topic, e);
+                assertThat((Throwable) e, instanceOf(TopicAuthorizationException.class));
             }
+
+            domainProducer.beginTransaction();
 
             final Executable send =
                     () ->
@@ -162,9 +179,11 @@ class KafkaAPISpecFunctionalTest {
 
             if (canProduce) {
                 send.execute();
+                domainProducer.commitTransaction();
             } else {
                 final Throwable e = assertThrows(ExecutionException.class, send).getCause();
-                assertTopicAuthorizationException(topic, e);
+                assertThat(e, instanceOf(TopicAuthorizationException.class));
+                domainProducer.abortTransaction();
             }
 
             if (canConsume && canProduce) {
@@ -182,34 +201,55 @@ class KafkaAPISpecFunctionalTest {
         }
     }
 
-    private void assertTopicAuthorizationException(final Topic topic, final Throwable e) {
-        assertThat(e, instanceOf(TopicAuthorizationException.class));
-        assertThat(e.getMessage(), containsString("Not authorized to access topics"));
-        assertThat(e.getMessage(), containsString(topic.topicName));
+    @CartesianTest(name = "topic: {0}, domain: {1}")
+    void shouldHaveCorrectTopicCreationAcls(
+            @CartesianTest.Enum final Topic topic, @CartesianTest.Enum final Domain domain)
+            throws Throwable {
+
+        final boolean shouldSucceed = topic == Topic.PRIVATE && domain == Domain.SELF;
+        final NewTopic newTopic =
+                new NewTopic(topic.topicName + "." + UUID.randomUUID(), 1, (short) 1);
+
+        try (Admin adminClient = adminClient(domain)) {
+            final KafkaFuture<Void> f = adminClient.createTopics(List.of(newTopic)).all();
+            final Executable executable = () -> f.get(30, TimeUnit.SECONDS);
+
+            if (shouldSucceed) {
+                executable.execute();
+            } else {
+                final Throwable cause =
+                        assertThrows(ExecutionException.class, executable).getCause();
+                assertThat(cause, is(instanceOf(TopicAuthorizationException.class)));
+            }
+        }
     }
 
-    private KafkaProducer<Long, String> domainProducer(final Domain domain) {
+    private Admin adminClient(final Domain domain) {
         final Map<String, Object> props = clientProperties();
         props.putAll(saslAuthProperties(domain.domainId));
-        props.put(AdminClientConfig.CLIENT_ID_CONFIG, domain.domainId + ".producer");
-
-        return new KafkaProducer<>(props, Serdes.Long().serializer(), Serdes.String().serializer());
+        return AdminClient.create(props);
     }
 
-    private KafkaConsumer<Long, String> domainConsumer(final Domain domain) {
+    private Producer<Long, String> domainProducer(final Domain domain) {
+        final Map<String, Object> props = clientProperties();
+        props.putAll(saslAuthProperties(domain.domainId));
+        props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
+        props.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, domain.domainId + ".txId");
+
+        return new KafkaProducer<>(props, new LongSerializer(), new StringSerializer());
+    }
+
+    private Consumer<Long, String> domainConsumer(final Domain domain) {
         final Map<String, Object> props = clientProperties();
         props.putAll(saslAuthProperties(domain.domainId));
         props.putAll(
                 Map.of(
-                        ConsumerConfig.CLIENT_ID_CONFIG,
-                        domain.domainId + ".consumer",
                         ConsumerConfig.GROUP_ID_CONFIG,
                         domain.domainId,
                         ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
                         "latest"));
 
-        return new KafkaConsumer<>(
-                props, Serdes.Long().deserializer(), Serdes.String().deserializer());
+        return new KafkaConsumer<>(props, new LongDeserializer(), new StringDeserializer());
     }
 
     private static Map<String, Object> clientProperties() {
@@ -244,10 +284,13 @@ class KafkaAPISpecFunctionalTest {
         final String principal = "User:" + domain.domainId;
         return Set.of(
                 new AclBinding(
-                        new ResourcePattern(CLUSTER, "kafka-cluster", LITERAL),
-                        new AccessControlEntry(principal, "*", ALL, ALLOW)),
+                        new ResourcePattern(CLUSTER, CLUSTER_NAME, LITERAL),
+                        new AccessControlEntry(principal, "*", IDEMPOTENT_WRITE, ALLOW)),
                 new AclBinding(
                         new ResourcePattern(GROUP, domain.domainId, LITERAL),
+                        new AccessControlEntry(principal, "*", ALL, ALLOW)),
+                new AclBinding(
+                        new ResourcePattern(TRANSACTIONAL_ID, domain.domainId, PREFIXED),
                         new AccessControlEntry(principal, "*", ALL, ALLOW)));
     }
 }
