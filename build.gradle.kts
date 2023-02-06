@@ -77,7 +77,7 @@ subprojects {
         set("log4jVersion", "2.18.0")
         set("classGraphVersion", "4.8.21")
         set("testcontainersVersion", "1.17.6")
-        set("lombokVersion", "1.18.24")
+        set("lombokVersion", "1.18.26")
     }
 
     val junitVersion: String by extra
