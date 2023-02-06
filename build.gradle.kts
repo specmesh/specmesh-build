@@ -62,12 +62,13 @@ subprojects {
     }
 
     extra.apply {
-        set("kafkaVersion", "3.3.1")
+        set("kafkaVersion", "3.3.2")
         set("openTracingVersion", "0.33.0")
         set("observabilityVersion", "1.1.8")
         set("guavaVersion", "31.1-jre")
         set("confluentVersion", "7.3.1")
         set("jacksonVersion", "2.14.2")
+        set("protobufVersion", "3.21.12")
         set("medeiaValidatorVersion", "1.1.0")
         set("junitVersion", "5.9.2")
         set("mockitoVersion", "5.1.1")
@@ -139,6 +140,7 @@ subprojects {
             removeUnusedImports()
             trimTrailingWhitespace()
             endWithNewline()
+            targetExclude("**/build/generated/source*/**/*.*")
         }
     }
 
@@ -159,6 +161,8 @@ subprojects {
     }
 
     spotbugs {
+        excludeFilter.set(rootProject.file("config/spotbugs/suppressions.xml"))
+
         tasks.spotbugsMain {
             reports.create("html") {
                 required.set(true)

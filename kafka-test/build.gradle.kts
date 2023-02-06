@@ -16,23 +16,26 @@
 
 plugins {
     `java-library`
+    id("com.google.protobuf") version "0.9.2"
 }
 
 val testcontainersVersion : String by extra
 val lombokVersion : String by extra
 val junitVersion : String by extra
+val protobufVersion : String by extra
 
 dependencies {
     implementation(project(":parser"))
     implementation(project(":kafka"))
     implementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
+    implementation("org.testcontainers:testcontainers:$testcontainersVersion")
+    implementation("org.testcontainers:kafka:$testcontainersVersion")
 
     compileOnly("org.projectlombok:lombok:$lombokVersion")
     annotationProcessor("org.projectlombok:lombok:$lombokVersion")
     testCompileOnly("org.projectlombok:lombok:$lombokVersion")
     testAnnotationProcessor("org.projectlombok:lombok:$lombokVersion")
 
-    implementation("org.testcontainers:testcontainers:$testcontainersVersion")
-    implementation("org.testcontainers:kafka:$testcontainersVersion")
+    testImplementation("com.google.protobuf:protobuf-java:$protobufVersion")
     testImplementation("org.testcontainers:junit-jupiter:$testcontainersVersion")
 }

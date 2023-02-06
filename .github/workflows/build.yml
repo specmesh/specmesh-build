@@ -37,6 +37,8 @@ jobs:
           java-version: 17
           distribution: 'temurin'
           cache: gradle
+      - name: Install Protoc
+        run: sudo apt install protobuf-compiler
       - name: Build
         run: ./gradlew build
       - name: Publish
