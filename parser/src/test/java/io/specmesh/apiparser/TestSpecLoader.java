@@ -16,7 +16,6 @@
 
 package io.specmesh.apiparser;
 
-
 import io.specmesh.apiparser.model.ApiSpec;
 import java.io.FileNotFoundException;
 import java.io.IOException;

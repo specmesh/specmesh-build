@@ -16,7 +16,6 @@
 
 package io.specmesh.kafka;
 
-
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroSerializerConfig;
 import java.util.HashMap;

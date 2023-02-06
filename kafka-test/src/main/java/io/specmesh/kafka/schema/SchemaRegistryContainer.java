@@ -16,7 +16,6 @@
 
 package io.specmesh.kafka.schema;
 
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import org.testcontainers.containers.GenericContainer;

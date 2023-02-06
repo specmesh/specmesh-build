@@ -16,7 +16,6 @@
 
 package io.specmesh.apiparser.model;
 
-
 import lombok.Value;
 import lombok.experimental.Accessors;
 
