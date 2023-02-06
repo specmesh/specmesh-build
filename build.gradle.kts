@@ -46,13 +46,10 @@ subprojects {
     apply(plugin = "signing")
 
     repositories {
-        google()
         mavenCentral()
         maven {
             url = uri("https://packages.confluent.io/maven/")
-        }
-        maven {
-            url = uri("https://repository.mulesoft.org/nexus/content/repositories/public/")
+            group = "io.confluent"
         }
     }
 
