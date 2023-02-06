@@ -1,7 +1,6 @@
-<?xml version="1.0"?>
-
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2023 SpecMesh Contributors (https://github.com/specmesh)
+  ~ Copyright 2023 SpecMesh Contributors (https://github.com/creek-service)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -16,14 +15,13 @@
   ~ limitations under the License.
   -->
 
-<!DOCTYPE suppressions PUBLIC
-        "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
-        "https://checkstyle.org/dtds/suppressions_1_2.dtd">
-<!--
- THIS SHOULD ONLY BE USED FOR CHECKS THAT CAN'T BE TURNED OFF WITH
- SUPPRESSION COMMENTS OR @SuppressWarnings(..)
--->
-<suppressions>
-    <!-- Exclude generated sources   -->
-    <suppress files="[\\/]build[\\/]generated[\\/]source" checks=".*"/>
-</suppressions>
+<FindBugsFilter>
+    <!--
+     THIS SHOULD ONLY BE USED FOR CHECKS THAT CAN'T BE TURNED OFF WITH
+     SUPPRESSION COMMENTS OR @SuppressFBWarnings(..)
+    -->
+    <Match>
+        <!-- Exclude generated sources   -->
+        <Source name="~.*[\\/]build[\\/]generated[\\/]source.*" />
+    </Match>
+</FindBugsFilter>

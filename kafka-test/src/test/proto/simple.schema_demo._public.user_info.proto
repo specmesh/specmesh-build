@@ -6,4 +6,4 @@ message UserInfo {
   string fullName = 1;
   string email = 2;
   int32 age = 3;
-  }
+}
