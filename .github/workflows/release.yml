@@ -34,7 +34,7 @@ jobs:
       - name: Release
         run: |
           # The following command will trigger the build.yml workflow as it pushes a release tag
-          ./gradlew release 
+          ./gradlew release --stacktrace 
       - name: Capture version info
         run: |
           echo "Release version: $(./gradlew cV -q -Prelease.quiet)" >> $GITHUB_STEP_SUMMARY
