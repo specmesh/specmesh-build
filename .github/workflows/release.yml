@@ -27,6 +27,8 @@ jobs:
           java-version: '16'
           distribution: 'adopt'
           cache: gradle
+      - name: Install Protoc
+        run: sudo apt install protobuf-compiler
       - name: Ensure build is green
         run: ./gradlew build
       - name: Release
