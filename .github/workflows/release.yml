@@ -34,5 +34,4 @@ jobs:
       - name: Release
         run: |
           # The following command will trigger the build.yml workflow as it pushes a release tag
-          ./gradlew release --stacktrace --debug
-
+          ./gradlew release --stacktrace
