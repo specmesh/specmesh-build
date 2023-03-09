@@ -19,9 +19,9 @@ plugins {
     `maven-publish`
     signing
     id("com.github.spotbugs") version "5.0.13"
-    id("com.diffplug.spotless") version "6.14.1"
-    id("pl.allegro.tech.build.axion-release") version "1.14.3"
-    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
+    id("com.diffplug.spotless") version "6.16.0"
+    id("pl.allegro.tech.build.axion-release") version "1.14.4"
+    id("io.github.gradle-nexus.publish-plugin") version "1.2.0"
 }
 
 project.version = scmVersion.version
@@ -66,9 +66,9 @@ subprojects {
         set("openTracingVersion", "0.33.0")
         set("observabilityVersion", "1.1.8")
         set("guavaVersion", "31.1-jre")
-        set("confluentVersion", "7.3.1")
+        set("confluentVersion", "7.3.2")
         set("jacksonVersion", "2.14.2")
-        set("protobufVersion", "3.21.12")
+        set("protobufVersion", "3.22.0")
         set("medeiaValidatorVersion", "1.1.0")
         set("junitVersion", "5.9.2")
         set("mockitoVersion", "5.1.1")
