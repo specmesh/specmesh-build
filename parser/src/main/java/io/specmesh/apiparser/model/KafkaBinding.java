@@ -19,16 +19,15 @@ package io.specmesh.apiparser.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 /*
  * Note: Lombok has a Value/Defaults bug which means we have messy accessors to
@@ -69,12 +68,12 @@ public class KafkaBinding {
 
     @JsonProperty private String bindingVersion;
 
-
     /**
      * @return configs
      */
     public Map<String, String> configs() {
-        final Map<String, String> results = new LinkedHashMap<>(configs == null ? Collections.emptyMap() : configs);
+        final Map<String, String> results =
+                new LinkedHashMap<>(configs == null ? Collections.emptyMap() : configs);
 
         if (!results.containsKey(RETENTION_MS) && retention != 0) {
             results.put("retention.ms", String.valueOf(retention * DAYS_TO_MS));

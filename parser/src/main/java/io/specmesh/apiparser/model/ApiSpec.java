@@ -29,7 +29,6 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 /** Pojo representing the api spec */
-
 @Builder
 @Data
 @Accessors(fluent = true)
