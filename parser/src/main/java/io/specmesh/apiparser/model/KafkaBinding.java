@@ -23,7 +23,12 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
@@ -35,10 +40,12 @@ import lombok.experimental.Accessors;
  */
 
 /** Pojo representing a Kafka binding */
-@Value
+@Builder
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@NoArgsConstructor(force = true) // , access = AccessLevel.PRIVATE)
 @SuppressFBWarnings
 public class KafkaBinding {
     private static final int DAYS_TO_MS = 24 * 60 * 60 * 1000;
@@ -46,7 +53,7 @@ public class KafkaBinding {
 
     @SuppressWarnings("unchecked")
     @JsonProperty
-    private List<String> envs = Collections.EMPTY_LIST;
+    private List<String> envs;
 
     @JsonProperty private int partitions;
 
@@ -54,7 +61,7 @@ public class KafkaBinding {
 
     @JsonProperty private int retention;
 
-    @JsonProperty private Map<String, String> configs = Collections.emptyMap();
+    @JsonProperty private Map<String, String> configs;
 
     @JsonProperty private String groupId;
 
@@ -64,11 +71,12 @@ public class KafkaBinding {
 
     @JsonProperty private String bindingVersion;
 
+
     /**
      * @return configs
      */
     public Map<String, String> configs() {
-        final Map<String, String> results = new LinkedHashMap<>(configs);
+        final Map<String, String> results = new LinkedHashMap<>(configs == null ? Collections.emptyMap() : configs);
 
         if (!results.containsKey(RETENTION_MS) && retention != 0) {
             results.put("retention.ms", String.valueOf(retention * DAYS_TO_MS));
