@@ -41,12 +41,31 @@ import org.apache.kafka.common.config.ConfigResource;
  */
 public class Exporter {
 
-    public static String exportYaml(final ApiSpec exported) throws JsonProcessingException {
-        return new ObjectMapper(new YAMLFactory()).writeValueAsString(exported);
+    /**
+     * Export the Spec obhect to its yaml representation
+     *
+     * @param exported - the hydrated spec to convert to yaml
+     * @return the asyncapi spec
+     * @throws ExporterException - when json cannot be handled
+     */
+    public static String exportYaml(final ApiSpec exported) throws ExporterException {
+        try {
+            return new ObjectMapper(new YAMLFactory()).writeValueAsString(exported);
+        } catch (JsonProcessingException e) {
+            throw new ExporterException("Failed to convert to YAML", e);
+        }
     }
 
+    /**
+     * Integrrogate a cluster and extract domain-owned/aggregate resourcews
+     *
+     * @param aggregateId - the oomain-owner
+     * @param adminClient - cluster connection
+     * @return the exported spec
+     * @throws ExporterException - when admin client fails
+     */
     public ApiSpec export(final String aggregateId, final Admin adminClient)
-            throws ExecutionException, InterruptedException {
+            throws ExporterException {
         return ApiSpec.builder()
                 .id("urn:" + aggregateId)
                 .version(java.time.LocalDate.now().toString())
@@ -56,31 +75,41 @@ public class Exporter {
     }
 
     private Map<String, Channel> channels(final String aggregateId, final Admin adminClient)
-            throws ExecutionException, InterruptedException {
-        final List<TopicListing> topicListings =
-                adminClient.listTopics().listings().get().stream()
-                        .filter(
-                                listing ->
-                                        !listing.isInternal()
-                                                && listing.name().startsWith(aggregateId))
-                        .collect(Collectors.toList());
-        final Map<String, Config> topicConfigs =
-                adminClient
-                        .describeConfigs(
-                                topicListings.stream()
-                                        .map(
-                                                item ->
-                                                        new ConfigResource(
-                                                                ConfigResource.Type.TOPIC,
-                                                                item.name()))
-                                        .collect(Collectors.toList()))
-                        .all()
-                        .get()
-                        .entrySet()
-                        .stream()
-                        .collect(
-                                Collectors.toMap(
-                                        entry -> entry.getKey().name(), Map.Entry::getValue));
+            throws ExporterException {
+        final List<TopicListing> topicListings;
+        try {
+            topicListings =
+                    adminClient.listTopics().listings().get().stream()
+                            .filter(
+                                    listing ->
+                                            !listing.isInternal()
+                                                    && listing.name().startsWith(aggregateId))
+                            .collect(Collectors.toList());
+        } catch (InterruptedException | ExecutionException e) {
+            throw new ExporterException("Failed to list topics", e);
+        }
+        final Map<String, Config> topicConfigs;
+        try {
+            topicConfigs =
+                    adminClient
+                            .describeConfigs(
+                                    topicListings.stream()
+                                            .map(
+                                                    item ->
+                                                            new ConfigResource(
+                                                                    ConfigResource.Type.TOPIC,
+                                                                    item.name()))
+                                            .collect(Collectors.toList()))
+                            .all()
+                            .get()
+                            .entrySet()
+                            .stream()
+                            .collect(
+                                    Collectors.toMap(
+                                            entry -> entry.getKey().name(), Map.Entry::getValue));
+        } catch (InterruptedException | ExecutionException e) {
+            throw new ExporterException("Failed to describe topic configs", e);
+        }
 
         final Map<String, KafkaFuture<TopicDescription>> topicDescriptions =
                 adminClient
@@ -142,5 +171,12 @@ public class Exporter {
     private Map<String, String> configs(final Config config) {
         return config.entries().stream()
                 .collect(Collectors.toMap(ConfigEntry::name, ConfigEntry::value));
+    }
+
+    /** Thrown when the admin client cannot interact with the cluster */
+    public static class ExporterException extends Exception {
+        ExporterException(final String message, final Exception cause) {
+            super(message, cause);
+        }
     }
 }

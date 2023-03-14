@@ -30,12 +30,10 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.test.TestSpecLoader;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.common.acl.AccessControlEntry;
 import org.apache.kafka.common.acl.AclBinding;
@@ -97,7 +95,7 @@ class ExporterFunctionalTest {
     }
 
     @Test
-    void shouldExportAPIFromCluster() throws ExecutionException, InterruptedException {
+    void shouldExportAPIFromCluster() throws Exporter.ExporterException {
 
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
             final ApiSpec exported = new Exporter().export(aggregateId, adminClient);
@@ -116,8 +114,7 @@ class ExporterFunctionalTest {
     }
 
     @Test
-    void shouldExportYAMLAPIFromCluster()
-            throws ExecutionException, InterruptedException, JsonProcessingException {
+    void shouldExportYAMLAPIFromCluster() throws Exporter.ExporterException {
 
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
