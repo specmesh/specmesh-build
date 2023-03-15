@@ -174,7 +174,7 @@ public class Exporter {
     }
 
     /** Thrown when the admin client cannot interact with the cluster */
-    public static class ExporterException extends Exception {
+    public static class ExporterException extends RuntimeException {
         ExporterException(final String message, final Exception cause) {
             super(message, cause);
         }
