@@ -18,12 +18,11 @@ package io.specmesh.kafka;
 
 import io.specmesh.apiparser.model.ApiSpec;
 
-/**
- * Used to export an APISpec to structured text
- */
+/** Used to export an APISpec to structured text */
 public interface ExporterWriter {
     /**
      * export to structured text
+     *
      * @param apiSpec - to export
      * @return - resultant structured text
      * @throws Exporter.ExporterException - when failing to convert
