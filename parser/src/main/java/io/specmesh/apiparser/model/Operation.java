@@ -19,12 +19,13 @@ package io.specmesh.apiparser.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Value;
 import lombok.experimental.Accessors;
 
 /**
@@ -35,12 +36,14 @@ import lombok.experimental.Accessors;
  * @see <a href=
  *     "https://www.asyncapi.com/docs/reference/specification/v2.4.0#messageTraitObject">messageTraitObject</a>
  */
-@Value
+@Builder
+@Data
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 @SuppressFBWarnings
-@SuppressWarnings({"unchecked", "rawtypes"})
+@SuppressWarnings("rawtypes")
 public class Operation {
     @JsonProperty private String operationId;
 
@@ -48,14 +51,14 @@ public class Operation {
 
     @JsonProperty private String description;
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings("rawtypes")
     @JsonProperty
-    private List<Tag> tags = Collections.EMPTY_LIST;
+    private List<Tag> tags;
 
     @JsonProperty private Bindings bindings;
 
     // https://www.asyncapi.com/docs/reference/specification/v2.4.0#operationTraitObject
-    @JsonProperty private Map traits = Collections.EMPTY_MAP;
+    @JsonProperty private Map traits;
 
     @JsonProperty private Message message;
 
