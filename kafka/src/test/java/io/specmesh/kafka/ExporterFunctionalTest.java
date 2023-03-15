@@ -99,17 +99,10 @@ class ExporterFunctionalTest {
 
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
             final ApiSpec exported = new Exporter().export(aggregateId, adminClient);
-            assertThat(exported.channels(), is(notNullValue()));
-            assertThat(exported.channels().size(), is(3));
-            exported.channels()
-                    .keySet()
-                    .forEach(
-                            c ->
-                                    assertThat(
-                                            "Should natch aggregate level topic prefix",
-                                            c.matches(
-                                                    aggregateId.replace(':', '.')
-                                                            + ".(_public|_private|_protected).*")));
+ assertThat(exported.channels().keySet(), containsInAnyOrder(
+                    "london.hammersmith.olympia.bigdatalondon._protected.retail.subway.food.purchase",
+                    "london.hammersmith.olympia.bigdatalondon._public.attendee",
+                    "london.hammersmith.olympia.bigdatalondon._private.retail.subway.customers"));
         }
     }
 
