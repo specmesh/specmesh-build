@@ -1,0 +1,19 @@
+---
+id: "urn:asyncapi-id"
+version: "version-123"
+asyncapi: null
+channels:
+  one-topic-channel:
+    description: "one-topic-channel-description"
+    bindings:
+      kafka:
+        envs: null
+        partitions: 0
+        replicas: 0
+        configs: null
+        groupId: "kafka-binding-group-id"
+        schemaIdLocation: null
+        schemaLookupStrategy: null
+        bindingVersion: null
+    publish: null
+    subscribe: null

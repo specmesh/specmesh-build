@@ -27,7 +27,6 @@ import static org.apache.kafka.common.resource.ResourceType.GROUP;
 import static org.apache.kafka.common.resource.ResourceType.TRANSACTIONAL_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -36,6 +35,8 @@ import io.specmesh.apiparser.model.Bindings;
 import io.specmesh.apiparser.model.Channel;
 import io.specmesh.apiparser.model.KafkaBinding;
 import io.specmesh.test.TestSpecLoader;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
 import org.apache.kafka.clients.admin.Admin;
@@ -113,7 +114,7 @@ class ExporterFunctionalTest {
     }
 
     @Test
-    void shouldExportYAMLAPIFromCluster() throws Exporter.ExporterException {
+    void shouldExportYAMLAPIFromCluster() throws Exporter.ExporterException, IOException {
 
         final ApiSpec apiSpec =
                 ApiSpec.builder()
@@ -134,13 +135,15 @@ class ExporterFunctionalTest {
                                                                 .build())
                                                 .build()))
                         .build();
-        final String specYaml = Exporter.exportYaml(apiSpec);
-        assertThat(specYaml, is(containsString("id: \"urn:asyncapi-id\"")));
-        assertThat(specYaml, is(containsString("version: \"version-123\"")));
-        assertThat(specYaml, is(containsString("one-topic-channel:")));
-
-        assertThat(specYaml, is(containsString("description: \"one-topic-channel-description\"")));
-        assertThat(specYaml, is(containsString("groupId: \"kafka-binding-group-id\"")));
+        assertThat(
+                Exporter.exportYaml(apiSpec),
+                is(
+                        new String(
+                                ExporterFunctionalTest.class
+                                        .getClassLoader()
+                                        .getResourceAsStream("exporter-expected-spec.yaml")
+                                        .readAllBytes(),
+                                StandardCharsets.UTF_8)));
     }
 
     private static Set<AclBinding> aclsForOtherDomain(final Domain domain) {
