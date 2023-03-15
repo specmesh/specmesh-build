@@ -16,9 +16,6 @@
 
 package io.specmesh.kafka;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.apiparser.model.Bindings;
 import io.specmesh.apiparser.model.Channel;
@@ -46,22 +43,7 @@ public final class Exporter {
     private Exporter() {}
 
     /**
-     * Export the Spec object to its yaml representation
-     *
-     * @param exported - the hydrated spec to convert to yaml
-     * @return the asyncapi spec
-     * @throws ExporterException - when json cannot be handled
-     */
-    public static String exportYaml(final ApiSpec exported) throws ExporterException {
-        try {
-            return new ObjectMapper(new YAMLFactory()).writeValueAsString(exported);
-        } catch (JsonProcessingException e) {
-            throw new ExporterException("Failed to convert to YAML", e);
-        }
-    }
-
-    /**
-     * Integrrogate a cluster and extract domain-owned/aggregate resourcews
+     * Interrogate a cluster and extract domain-owned/aggregate resourcews
      *
      * @param aggregateId - the domain-owner
      * @param adminClient - cluster connection

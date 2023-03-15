@@ -136,7 +136,7 @@ class ExporterFunctionalTest {
                                                 .build()))
                         .build();
         assertThat(
-                Exporter.exportYaml(apiSpec),
+                new ExporterYamlWriter().export(apiSpec),
                 is(
                         new String(
                                 ExporterFunctionalTest.class
