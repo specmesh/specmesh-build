@@ -35,7 +35,7 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 @SuppressFBWarnings
 public class ApiSpec {
     private static final char DELIMITER = System.getProperty("DELIMITER", ".").charAt(0);

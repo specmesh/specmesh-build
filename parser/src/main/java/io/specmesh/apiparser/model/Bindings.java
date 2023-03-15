@@ -29,7 +29,7 @@ import lombok.experimental.Accessors;
 @Builder
 @Data
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Bindings {
