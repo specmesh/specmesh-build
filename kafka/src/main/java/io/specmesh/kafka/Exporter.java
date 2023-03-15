@@ -42,7 +42,7 @@ import org.apache.kafka.common.config.ConfigResource;
 public class Exporter {
 
     /**
-     * Export the Spec obhect to its yaml representation
+     * Export the Spec object to its yaml representation
      *
      * @param exported - the hydrated spec to convert to yaml
      * @return the asyncapi spec
