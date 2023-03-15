@@ -84,10 +84,10 @@ public class AsyncApiParserTest {
 
         final Bindings producerBindings =
                 channelsMap.get("simple.streetlights.public.light.measured").bindings();
-        assertThat(producerBindings.kafka().configs().entrySet(), hasSize(2));
+        assertThat(producerBindings.kafka().configs().entrySet(), hasSize(1));
         assertThat(
                 producerBindings.kafka().configs().keySet(),
-                is(Set.of(TopicConfig.CLEANUP_POLICY_CONFIG, TopicConfig.RETENTION_MS_CONFIG)));
+                is(Set.of(TopicConfig.CLEANUP_POLICY_CONFIG)));
         assertThat(producerBindings.kafka().envs(), hasSize(2));
 
         assertThat(
@@ -106,10 +106,10 @@ public class AsyncApiParserTest {
 
         final Bindings producerBindings =
                 channelsMap.get("simple.streetlights.public.light.measured").bindings();
-        assertThat(producerBindings.kafka().configs().entrySet(), hasSize(2));
+        assertThat(producerBindings.kafka().configs().entrySet(), hasSize(1));
         assertThat(
                 producerBindings.kafka().configs().keySet(),
-                is(Set.of(TopicConfig.CLEANUP_POLICY_CONFIG, TopicConfig.RETENTION_MS_CONFIG)));
+                is(Set.of(TopicConfig.CLEANUP_POLICY_CONFIG)));
         assertThat(producerBindings.kafka().envs(), hasSize(2));
 
         assertThat(
