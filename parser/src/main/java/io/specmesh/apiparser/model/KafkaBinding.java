@@ -46,8 +46,7 @@ import lombok.experimental.Accessors;
 public class KafkaBinding {
     private static final int DAYS_TO_MS = 24 * 60 * 60 * 1000;
 
-    @JsonProperty
-    private List<String> envs;
+    @JsonProperty private List<String> envs;
 
     @JsonProperty private int partitions;
 
