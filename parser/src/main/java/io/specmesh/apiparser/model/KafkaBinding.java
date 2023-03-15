@@ -18,10 +18,14 @@ package io.specmesh.apiparser.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,6 +47,8 @@ import lombok.experimental.Accessors;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
+@SuppressWarnings({"unchecked"})
+@SuppressFBWarnings
 public class KafkaBinding {
     private static final int DAYS_TO_MS = 24 * 60 * 60 * 1000;
 
@@ -67,6 +73,13 @@ public class KafkaBinding {
      */
     public Map<String, String> configs() {
         return new LinkedHashMap<>(configs == null ? Collections.emptyMap() : configs);
+    }
+
+    /**
+     * @return envs
+     */
+    public List<String> envs() {
+        return new ArrayList<>(envs == null ? Collections.EMPTY_LIST : envs);
     }
 
     /**
