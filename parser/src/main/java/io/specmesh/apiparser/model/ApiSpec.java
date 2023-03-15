@@ -22,6 +22,8 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,7 +35,7 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
 @SuppressFBWarnings
 public class ApiSpec {
@@ -68,7 +70,7 @@ public class ApiSpec {
                 .collect(
                         Collectors.toMap(
                                 e -> getCanonical(id(), e.getKey()),
-                                e -> e.getValue(),
+                                Map.Entry::getValue,
                                 (k, v) -> k,
                                 LinkedHashMap::new));
     }

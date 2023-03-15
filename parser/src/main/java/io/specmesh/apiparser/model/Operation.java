@@ -21,6 +21,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.List;
 import java.util.Map;
+
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -37,12 +39,12 @@ import lombok.experimental.Accessors;
  */
 @Builder
 @Data
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @SuppressFBWarnings
-@SuppressWarnings({"unchecked", "rawtypes"})
+@SuppressWarnings("rawtypes")
 public class Operation {
     @JsonProperty private String operationId;
 
@@ -50,7 +52,7 @@ public class Operation {
 
     @JsonProperty private String description;
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings("rawtypes")
     @JsonProperty
     private List<Tag> tags;
 

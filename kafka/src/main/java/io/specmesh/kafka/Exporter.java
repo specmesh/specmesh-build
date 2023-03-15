@@ -34,12 +34,16 @@ import org.apache.kafka.clients.admin.TopicDescription;
 import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.config.ConfigResource;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Builds a simplified topic resources structure as the async-api spec limitations: atm only exports
  * domain owned topics, ignored producer and consumer models, ACLs, and Schemas
  */
-public class Exporter {
+public final class Exporter {
+
+    /** Hides it */
+    private Exporter() {}
 
     /**
      * Export the Spec object to its yaml representation
@@ -64,7 +68,7 @@ public class Exporter {
      * @return the exported spec
      * @throws ExporterException - when admin client fails
      */
-    public ApiSpec export(final String aggregateId, final Admin adminClient)
+    public static ApiSpec export(final String aggregateId, final Admin adminClient)
             throws ExporterException {
         return ApiSpec.builder()
                 .id("urn:" + aggregateId)
@@ -74,8 +78,40 @@ public class Exporter {
                 .build();
     }
 
-    private Map<String, Channel> channels(final String aggregateId, final Admin adminClient)
+    private static Map<String, Channel> channels(final String aggregateId, final Admin adminClient)
             throws ExporterException {
+        final List<TopicListing> topicListings = getTopicListings(aggregateId, adminClient);
+        final Map<String, Config> topicConfigs = getTopicConfigs(adminClient, topicListings);
+        final Map<String, KafkaFuture<TopicDescription>> topicDescriptions =
+                topicDescriptions(adminClient, topicListings);
+
+        return topicListings.stream()
+                .collect(
+                        Collectors.toMap(
+                                listing -> listing.name().substring(aggregateId.length() + 1),
+                                listing -> {
+                                    try {
+                                        return channel(
+                                                topicConfigs.get(listing.name()),
+                                                topicDescriptions.get(listing.name()).get());
+                                    } catch (InterruptedException | ExecutionException e) {
+                                        throw new ExporterException(
+                                                "Failed to get descriptions", e);
+                                    }
+                                }));
+    }
+
+    private static Map<String, KafkaFuture<TopicDescription>> topicDescriptions(
+            final Admin adminClient, final List<TopicListing> topicListings) {
+        return adminClient
+                .describeTopics(
+                        topicListings.stream().map(TopicListing::name).collect(Collectors.toList()))
+                .topicNameValues();
+    }
+
+    @NotNull
+    private static List<TopicListing> getTopicListings(
+            final String aggregateId, final Admin adminClient) {
         final List<TopicListing> topicListings;
         try {
             topicListings =
@@ -88,6 +124,12 @@ public class Exporter {
         } catch (InterruptedException | ExecutionException e) {
             throw new ExporterException("Failed to list topics", e);
         }
+        return topicListings;
+    }
+
+    @NotNull
+    private static Map<String, Config> getTopicConfigs(
+            final Admin adminClient, final List<TopicListing> topicListings) {
         final Map<String, Config> topicConfigs;
         try {
             topicConfigs =
@@ -110,65 +152,33 @@ public class Exporter {
         } catch (InterruptedException | ExecutionException e) {
             throw new ExporterException("Failed to describe topic configs", e);
         }
-
-        final Map<String, KafkaFuture<TopicDescription>> topicDescriptions =
-                adminClient
-                        .describeTopics(
-                                topicListings.stream()
-                                        .map(TopicListing::name)
-                                        .collect(Collectors.toList()))
-                        .topicNameValues();
-
-        return topicListings.stream()
-                .collect(
-                        Collectors.toMap(
-                                listing -> listing.name().substring(aggregateId.length() + 1),
-                                listing -> {
-                                    try {
-                                        return channel(
-                                                topicConfigs.get(listing.name()),
-                                                topicDescriptions.get(listing.name()).get());
-                                    } catch (InterruptedException | ExecutionException e) {
-                                        return Channel.builder().build();
-                                    }
-                                }));
+        return topicConfigs;
     }
 
     /**
      * Extract the Channel - todo Produce/Consume info
      *
-     * @param config
-     * @param topicDescription
-     * @return
+     * @param config - kafka topic config map
+     * @param topicDescription - topic details
+     * @return decorated channel
      */
-    private Channel channel(final Config config, final TopicDescription topicDescription) {
+    private static Channel channel(final Config config, final TopicDescription topicDescription) {
         return Channel.builder()
                 .bindings(Bindings.builder().kafka(kafkaBindings(config, topicDescription)).build())
                 .build();
     }
 
-    private KafkaBinding kafkaBindings(
+    private static KafkaBinding kafkaBindings(
             final Config config, final TopicDescription topicDescription) {
         return KafkaBinding.builder()
                 .bindingVersion("unknown")
                 .replicas(topicDescription.partitions().get(0).replicas().size())
                 .partitions(topicDescription.partitions().size())
-                .retention(inferRetentionDays(config.get("retention.ms")))
                 .configs(configs(config))
                 .build();
     }
 
-    private int inferRetentionDays(final ConfigEntry retention) {
-        try {
-            return Long.valueOf(Long.parseLong(retention.value()) / (1000L * 60 * 60 * 24))
-                    .intValue();
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            return 1;
-        }
-    }
-
-    private Map<String, String> configs(final Config config) {
+    private static Map<String, String> configs(final Config config) {
         return config.entries().stream()
                 .collect(Collectors.toMap(ConfigEntry::name, ConfigEntry::value));
     }

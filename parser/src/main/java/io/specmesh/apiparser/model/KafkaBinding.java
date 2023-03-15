@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -39,14 +41,13 @@ import lombok.experimental.Accessors;
 /** Pojo representing a Kafka binding */
 @Builder
 @Data
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @SuppressFBWarnings
 public class KafkaBinding {
     private static final int DAYS_TO_MS = 24 * 60 * 60 * 1000;
-    private static final String RETENTION_MS = "retention.ms";
 
     @SuppressWarnings("unchecked")
     @JsonProperty
@@ -55,8 +56,6 @@ public class KafkaBinding {
     @JsonProperty private int partitions;
 
     @JsonProperty private int replicas;
-
-    @JsonProperty private int retention;
 
     @JsonProperty private Map<String, String> configs;
 
@@ -72,13 +71,7 @@ public class KafkaBinding {
      * @return configs
      */
     public Map<String, String> configs() {
-        final Map<String, String> results =
-                new LinkedHashMap<>(configs == null ? Collections.emptyMap() : configs);
-
-        if (!results.containsKey(RETENTION_MS) && retention != 0) {
-            results.put("retention.ms", String.valueOf(retention * DAYS_TO_MS));
-        }
-        return results;
+        return new LinkedHashMap<>(configs == null ? Collections.emptyMap() : configs);
     }
 
     /**
@@ -93,12 +86,5 @@ public class KafkaBinding {
      */
     public int replicas() {
         return replicas == 0 ? 1 : replicas;
-    }
-
-    /**
-     * @return message retention in ms.
-     */
-    public int retention() {
-        return retention == 0 ? 1 : retention;
     }
 }
