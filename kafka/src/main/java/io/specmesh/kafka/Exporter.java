@@ -59,7 +59,7 @@ public class Exporter {
     /**
      * Integrrogate a cluster and extract domain-owned/aggregate resourcews
      *
-     * @param aggregateId - the oomain-owner
+     * @param aggregateId - the domain-owner
      * @param adminClient - cluster connection
      * @return the exported spec
      * @throws ExporterException - when admin client fails
