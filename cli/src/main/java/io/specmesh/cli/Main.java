@@ -18,9 +18,16 @@ package io.specmesh.cli;
 
 import picocli.CommandLine;
 
+/**
+ * SpecMesh CLI client
+ */
 public final class Main {
     private Main() {}
 
+    /**
+     * Main cli
+      * @param args - set of CLI args for processing
+     */
     public static void main(final String[] args) {
 
         new CommandLine(new KafkaProvisionCommand()).execute(args);

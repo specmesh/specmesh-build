@@ -34,6 +34,9 @@ import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import picocli.CommandLine.Option;
 
+/**
+ * SpecMesh Kafka Provisioner
+ */
 @Command(name = "provision", description = "Applied provided specification file to the cluster")
 public class KafkaProvisionCommand implements Runnable {
 
@@ -98,6 +101,10 @@ public class KafkaProvisionCommand implements Runnable {
         }
     }
 
+    /**
+     * AdminClient access
+     * @return = adminClient
+     */
     public Admin adminClient() {
         final Map<String, Object> properties = new HashMap<>();
         properties.put(AdminClientConfig.CLIENT_ID_CONFIG, UUID.randomUUID().toString());
@@ -107,6 +114,12 @@ public class KafkaProvisionCommand implements Runnable {
         return AdminClient.create(properties);
     }
 
+    /**
+     * loads the spec from the classpath
+     * @param spec to load
+     * @param classLoader to use
+     * @return the loaded spec
+     */
     public static KafkaApiSpec loadFromClassPath(final String spec, final ClassLoader classLoader) {
         try (InputStream s = classLoader.getResourceAsStream(spec)) {
             if (s == null) {
@@ -114,7 +127,7 @@ public class KafkaProvisionCommand implements Runnable {
             }
             return new KafkaApiSpec(new AsyncApiParser().loadResource(s));
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load api spec: " + spec, e);
+            throw new RuntimeException("Failed to load API spec: " + spec, e);
         }
     }
 }
