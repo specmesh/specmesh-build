@@ -34,9 +34,7 @@ import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import picocli.CommandLine.Option;
 
-/**
- * SpecMesh Kafka Provisioner
- */
+/** SpecMesh Kafka Provisioner */
 @Command(name = "provision", description = "Applied provided specification file to the cluster")
 public class KafkaProvisionCommand implements Runnable {
 
@@ -103,6 +101,7 @@ public class KafkaProvisionCommand implements Runnable {
 
     /**
      * AdminClient access
+     *
      * @return = adminClient
      */
     public Admin adminClient() {
@@ -116,6 +115,7 @@ public class KafkaProvisionCommand implements Runnable {
 
     /**
      * loads the spec from the classpath
+     *
      * @param spec to load
      * @param classLoader to use
      * @return the loaded spec
