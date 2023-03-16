@@ -174,7 +174,7 @@ public final class Provisioner {
      * @param apiSpec given spec
      * @param schemaResources schema path
      * @param adminClient kafka admin client
-     * @param schemaRegistryClient sr client
+     * @param schemaRegistryClient sr client - null when schemas are not provisioned
      * @throws ProvisioningException when cant provision resources
      */
     public static void provision(
@@ -183,7 +183,9 @@ public final class Provisioner {
             final Admin adminClient,
             final SchemaRegistryClient schemaRegistryClient) {
         provisionTopics(apiSpec, adminClient);
-        provisionSchemas(apiSpec, schemaResources, schemaRegistryClient);
+        if (schemaRegistryClient != null) {
+            provisionSchemas(apiSpec, schemaResources, schemaRegistryClient);
+        }
         provisionAcls(apiSpec, adminClient);
     }
 
