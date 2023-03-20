@@ -184,7 +184,8 @@ public final class Provisioner {
             final Admin adminClient,
             final Optional<SchemaRegistryClient> schemaRegistryClient) {
         provisionTopics(apiSpec, adminClient);
-        schemaRegistryClient.ifPresent(registryClient -> provisionSchemas(apiSpec, schemaResources, registryClient));
+        schemaRegistryClient.ifPresent(
+                registryClient -> provisionSchemas(apiSpec, schemaResources, registryClient));
         provisionAcls(apiSpec, adminClient);
     }
 
