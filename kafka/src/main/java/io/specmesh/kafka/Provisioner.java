@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -181,9 +182,10 @@ public final class Provisioner {
             final KafkaApiSpec apiSpec,
             final String schemaResources,
             final Admin adminClient,
-            final SchemaRegistryClient schemaRegistryClient) {
+            final Optional<SchemaRegistryClient> schemaRegistryClient) {
         provisionTopics(apiSpec, adminClient);
-        provisionSchemas(apiSpec, schemaResources, schemaRegistryClient);
+        schemaRegistryClient.ifPresent(
+                registryClient -> provisionSchemas(apiSpec, schemaResources, registryClient));
         provisionAcls(apiSpec, adminClient);
     }
 
