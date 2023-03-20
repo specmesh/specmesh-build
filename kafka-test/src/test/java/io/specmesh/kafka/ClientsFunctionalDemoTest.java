@@ -45,6 +45,7 @@ import io.specmesh.test.TestSpecLoader;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -105,7 +106,7 @@ class ClientsFunctionalDemoTest {
             final SchemaRegistryClient schemaRegistryClient =
                     new CachedSchemaRegistryClient(KAFKA_ENV.schemeRegistryServer(), 5);
             Provisioner.provision(
-                    API_SPEC, "./build/resources/test", adminClient, schemaRegistryClient);
+                    API_SPEC, "./build/resources/test", adminClient, Optional.of(schemaRegistryClient));
         }
     }
 
