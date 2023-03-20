@@ -19,6 +19,7 @@ package io.specmesh.cli;
 import static picocli.CommandLine.Command;
 
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
+import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientConfig;
 import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.kafka.KafkaApiSpec;
@@ -28,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -35,13 +37,17 @@ import org.apache.kafka.clients.admin.AdminClientConfig;
 import picocli.CommandLine.Option;
 
 /** SpecMesh Kafka Provisioner */
-@Command(name = "provision", description = "Applied provided specification file to the cluster")
+@Command(
+        name = "provision",
+        description =
+                "Apply the provided specification to provision kafka resources and permissions on"
+                        + " the cluster")
 public class KafkaProvisionCommand implements Runnable {
 
     @Option(
-            names = {"-br", "--brokerUrl"},
-            description = "Cluster url")
-    private String brokerUrl;
+            names = {"-br", "--bootstrap-server"},
+            description = "Kafka bootstrap server url")
+    private String brokerUrl = "";
 
     @Option(
             names = {"-sr", "--schemaRegistryUrl"},
@@ -49,33 +55,33 @@ public class KafkaProvisionCommand implements Runnable {
     private String schemaRegistryUrl;
 
     @Option(
-            names = {"-srApiKey", "--srApiKey"},
-            description = "srApiKey")
+            names = {"-srKey", "--srApiKey"},
+            description = "srApiKey for schema registry")
     private String srApiKey;
 
     @Option(
-            names = {"-srApiSecret", "--srApiSecret"},
-            description = "srApiSecret")
+            names = {"-srSecret", "--srApiSecret"},
+            description = "srApiSecret for schema secret")
     private String srApiSecret;
 
     @Option(
             names = {"-schemaPath", "--schemaPath"},
-            description = "schemaPath")
+            description = "schemaPath where the set of referenced schemas will be loaded")
     private String schemaPath;
 
     @Option(
-            names = {"-specmeshFile", "--specmeshFile"},
-            description = "specmeshFile")
-    private String specmeshFile;
+            names = {"-spec", "--spec"},
+            description = "specmesh specification file")
+    private String spec;
 
     @Option(
             names = {"-username", "--username"},
-            description = "username")
+            description = "username or api key for the cluster connection")
     private String username;
 
     @Option(
             names = {"-secret", "--secret"},
-            description = "secret")
+            description = "secret credential for the cluster connection")
     private String secret;
 
     @Override
@@ -84,18 +90,18 @@ public class KafkaProvisionCommand implements Runnable {
     }
 
     private KafkaApiSpec specMeshSpec() {
-        return loadFromClassPath(specmeshFile, KafkaProvisionCommand.class.getClassLoader());
+        return loadFromClassPath(spec, KafkaProvisionCommand.class.getClassLoader());
     }
 
-    private CachedSchemaRegistryClient schemaRegistryClient() {
+    private Optional<SchemaRegistryClient> schemaRegistryClient() {
         if (schemaRegistryUrl != null) {
             final Map<String, Object> properties = new HashMap<>();
             properties.put(SchemaRegistryClientConfig.BASIC_AUTH_CREDENTIALS_SOURCE, "USER_INFO");
             properties.put(
                     SchemaRegistryClientConfig.USER_INFO_CONFIG, srApiKey + ":" + srApiSecret);
-            return new CachedSchemaRegistryClient(schemaRegistryUrl, 5, properties);
+            return Optional.of(new CachedSchemaRegistryClient(schemaRegistryUrl, 5, properties));
         } else {
-            return null;
+            return Optional.empty();
         }
     }
 
@@ -104,7 +110,7 @@ public class KafkaProvisionCommand implements Runnable {
      *
      * @return = adminClient
      */
-    public Admin adminClient() {
+    private Admin adminClient() {
         final Map<String, Object> properties = new HashMap<>();
         properties.put(AdminClientConfig.CLIENT_ID_CONFIG, UUID.randomUUID().toString());
         properties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, brokerUrl);
@@ -120,7 +126,8 @@ public class KafkaProvisionCommand implements Runnable {
      * @param classLoader to use
      * @return the loaded spec
      */
-    public static KafkaApiSpec loadFromClassPath(final String spec, final ClassLoader classLoader) {
+    private static KafkaApiSpec loadFromClassPath(
+            final String spec, final ClassLoader classLoader) {
         try (InputStream s = classLoader.getResourceAsStream(spec)) {
             if (s == null) {
                 throw new FileNotFoundException("API Spec resource not found: " + spec);
