@@ -33,7 +33,7 @@ dependencies {
     implementation(project(":kafka"))
     testImplementation(project(":kafka-test"))
 
-    implementation("org.testcontainers:testcontainers:$testcontainersVersion")
-    implementation("org.testcontainers:kafka:$testcontainersVersion")
+    testImplementation("org.testcontainers:testcontainers:$testcontainersVersion")
+    testImplementation("org.testcontainers:kafka:$testcontainersVersion")
 
 }
