@@ -62,10 +62,10 @@ class CliFunctionalTest {
         final CommandLine.ParseResult parseResult =
                 new CommandLine(kafkaProvisionCommand)
                         .parseArgs(
-                                ("--brokerUrl "
+                                ("--bootstrap-server "
                                                 + KAFKA_ENV.kafkaBootstrapServers()
                                                 + " "
-                                                + "--specmeshFile simple_spec_demo-api.yaml "
+                                                + "--spec simple_spec_demo-api.yaml "
                                                 + "--username admin "
                                                 + "--secret admin-secret ")
                                         .split(" "));
