@@ -106,7 +106,10 @@ class ClientsFunctionalDemoTest {
             final SchemaRegistryClient schemaRegistryClient =
                     new CachedSchemaRegistryClient(KAFKA_ENV.schemeRegistryServer(), 5);
             Provisioner.provision(
-                    API_SPEC, "./build/resources/test", adminClient, Optional.of(schemaRegistryClient));
+                    API_SPEC,
+                    "./build/resources/test",
+                    adminClient,
+                    Optional.of(schemaRegistryClient));
         }
     }
 
