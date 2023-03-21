@@ -73,7 +73,15 @@ class CliFunctionalTest {
         assertThat(parseResult.matchedArgs().size(), is(4));
 
         // When:
-        kafkaProvisionCommand.run();
+        final var status = kafkaProvisionCommand.call();
+
+        // then: Verify status is correct
+        final var topicProvisionStatus = status.topics();
+        assertThat(topicProvisionStatus.createTopics().size(), is(3));
+        assertThat(topicProvisionStatus.domainTopics().size(), is(3));
+        assertThat(topicProvisionStatus.existingTopics().size(), is(1));
+        final var aclProvisionStatus = status.acls().aclsToCreate();
+        assertThat(aclProvisionStatus.size(), is(12));
 
         /*
          * NOTE: Loooooose sanity checks follow (they validate 'enough' to ensure the provisioner
