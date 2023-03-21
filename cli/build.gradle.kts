@@ -14,25 +14,26 @@
  * limitations under the License.
  */
 
-package io.specmesh.apiparser.model;
+plugins {
+    application
+}
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
+val kafkaVersion : String by extra
+val spotBugsVersion : String by extra
+val jacksonVersion : String by extra
+val lombokVersion : String by extra
+val confluentVersion : String by extra
+val testcontainersVersion : String by extra
 
-/** Pojo representing a binding */
-@Builder
-@Data
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-@Accessors(fluent = true)
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class Bindings {
 
-    @JsonProperty KafkaBinding kafka;
+dependencies {
+    implementation("info.picocli:picocli:4.7.1")
+
+    implementation(project(":parser"))
+    implementation(project(":kafka"))
+    testImplementation(project(":kafka-test"))
+
+    testImplementation("org.testcontainers:testcontainers:$testcontainersVersion")
+    testImplementation("org.testcontainers:kafka:$testcontainersVersion")
+
 }

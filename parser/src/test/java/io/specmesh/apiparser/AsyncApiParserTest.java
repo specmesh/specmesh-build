@@ -26,6 +26,7 @@ import io.specmesh.apiparser.model.Bindings;
 import io.specmesh.apiparser.model.Channel;
 import java.util.Map;
 import java.util.Set;
+import org.apache.kafka.common.config.TopicConfig;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -65,7 +66,6 @@ public class AsyncApiParserTest {
                 channelsMap.get("simple.streetlights.public.light.measured").bindings();
         assertThat(producerBindings.kafka().partitions(), is(3));
         assertThat(producerBindings.kafka().replicas(), is(1));
-        assertThat(producerBindings.kafka().retention(), is(1));
 
         assertThat(
                 "Should use absolute path",
@@ -84,10 +84,10 @@ public class AsyncApiParserTest {
 
         final Bindings producerBindings =
                 channelsMap.get("simple.streetlights.public.light.measured").bindings();
-        assertThat(producerBindings.kafka().configs().entrySet(), hasSize(2));
+        assertThat(producerBindings.kafka().configs().entrySet(), hasSize(1));
         assertThat(
                 producerBindings.kafka().configs().keySet(),
-                is(Set.of("cleanup.policy", "retention.ms")));
+                is(Set.of(TopicConfig.CLEANUP_POLICY_CONFIG)));
         assertThat(producerBindings.kafka().envs(), hasSize(2));
 
         assertThat(
@@ -106,10 +106,10 @@ public class AsyncApiParserTest {
 
         final Bindings producerBindings =
                 channelsMap.get("simple.streetlights.public.light.measured").bindings();
-        assertThat(producerBindings.kafka().configs().entrySet(), hasSize(2));
+        assertThat(producerBindings.kafka().configs().entrySet(), hasSize(1));
         assertThat(
                 producerBindings.kafka().configs().keySet(),
-                is(Set.of("cleanup.policy", "retention.ms")));
+                is(Set.of(TopicConfig.CLEANUP_POLICY_CONFIG)));
         assertThat(producerBindings.kafka().envs(), hasSize(2));
 
         assertThat(

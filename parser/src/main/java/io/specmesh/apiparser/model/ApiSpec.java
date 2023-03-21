@@ -23,15 +23,19 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Value;
 import lombok.experimental.Accessors;
 
 /** Pojo representing the api spec */
-@Value
+@Builder
+@Data
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 @SuppressFBWarnings
 public class ApiSpec {
     private static final char DELIMITER = System.getProperty("DELIMITER", ".").charAt(0);
@@ -65,7 +69,7 @@ public class ApiSpec {
                 .collect(
                         Collectors.toMap(
                                 e -> getCanonical(id(), e.getKey()),
-                                e -> e.getValue(),
+                                Map.Entry::getValue,
                                 (k, v) -> k,
                                 LinkedHashMap::new));
     }

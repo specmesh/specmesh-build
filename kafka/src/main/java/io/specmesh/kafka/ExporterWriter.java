@@ -14,25 +14,18 @@
  * limitations under the License.
  */
 
-package io.specmesh.apiparser.model;
+package io.specmesh.kafka;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
+import io.specmesh.apiparser.model.ApiSpec;
 
-/** Pojo representing a binding */
-@Builder
-@Data
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-@Accessors(fluent = true)
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class Bindings {
-
-    @JsonProperty KafkaBinding kafka;
+/** Used to export an APISpec to structured text */
+public interface ExporterWriter {
+    /**
+     * export to structured text
+     *
+     * @param apiSpec - to export
+     * @return - resultant structured text
+     * @throws Exporter.ExporterException - when failing to convert
+     */
+    String export(ApiSpec apiSpec) throws Exporter.ExporterException;
 }

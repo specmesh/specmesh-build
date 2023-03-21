@@ -14,25 +14,21 @@
  * limitations under the License.
  */
 
-package io.specmesh.apiparser.model;
+package io.specmesh.cli;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
+import picocli.CommandLine;
 
-/** Pojo representing a binding */
-@Builder
-@Data
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-@Accessors(fluent = true)
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class Bindings {
+/** SpecMesh CLI client */
+public final class Main {
+    private Main() {}
 
-    @JsonProperty KafkaBinding kafka;
+    /**
+     * Main cli
+     *
+     * @param args - set of CLI args for processing
+     */
+    public static void main(final String[] args) {
+
+        new CommandLine(new KafkaProvisionCommand()).execute(args);
+    }
 }

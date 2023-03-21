@@ -19,12 +19,16 @@ package io.specmesh.apiparser.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Value;
 import lombok.experimental.Accessors;
 
 /*
@@ -35,26 +39,24 @@ import lombok.experimental.Accessors;
  */
 
 /** Pojo representing a Kafka binding */
-@Value
+@Builder
+@Data
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@NoArgsConstructor(force = true) // , access = AccessLevel.PRIVATE)
+@SuppressWarnings({"unchecked"})
 @SuppressFBWarnings
 public class KafkaBinding {
     private static final int DAYS_TO_MS = 24 * 60 * 60 * 1000;
-    private static final String RETENTION_MS = "retention.ms";
 
-    @SuppressWarnings("unchecked")
-    @JsonProperty
-    private List<String> envs = Collections.EMPTY_LIST;
+    @JsonProperty private List<String> envs;
 
     @JsonProperty private int partitions;
 
     @JsonProperty private int replicas;
 
-    @JsonProperty private int retention;
-
-    @JsonProperty private Map<String, String> configs = Collections.emptyMap();
+    @JsonProperty private Map<String, String> configs;
 
     @JsonProperty private String groupId;
 
@@ -68,12 +70,14 @@ public class KafkaBinding {
      * @return configs
      */
     public Map<String, String> configs() {
-        final Map<String, String> results = new LinkedHashMap<>(configs);
+        return new LinkedHashMap<>(configs == null ? Collections.emptyMap() : configs);
+    }
 
-        if (!results.containsKey(RETENTION_MS) && retention != 0) {
-            results.put("retention.ms", String.valueOf(retention * DAYS_TO_MS));
-        }
-        return results;
+    /**
+     * @return envs
+     */
+    public List<String> envs() {
+        return new ArrayList<>(envs == null ? Collections.EMPTY_LIST : envs);
     }
 
     /**
@@ -88,12 +92,5 @@ public class KafkaBinding {
      */
     public int replicas() {
         return replicas == 0 ? 1 : replicas;
-    }
-
-    /**
-     * @return message retention in ms.
-     */
-    public int retention() {
-        return retention == 0 ? 1 : retention;
     }
 }

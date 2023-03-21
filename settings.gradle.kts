@@ -24,4 +24,4 @@
  */
 rootProject.name = "specmesh-build"
 
-include("parser", "kafka", "kafka-test")
+include("cli", "parser", "kafka", "kafka-test")
