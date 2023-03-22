@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
@@ -42,10 +43,10 @@ import picocli.CommandLine.Option;
         description =
                 "Apply the provided specification to provision kafka resources and permissions on"
                         + " the cluster")
-public class KafkaProvisionCommand implements Runnable {
+public class KafkaProvisionCommand implements Callable<Provisioner.Status> {
 
     @Option(
-            names = {"-br", "--bootstrap-server"},
+            names = {"-bs", "--bootstrap-server"},
             description = "Kafka bootstrap server url")
     private String brokerUrl = "";
 
@@ -75,18 +76,19 @@ public class KafkaProvisionCommand implements Runnable {
     private String spec;
 
     @Option(
-            names = {"-username", "--username"},
+            names = {"-u", "--username"},
             description = "username or api key for the cluster connection")
     private String username;
 
     @Option(
-            names = {"-secret", "--secret"},
+            names = {"-p", "--secret"},
             description = "secret credential for the cluster connection")
     private String secret;
 
     @Override
-    public void run() {
-        Provisioner.provision(specMeshSpec(), schemaPath, adminClient(), schemaRegistryClient());
+    public Provisioner.Status call() throws Exception {
+        return Provisioner.provision(
+                specMeshSpec(), schemaPath, adminClient(), schemaRegistryClient());
     }
 
     private KafkaApiSpec specMeshSpec() {
