@@ -28,8 +28,10 @@ import io.confluent.kafka.schemaregistry.json.JsonSchema;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchema;
 import io.specmesh.apiparser.model.SchemaInfo;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -135,36 +137,52 @@ public final class Provisioner {
                                     .schemaSubject(schemaSubject)
                                     .schemaInfo(schemaInfo)
                                     .schemaPath(schemaPath.toAbsolutePath().toString());
-
-                    final String schemaContent;
                     try {
-                        schemaContent = readString(schemaPath, UTF_8);
-                    } catch (IOException e) {
-                        status.exception(e);
-                        statusList.add(status.build());
-                        throw new ProvisioningException(
-                                "Failed to read schema from: " + schemaPath, e);
-                    }
-
-                    // register the schema against the topic (subject)
-                    try {
-                        final ParsedSchema someSchema =
-                                getSchema(topic.name(), schemaRef, baseResourcePath, schemaContent);
-
-                        schemaRegistryClient.register(schemaSubject, someSchema);
-                    } catch (IOException | RestClientException e) {
-                        status.exception(e);
-                        statusList.add(status.build());
-                        throw new ProvisioningException(
-                                "Failed to register schema. topic: "
-                                        + topic.name()
-                                        + ", schema:"
-                                        + schemaPath,
-                                e);
+                        // register the schema against the topic (subject)
+                        registerSchema(
+                                baseResourcePath,
+                                schemaRegistryClient,
+                                topic,
+                                schemaSubject,
+                                schemaRef,
+                                schemaPath,
+                                readSchemaContent(schemaPath));
+                    } catch (ProvisioningException ex) {
+                        status.exception(ex);
                     }
                     statusList.add(status.build());
                 }));
         return statusList;
+    }
+
+    private static void registerSchema(
+            final String baseResourcePath,
+            final SchemaRegistryClient schemaRegistryClient,
+            final NewTopic topic,
+            final String schemaSubject,
+            final String schemaRef,
+            final Path schemaPath,
+            final String schemaContent) {
+        try {
+            final ParsedSchema someSchema =
+                    getSchema(topic.name(), schemaRef, baseResourcePath, schemaContent);
+
+            schemaRegistryClient.register(schemaSubject, someSchema);
+        } catch (IOException | RestClientException e) {
+            throw new ProvisioningException(
+                    "Failed to register schema. topic: " + topic.name() + ", schema:" + schemaPath,
+                    e);
+        }
+    }
+
+    private static String readSchemaContent(final Path schemaPath) {
+        final String schemaContent;
+        try {
+            schemaContent = readString(schemaPath, UTF_8);
+        } catch (IOException e) {
+            throw new ProvisioningException("Failed to read schema from: " + schemaPath, e);
+        }
+        return schemaContent;
     }
 
     /**
@@ -176,14 +194,15 @@ public final class Provisioner {
      * @throws ProvisioningException on interrupt
      */
     public static AclStatus provisionAcls(final KafkaApiSpec apiSpec, final Admin adminClient) {
+        final var aclStatus = AclStatus.builder();
         try {
             final Set<AclBinding> allAcls = apiSpec.requiredAcls();
-            final var aclStatus = AclStatus.builder().aclsToCreate(allAcls);
+            aclStatus.aclsToCreate(allAcls);
             adminClient.createAcls(allAcls).all().get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
-            return aclStatus.build();
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new ProvisioningException("Failed to create ACLs", e);
+            aclStatus.exception(new ProvisioningException("Failed to create ACLs", e));
         }
+        return aclStatus.build();
     }
 
     static ParsedSchema getSchema(
@@ -220,14 +239,10 @@ public final class Provisioner {
             final String schemaResources,
             final Admin adminClient,
             final Optional<SchemaRegistryClient> schemaRegistryClient) {
-        final var topicProvisionStatus = provisionTopics(apiSpec, adminClient);
-        final var status = Status.builder().topics(topicProvisionStatus);
+        final var status = Status.builder().topics(provisionTopics(apiSpec, adminClient));
         schemaRegistryClient.ifPresent(
                 registryClient ->
-                        status.schemas(
-                                Optional.of(
-                                        provisionSchemas(
-                                                apiSpec, schemaResources, registryClient))));
+                        status.schemas(provisionSchemas(apiSpec, schemaResources, registryClient)));
         status.acls(provisionAcls(apiSpec, adminClient));
         return status.build();
     }
@@ -280,7 +295,7 @@ public final class Provisioner {
     @SuppressFBWarnings
     public static class Status {
         private TopicProvisionStatus topics;
-        @Builder.Default private Optional<List<SchemaStatus>> schemas = Optional.empty();
+        @Builder.Default private List<SchemaStatus> schemas = Collections.emptyList();
         private AclStatus acls;
     }
 
@@ -291,9 +306,11 @@ public final class Provisioner {
     @Accessors(fluent = true)
     @SuppressFBWarnings
     public static class TopicProvisionStatus {
-        private List<NewTopic> domainTopics;
-        private List<String> existingTopics;
-        private List<NewTopic> createTopics;
+
+        @Builder.Default private List<NewTopic> domainTopics = Collections.emptyList();
+        @Builder.Default private List<String> existingTopics = Collections.emptyList();
+        @Builder.Default private List<NewTopic> createTopics = Collections.emptyList();
+
         private Exception exception;
     }
 
@@ -317,6 +334,7 @@ public final class Provisioner {
     @Accessors(fluent = true)
     @SuppressFBWarnings
     public static class AclStatus {
-        private Set<AclBinding> aclsToCreate;
+        @Builder.Default private Set<AclBinding> aclsToCreate = Collections.emptySet();
+        private Exception exception;
     }
 }

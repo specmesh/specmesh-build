@@ -17,6 +17,7 @@
 package io.specmesh.cli;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 
 import io.specmesh.kafka.DockerKafkaEnvironment;
@@ -24,7 +25,9 @@ import io.specmesh.kafka.KafkaEnvironment;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.ListTopicsResult;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.acl.AccessControlEntryFilter;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.acl.AclBindingFilter;
@@ -77,8 +80,25 @@ class CliFunctionalTest {
 
         // then: Verify status is correct
         final var topicProvisionStatus = status.topics();
-        assertThat(topicProvisionStatus.createTopics().size(), is(3));
-        assertThat(topicProvisionStatus.domainTopics().size(), is(3));
+        assertThat(
+                topicProvisionStatus.createTopics().stream()
+                        .map(NewTopic::name)
+                        .collect(Collectors.toSet()),
+                is(
+                        containsInAnyOrder(
+                                "simple.spec_demo._public.user_signed_up",
+                                "simple.spec_demo._private.user_checkout",
+                                "simple.spec_demo._protected.purchased")));
+        assertThat(
+                topicProvisionStatus.domainTopics().stream()
+                        .map(NewTopic::name)
+                        .collect(Collectors.toSet()),
+                is(
+                        containsInAnyOrder(
+                                "simple.spec_demo._public.user_signed_up",
+                                "simple.spec_demo._private.user_checkout",
+                                "simple.spec_demo._protected.purchased")));
+
         assertThat(topicProvisionStatus.existingTopics().size(), is(1));
         final var aclProvisionStatus = status.acls().aclsToCreate();
         assertThat(aclProvisionStatus.size(), is(12));
@@ -91,11 +111,10 @@ class CliFunctionalTest {
         // Then: check topic resources were created
         final ListTopicsResult topicsResult = KAFKA_ENV.adminClient().listTopics();
         final Set<String> topicNames = topicsResult.names().get();
-        assertThat(topicNames.size(), is(4));
         assertThat(
                 topicNames,
                 is(
-                        Set.of(
+                        containsInAnyOrder(
                                 "simple.spec_demo._public.user_signed_up",
                                 "simple.spec_demo._private.user_checkout",
                                 "simple.spec_demo._protected.purchased",

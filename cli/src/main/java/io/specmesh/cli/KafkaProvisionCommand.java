@@ -46,7 +46,7 @@ import picocli.CommandLine.Option;
 public class KafkaProvisionCommand implements Callable<Provisioner.Status> {
 
     @Option(
-            names = {"-br", "--bootstrap-server"},
+            names = {"-bs", "--bootstrap-server"},
             description = "Kafka bootstrap server url")
     private String brokerUrl = "";
 
