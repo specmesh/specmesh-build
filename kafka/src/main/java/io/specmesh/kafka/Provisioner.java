@@ -68,12 +68,12 @@ public final class Provisioner {
      * @return number of topics created
      * @throws ProvisioningException on provision failure
      */
-    public static TopicProvisionStatus provisionTopics(
+    public static TopicStatus provisionTopics(
             final KafkaApiSpec apiSpec, final Admin adminClient) {
 
         final var domainTopics = apiSpec.listDomainOwnedTopics();
 
-        final var status = TopicProvisionStatus.builder().domainTopics(domainTopics);
+        final var status = TopicStatus.builder().domainTopics(domainTopics);
 
         final List<String> existingTopics;
         try {
@@ -294,18 +294,22 @@ public final class Provisioner {
     @Accessors(fluent = true)
     @SuppressFBWarnings
     public static class Status {
-        private TopicProvisionStatus topics;
+        private TopicStatus topics;
         @Builder.Default private List<SchemaStatus> schemas = Collections.emptyList();
         private AclStatus acls;
     }
 
+
+    /**
+     * Topic provisioning status
+     */
     @Builder
     @Data
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     @Accessors(fluent = true)
     @SuppressFBWarnings
-    public static class TopicProvisionStatus {
+    public static class TopicStatus {
 
         @Builder.Default private List<NewTopic> domainTopics = Collections.emptyList();
         @Builder.Default private List<String> existingTopics = Collections.emptyList();
@@ -314,6 +318,10 @@ public final class Provisioner {
         private Exception exception;
     }
 
+
+    /**
+     * Schema provisioning status
+     */
     @Builder
     @Data
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -327,6 +335,9 @@ public final class Provisioner {
         private Exception exception;
     }
 
+    /**
+     * Acl Provisioning status
+     */
     @Builder
     @Data
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
