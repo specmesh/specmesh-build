@@ -68,45 +68,66 @@ public final class Provisioner {
      * @return number of topics created
      * @throws ProvisioningException on provision failure
      */
-    public static TopicStatus provisionTopics(
-            final KafkaApiSpec apiSpec, final Admin adminClient) {
+    public static TopicStatus provisionTopics(final KafkaApiSpec apiSpec, final Admin adminClient) {
 
-        final var domainTopics = apiSpec.listDomainOwnedTopics();
-
-        final var status = TopicStatus.builder().domainTopics(domainTopics);
-
-        final List<String> existingTopics;
+        final var status = TopicStatus.builder();
         try {
-            existingTopics =
-                    adminClient
-                            .listTopics()
-                            .listings()
-                            .get(REQUEST_TIMEOUT, TimeUnit.SECONDS)
-                            .stream()
-                            .map(TopicListing::name)
-                            .collect(Collectors.toList());
+
+            final var domainTopics = apiSpec.listDomainOwnedTopics();
+
+            status.domainTopics(domainTopics);
+
+            final List<String> existing = existingTopics(adminClient);
+
+            status.existingTopics(existing);
+
+            final var create = creatingTopics(domainTopics, existing);
+
+            status.createTopics(create);
+
+            try {
+                adminClient.createTopics(create).all().get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                throw new ProvisioningException("Failed to create topics", e);
+            }
+        } catch (ProvisioningException ex) {
+            status.exception(ex);
+        }
+        return status.build();
+    }
+
+    /**
+     * Create topics
+     *
+     * @param domainTopics - domain owned
+     * @param existingTopics - existing
+     * @return list of new topics
+     */
+    private static List<NewTopic> creatingTopics(
+            final List<NewTopic> domainTopics, final List<String> existingTopics) {
+        return domainTopics.stream()
+                .filter(newTopic -> !existingTopics.contains(newTopic.name()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * get existing topics for this domain
+     *
+     * @param adminClient - connection
+     * @return set of existing
+     */
+    private static List<String> existingTopics(final Admin adminClient) {
+        try {
+            return adminClient
+                    .listTopics()
+                    .listings()
+                    .get(REQUEST_TIMEOUT, TimeUnit.SECONDS)
+                    .stream()
+                    .map(TopicListing::name)
+                    .collect(Collectors.toList());
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new ProvisioningException("Failed to list topics", e);
         }
-
-        status.existingTopics(existingTopics);
-
-        final var newTopicsToCreate =
-                domainTopics.stream()
-                        .filter(newTopic -> !existingTopics.contains(newTopic.name()))
-                        .collect(Collectors.toList());
-
-        status.createTopics(newTopicsToCreate);
-
-        try {
-            adminClient
-                    .createTopics(newTopicsToCreate)
-                    .all()
-                    .get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new ProvisioningException("Failed to create topics", e);
-        }
-        return status.build();
     }
 
     /**
@@ -299,10 +320,7 @@ public final class Provisioner {
         private AclStatus acls;
     }
 
-
-    /**
-     * Topic provisioning status
-     */
+    /** Topic provisioning status */
     @Builder
     @Data
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -318,10 +336,7 @@ public final class Provisioner {
         private Exception exception;
     }
 
-
-    /**
-     * Schema provisioning status
-     */
+    /** Schema provisioning status */
     @Builder
     @Data
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -335,9 +350,7 @@ public final class Provisioner {
         private Exception exception;
     }
 
-    /**
-     * Acl Provisioning status
-     */
+    /** Acl Provisioning status */
     @Builder
     @Data
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
