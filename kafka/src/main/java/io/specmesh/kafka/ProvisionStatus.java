@@ -144,21 +144,38 @@ public class ProvisionStatus {
 
     /** Operation result */
     public enum CRUD {
-        // intention to create
+        /**
+         *  intention to create
+         */
         CREATE,
-        // successfully creates
+        /**
+         * successfully creates
+         */
+
         CREATED,
-        // intention to update
+        /**
+         * intention to update
+         */
         UPDATE,
-        // updated successfully
+        /**
+         * updated successfully
+         */
         UPDATED,
-        // intention to delete
+        /**
+         * intention to delete
+         */
          DELETE,
-        // deleted
+        /**
+         * deleted successfully
+         */
          DELETED,
-        // Noop
+        /**
+         * Noop
+         */
         IGNORED,
-        // operation failed
+        /**
+         * operation failed
+         */
         FAILED
     }
 
