@@ -144,38 +144,21 @@ public class ProvisionStatus {
 
     /** Operation result */
     public enum CRUD {
-        /**
-         *  intention to create
-         */
+        /** intention to create */
         CREATE,
-        /**
-         * successfully creates
-         */
-
+        /** successfully creates */
         CREATED,
-        /**
-         * intention to update
-         */
+        /** intention to update */
         UPDATE,
-        /**
-         * updated successfully
-         */
+        /** updated successfully */
         UPDATED,
-        /**
-         * intention to delete
-         */
-         DELETE,
-        /**
-         * deleted successfully
-         */
-         DELETED,
-        /**
-         * Noop
-         */
+        /** intention to delete */
+        DELETE,
+        /** deleted successfully */
+        DELETED,
+        /** Noop */
         IGNORED,
-        /**
-         * operation failed
-         */
+        /** operation failed */
         FAILED
     }
 
@@ -190,9 +173,7 @@ public class ProvisionStatus {
         @Builder.Default private List<SchemaStatus> schemas = Collections.emptyList();
         private Map<String, SchemaStatus> status;
 
-        /**
-         * compile state collections into the validation state map
-         */
+        /** compile state collections into the validation state map */
         public void build() {
             status =
                     schemas.stream()
@@ -229,9 +210,7 @@ public class ProvisionStatus {
         private Map<String, AclStatus> status;
         private Exception exception;
 
-        /**
-         * compile state collections into the validation state map
-         */
+        /** compile state collections into the validation state map */
         public void build() {
             status =
                     aclsToCreate.stream()
