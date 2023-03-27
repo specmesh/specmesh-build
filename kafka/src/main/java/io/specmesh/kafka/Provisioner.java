@@ -16,22 +16,25 @@
 
 package io.specmesh.kafka;
 
+import static io.specmesh.kafka.ProvisionStatus.CRUD.CREATE;
+import static io.specmesh.kafka.ProvisionStatus.CRUD.CREATED;
+import static io.specmesh.kafka.ProvisionStatus.CRUD.FAILED;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.readString;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
 import io.confluent.kafka.schemaregistry.avro.AvroSchema;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
 import io.confluent.kafka.schemaregistry.json.JsonSchema;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchema;
-import io.specmesh.apiparser.model.SchemaInfo;
+import io.specmesh.kafka.ProvisionStatus.SchemaStatus;
+import io.specmesh.kafka.ProvisionStatus.Schemas;
+import io.specmesh.kafka.ProvisionStatus.Topics;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -40,12 +43,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -61,16 +58,47 @@ public final class Provisioner {
     private Provisioner() {}
 
     /**
+     * Provision Topics, ACLS and schemas
+     *
+     * @param validateMode test or execute
+     * @param apiSpec given spec
+     * @param schemaResources schema path
+     * @param adminClient kafka admin client
+     * @param schemaRegistryClient sr client
+     * @return status of provisioning
+     * @throws ProvisioningException when cant provision resources
+     */
+    public static ProvisionStatus provision(
+            final boolean validateMode,
+            final KafkaApiSpec apiSpec,
+            final String schemaResources,
+            final Admin adminClient,
+            final Optional<SchemaRegistryClient> schemaRegistryClient) {
+        final var status =
+                ProvisionStatus.builder()
+                        .topics(provisionTopics(validateMode, apiSpec, adminClient));
+        schemaRegistryClient.ifPresent(
+                registryClient ->
+                        status.schemas(
+                                provisionSchemas(
+                                        validateMode, apiSpec, schemaResources, registryClient)));
+        status.acls(provisionAcls(validateMode, apiSpec, adminClient));
+        return status.build();
+    }
+
+    /**
      * Provision topics in the Kafka cluster.
      *
+     * @param validateMode test or execute
      * @param apiSpec the api spec.
      * @param adminClient admin client for the Kafka cluster.
      * @return number of topics created
      * @throws ProvisioningException on provision failure
      */
-    public static TopicStatus provisionTopics(final KafkaApiSpec apiSpec, final Admin adminClient) {
+    public static Topics provisionTopics(
+            final boolean validateMode, final KafkaApiSpec apiSpec, final Admin adminClient) {
 
-        final var status = TopicStatus.builder();
+        final var status = Topics.builder();
         try {
 
             final var domainTopics = apiSpec.listDomainOwnedTopics();
@@ -86,7 +114,10 @@ public final class Provisioner {
             status.createTopics(create);
 
             try {
-                adminClient.createTopics(create).all().get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                if (!validateMode) {
+                    adminClient.createTopics(create).all().get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                    status.createdTopics(create);
+                }
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
                 throw new ProvisioningException("Failed to create topics", e);
             }
@@ -133,12 +164,14 @@ public final class Provisioner {
     /**
      * Provision schemas to Schema Registry
      *
+     * @param validateMode for mode of operation
      * @param apiSpec the api spec
      * @param baseResourcePath the path under which external schemas are stored.
      * @param schemaRegistryClient the client for the schema registry
      * @return status of actions
      */
-    public static List<SchemaStatus> provisionSchemas(
+    public static Schemas provisionSchemas(
+            final boolean validateMode,
             final KafkaApiSpec apiSpec,
             final String baseResourcePath,
             final SchemaRegistryClient schemaRegistryClient) {
@@ -160,23 +193,35 @@ public final class Provisioner {
                                     .schemaPath(schemaPath.toAbsolutePath().toString());
                     try {
                         // register the schema against the topic (subject)
-                        registerSchema(
-                                baseResourcePath,
-                                schemaRegistryClient,
-                                topic,
-                                schemaSubject,
-                                schemaRef,
-                                schemaPath,
-                                readSchemaContent(schemaPath));
+                        final var id =
+                                registerSchema(
+                                        validateMode,
+                                        baseResourcePath,
+                                        schemaRegistryClient,
+                                        topic,
+                                        schemaSubject,
+                                        schemaRef,
+                                        schemaPath,
+                                        readSchemaContent(schemaPath));
+                        status.id(id);
+                        if (id == -1) {
+                            status.crud(CREATE);
+                        } else {
+                            status.crud(CREATED);
+                        }
+
                     } catch (ProvisioningException ex) {
+                        status.crud(FAILED);
                         status.exception(ex);
                     }
                     statusList.add(status.build());
                 }));
-        return statusList;
+        return Schemas.builder().schemas(statusList).build();
     }
 
-    private static void registerSchema(
+    @SuppressWarnings("checkstyle:ParameterNumber")
+    private static int registerSchema(
+            final boolean validateMode,
             final String baseResourcePath,
             final SchemaRegistryClient schemaRegistryClient,
             final NewTopic topic,
@@ -185,10 +230,13 @@ public final class Provisioner {
             final Path schemaPath,
             final String schemaContent) {
         try {
-            final ParsedSchema someSchema =
+            final var parsedSchema =
                     getSchema(topic.name(), schemaRef, baseResourcePath, schemaContent);
-
-            schemaRegistryClient.register(schemaSubject, someSchema);
+            if (!validateMode) {
+                return schemaRegistryClient.register(schemaSubject, parsedSchema);
+            } else {
+                return -1;
+            }
         } catch (IOException | RestClientException e) {
             throw new ProvisioningException(
                     "Failed to register schema. topic: " + topic.name() + ", schema:" + schemaPath,
@@ -209,17 +257,22 @@ public final class Provisioner {
     /**
      * Provision acls in the Kafka cluster
      *
+     * @param validateMode for mode of operation
      * @param apiSpec the api spec.
      * @param adminClient th admin client for the cluster.
      * @return status of provisioning
      * @throws ProvisioningException on interrupt
      */
-    public static AclStatus provisionAcls(final KafkaApiSpec apiSpec, final Admin adminClient) {
-        final var aclStatus = AclStatus.builder();
+    public static ProvisionStatus.Acls provisionAcls(
+            final boolean validateMode, final KafkaApiSpec apiSpec, final Admin adminClient) {
+        final var aclStatus = ProvisionStatus.Acls.builder();
         try {
             final Set<AclBinding> allAcls = apiSpec.requiredAcls();
             aclStatus.aclsToCreate(allAcls);
-            adminClient.createAcls(allAcls).all().get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
+            if (!validateMode) {
+                adminClient.createAcls(allAcls).all().get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                aclStatus.aclsCreated(allAcls);
+            }
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             aclStatus.exception(new ProvisioningException("Failed to create ACLs", e));
         }
@@ -243,29 +296,6 @@ public final class Provisioner {
         }
         throw new ProvisioningException(
                 "Unsupported schema type for:" + topicName + ", schema: " + path);
-    }
-
-    /**
-     * Provision Topics, ACLS and schemas
-     *
-     * @param apiSpec given spec
-     * @param schemaResources schema path
-     * @param adminClient kafka admin client
-     * @param schemaRegistryClient sr client
-     * @return status of provisioning
-     * @throws ProvisioningException when cant provision resources
-     */
-    public static Status provision(
-            final KafkaApiSpec apiSpec,
-            final String schemaResources,
-            final Admin adminClient,
-            final Optional<SchemaRegistryClient> schemaRegistryClient) {
-        final var status = Status.builder().topics(provisionTopics(apiSpec, adminClient));
-        schemaRegistryClient.ifPresent(
-                registryClient ->
-                        status.schemas(provisionSchemas(apiSpec, schemaResources, registryClient)));
-        status.acls(provisionAcls(apiSpec, adminClient));
-        return status.build();
     }
 
     /**
@@ -305,60 +335,5 @@ public final class Provisioner {
         ProvisioningException(final String msg, final Throwable cause) {
             super(msg, cause);
         }
-    }
-
-    /** Accumulated Provision status of Underlying resources */
-    @Builder
-    @Data
-    @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    @Accessors(fluent = true)
-    @SuppressFBWarnings
-    public static class Status {
-        private TopicStatus topics;
-        @Builder.Default private List<SchemaStatus> schemas = Collections.emptyList();
-        private AclStatus acls;
-    }
-
-    /** Topic provisioning status */
-    @Builder
-    @Data
-    @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    @Accessors(fluent = true)
-    @SuppressFBWarnings
-    public static class TopicStatus {
-
-        @Builder.Default private List<NewTopic> domainTopics = Collections.emptyList();
-        @Builder.Default private List<String> existingTopics = Collections.emptyList();
-        @Builder.Default private List<NewTopic> createTopics = Collections.emptyList();
-
-        private Exception exception;
-    }
-
-    /** Schema provisioning status */
-    @Builder
-    @Data
-    @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    @Accessors(fluent = true)
-    @SuppressFBWarnings
-    public static class SchemaStatus {
-        private String schemaSubject;
-        private SchemaInfo schemaInfo;
-        private String schemaPath;
-        private Exception exception;
-    }
-
-    /** Acl Provisioning status */
-    @Builder
-    @Data
-    @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    @Accessors(fluent = true)
-    @SuppressFBWarnings
-    public static class AclStatus {
-        @Builder.Default private Set<AclBinding> aclsToCreate = Collections.emptySet();
-        private Exception exception;
     }
 }

@@ -23,6 +23,7 @@ import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientConfig;
 import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.kafka.KafkaApiSpec;
+import io.specmesh.kafka.ProvisionStatus;
 import io.specmesh.kafka.Provisioner;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -43,7 +44,7 @@ import picocli.CommandLine.Option;
         description =
                 "Apply the provided specification to provision kafka resources and permissions on"
                         + " the cluster")
-public class KafkaProvisionCommand implements Callable<Provisioner.Status> {
+public class KafkaProvisionCommand implements Callable<ProvisionStatus> {
 
     @Option(
             names = {"-bs", "--bootstrap-server"},
@@ -85,10 +86,17 @@ public class KafkaProvisionCommand implements Callable<Provisioner.Status> {
             description = "secret credential for the cluster connection")
     private String secret;
 
+    @Option(
+            names = {"-v", "--validate"},
+            description =
+                    "Validate the spec against the given cluster and output proposed changes, or"
+                            + " fail displaying incompatible changes/errors")
+    private boolean validateMode;
+
     @Override
-    public Provisioner.Status call() throws Exception {
+    public ProvisionStatus call() throws Exception {
         return Provisioner.provision(
-                specMeshSpec(), schemaPath, adminClient(), schemaRegistryClient());
+                validateMode, specMeshSpec(), schemaPath, adminClient(), schemaRegistryClient());
     }
 
     private KafkaApiSpec specMeshSpec() {

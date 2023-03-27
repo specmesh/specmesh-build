@@ -126,8 +126,8 @@ class KafkaAPISpecFunctionalTest {
     @BeforeAll
     static void setUp() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
-            Provisioner.provisionTopics(API_SPEC, adminClient);
-            Provisioner.provisionAcls(API_SPEC, adminClient);
+            Provisioner.provisionTopics(false, API_SPEC, adminClient);
+            Provisioner.provisionAcls(false, API_SPEC, adminClient);
         }
     }
 
