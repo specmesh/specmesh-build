@@ -144,12 +144,21 @@ public class ProvisionStatus {
 
     /** Operation result */
     public enum CRUD {
+        // intention to create
         CREATE,
+        // successfully creates
         CREATED,
-        READ,
+        // intention to update
         UPDATE,
-        DELETE,
+        // updated successfully
+        UPDATED,
+        // intention to delete
+         DELETE,
+        // deleted
+         DELETED,
+        // Noop
         IGNORED,
+        // operation failed
         FAILED
     }
 
