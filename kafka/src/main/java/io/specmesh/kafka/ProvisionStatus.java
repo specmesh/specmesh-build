@@ -190,6 +190,9 @@ public class ProvisionStatus {
         @Builder.Default private List<SchemaStatus> schemas = Collections.emptyList();
         private Map<String, SchemaStatus> status;
 
+        /**
+         * compile state collections into the validation state map
+         */
         public void build() {
             status =
                     schemas.stream()
@@ -226,6 +229,9 @@ public class ProvisionStatus {
         private Map<String, AclStatus> status;
         private Exception exception;
 
+        /**
+         * compile state collections into the validation state map
+         */
         public void build() {
             status =
                     aclsToCreate.stream()
