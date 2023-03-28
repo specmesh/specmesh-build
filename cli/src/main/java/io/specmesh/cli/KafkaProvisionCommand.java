@@ -87,11 +87,13 @@ public class KafkaProvisionCommand implements Callable<ProvisionStatus> {
     private String secret;
 
     @Option(
-            names = {"-v", "--validate"},
+            names = {"-d", "--dry-run"},
             description =
-                    "Validate the spec against the given cluster and output proposed changes, or"
-                            + " fail displaying incompatible changes/errors")
-    private boolean validateMode;
+                    "Compares the cluster against the spec, outputting proposed changes if compatible."
+                            + "If the spec incompatible with the cluster (not sure how it could be) then will fail with a descriptive error message."
+                              + "A return value of 0=indicates no changes needed; 1=changes needed; -1=not compatible, blah blah"
+                            )
+    private boolean dryRun;
 
     @Override
     public ProvisionStatus call() throws Exception {
