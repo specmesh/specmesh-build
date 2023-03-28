@@ -62,7 +62,7 @@ public class ProvisionStatus {
     @SuppressFBWarnings
     public static class Topics {
 
-        @Builder.Default private List<NewTopic> domainTopics = Collections.emptyList();
+        @Builder.Default private List<NewTopic> domainTopics = List.of();
         @Builder.Default private List<String> existingTopics = Collections.emptyList();
         @Builder.Default private List<NewTopic> createTopics = Collections.emptyList();
 
