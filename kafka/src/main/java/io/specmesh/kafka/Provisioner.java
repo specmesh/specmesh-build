@@ -16,9 +16,9 @@
 
 package io.specmesh.kafka;
 
-import static io.specmesh.kafka.ProvisionStatus.CRUD.CREATE;
-import static io.specmesh.kafka.ProvisionStatus.CRUD.CREATED;
-import static io.specmesh.kafka.ProvisionStatus.CRUD.FAILED;
+import static io.specmesh.kafka.ProvisionStatus.STATE.CREATE;
+import static io.specmesh.kafka.ProvisionStatus.STATE.CREATED;
+import static io.specmesh.kafka.ProvisionStatus.STATE.FAILED;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.readString;
 
@@ -111,18 +111,14 @@ public final class Provisioner {
 
             final var create = creatingTopics(domainTopics, existing);
 
-            status.createTopics(create);
+            status.topicsToCreate(create);
 
-            try {
-                if (!validateMode) {
-                    adminClient.createTopics(create).all().get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
-                    status.createdTopics(create);
-                }
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                throw new ProvisioningException("Failed to create topics", e);
+            if (!validateMode) {
+                adminClient.createTopics(create).all().get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                status.topicsCreated(create);
             }
-        } catch (ProvisioningException ex) {
-            status.exception(ex);
+        } catch (InterruptedException | ExecutionException | TimeoutException ex) {
+            status.exception(new ProvisioningException("Failed to create topics", ex));
         }
         return status.build();
     }
@@ -204,14 +200,14 @@ public final class Provisioner {
                                         schemaPath,
                                         readSchemaContent(schemaPath));
                         status.id(id);
-                        if (id == -1) {
-                            status.crud(CREATE);
+                        if (id == 0) {
+                            status.state(CREATE);
                         } else {
-                            status.crud(CREATED);
+                            status.state(CREATED);
                         }
 
                     } catch (ProvisioningException ex) {
-                        status.crud(FAILED);
+                        status.state(FAILED);
                         status.exception(ex);
                     }
                     statusList.add(status.build());

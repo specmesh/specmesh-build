@@ -112,7 +112,7 @@ class ProvisionerFunctionalTest {
                                     "simple.schema_demo._public.user_checkout")));
             assertThat(
                     validateTopicStatusMap.values().stream()
-                            .filter(tStatus -> tStatus.crud() == ProvisionStatus.CRUD.CREATE)
+                            .filter(tStatus -> tStatus.state() == ProvisionStatus.STATE.CREATE)
                             .count(),
                     is(2L));
 
@@ -127,7 +127,7 @@ class ProvisionerFunctionalTest {
                                     "simple.schema_demo._public.user_checkout")));
             assertThat(
                     topicStatusMap.values().stream()
-                            .filter(tStatus -> tStatus.crud() == ProvisionStatus.CRUD.CREATED)
+                            .filter(tStatus -> tStatus.state() == ProvisionStatus.STATE.CREATED)
                             .count(),
                     is(2L));
 
@@ -139,13 +139,13 @@ class ProvisionerFunctionalTest {
 
             assertThat(
                     validateAclStatusMap.values().stream()
-                            .filter(tStatus -> tStatus.crud() == ProvisionStatus.CRUD.CREATE)
+                            .filter(tStatus -> tStatus.state() == ProvisionStatus.STATE.CREATE)
                             .count(),
                     is(10L));
 
             assertThat(
                     aclStatusMap.values().stream()
-                            .filter(tStatus -> tStatus.crud() == ProvisionStatus.CRUD.CREATED)
+                            .filter(tStatus -> tStatus.state() == ProvisionStatus.STATE.CREATED)
                             .count(),
                     is(10L));
 
@@ -157,7 +157,7 @@ class ProvisionerFunctionalTest {
 
             assertThat(
                     validateSchemaStatusMap.values().stream()
-                            .filter(tStatus -> tStatus.crud() == ProvisionStatus.CRUD.CREATE)
+                            .filter(tStatus -> tStatus.state() == ProvisionStatus.STATE.CREATE)
                             .count(),
                     is(2L));
             assertThat(
@@ -169,7 +169,7 @@ class ProvisionerFunctionalTest {
 
             assertThat(
                     schemaStatusMap.values().stream()
-                            .filter(tStatus -> tStatus.crud() == ProvisionStatus.CRUD.CREATED)
+                            .filter(tStatus -> tStatus.state() == ProvisionStatus.STATE.CREATED)
                             .count(),
                     is(2L));
             assertThat(

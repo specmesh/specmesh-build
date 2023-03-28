@@ -81,7 +81,7 @@ class CliFunctionalTest {
         // then: Verify status is correct
         final var topicProvisionStatus = status.topics();
         assertThat(
-                topicProvisionStatus.createTopics().stream()
+                topicProvisionStatus.topicsToCreate().stream()
                         .map(NewTopic::name)
                         .collect(Collectors.toSet()),
                 is(

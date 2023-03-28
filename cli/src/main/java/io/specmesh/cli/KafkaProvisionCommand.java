@@ -89,16 +89,17 @@ public class KafkaProvisionCommand implements Callable<ProvisionStatus> {
     @Option(
             names = {"-d", "--dry-run"},
             description =
-                    "Compares the cluster against the spec, outputting proposed changes if compatible."
-                            + "If the spec incompatible with the cluster (not sure how it could be) then will fail with a descriptive error message."
-                              + "A return value of 0=indicates no changes needed; 1=changes needed; -1=not compatible, blah blah"
-                            )
+                    "Compares the cluster against the spec, outputting proposed changes if"
+                        + " compatible.If the spec incompatible with the cluster (not sure how it"
+                        + " could be) then will fail with a descriptive error message.A return"
+                        + " value of 0=indicates no changes needed; 1=changes needed; -1=not"
+                        + " compatible, blah blah")
     private boolean dryRun;
 
     @Override
     public ProvisionStatus call() throws Exception {
         return Provisioner.provision(
-                validateMode, specMeshSpec(), schemaPath, adminClient(), schemaRegistryClient());
+                dryRun, specMeshSpec(), schemaPath, adminClient(), schemaRegistryClient());
     }
 
     private KafkaApiSpec specMeshSpec() {

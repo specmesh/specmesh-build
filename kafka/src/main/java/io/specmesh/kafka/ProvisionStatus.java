@@ -64,9 +64,9 @@ public class ProvisionStatus {
 
         @Builder.Default private List<NewTopic> domainTopics = List.of();
         @Builder.Default private List<String> existingTopics = Collections.emptyList();
-        @Builder.Default private List<NewTopic> createTopics = Collections.emptyList();
+        @Builder.Default private List<NewTopic> topicsToCreate = Collections.emptyList();
 
-        @Builder.Default private List<NewTopic> createdTopics = Collections.emptyList();
+        @Builder.Default private List<NewTopic> topicsCreated = Collections.emptyList();
 
         private Exception exception;
         private Map<String, TopicStatus> status;
@@ -80,7 +80,7 @@ public class ProvisionStatus {
                                         final var status =
                                                 TopicStatus.builder().name(domainTopic.name());
                                         final var shouldCreate =
-                                                createTopics.stream()
+                                                topicsToCreate.stream()
                                                         .filter(
                                                                 createTopic ->
                                                                         createTopic
@@ -90,7 +90,7 @@ public class ProvisionStatus {
                                                                                                 .name()))
                                                         .findFirst();
                                         final var wasCreated =
-                                                createdTopics.stream()
+                                                topicsCreated.stream()
                                                         .filter(
                                                                 createdTopic ->
                                                                         createdTopic
@@ -103,22 +103,22 @@ public class ProvisionStatus {
                                         // is there an action to carry out
                                         var createdStatus =
                                                 shouldCreate.isPresent()
-                                                        ? CRUD.CREATE
-                                                        : CRUD.IGNORED;
+                                                        ? STATE.CREATE
+                                                        : STATE.IGNORED;
                                         // if not ignored - was it created or updated
                                         createdStatus =
-                                                createdStatus != CRUD.IGNORED
+                                                createdStatus != STATE.IGNORED
                                                                 && shouldCreate.isPresent()
                                                                 && wasCreated.isPresent()
-                                                        ? CRUD.CREATED
-                                                        : CRUD.CREATE;
+                                                        ? STATE.CREATED
+                                                        : STATE.CREATE;
 
-                                        status.crud(createdStatus)
+                                        status.state(createdStatus)
                                                 .configs(domainTopic.configs())
                                                 .partitions(domainTopic.numPartitions())
                                                 .replication(domainTopic.replicationFactor());
                                         if (exception != null) {
-                                            status.crud(CRUD.FAILED);
+                                            status.state(STATE.FAILED);
                                             status.exception(exception);
                                         }
                                         return status.build();
@@ -135,7 +135,7 @@ public class ProvisionStatus {
     @SuppressFBWarnings
     public static class TopicStatus {
         private String name;
-        private CRUD crud;
+        private STATE state;
         private int partitions;
         private short replication;
         private Map<String, String> configs;
@@ -143,7 +143,7 @@ public class ProvisionStatus {
     }
 
     /** Operation result */
-    public enum CRUD {
+    public enum STATE {
         /** intention to create */
         CREATE,
         /** successfully creates */
@@ -189,7 +189,7 @@ public class ProvisionStatus {
     @Accessors(fluent = true)
     @SuppressFBWarnings
     public static class SchemaStatus {
-        private CRUD crud;
+        private STATE state;
         private int id;
         private String schemaSubject;
         private SchemaInfo schemaInfo;
@@ -221,7 +221,7 @@ public class ProvisionStatus {
                                                         .name(acl.toString())
                                                         .entry(acl.entry())
                                                         .pattern(acl.pattern())
-                                                        .crud(CRUD.CREATE);
+                                                        .state(STATE.CREATE);
 
                                         final var wasCreated =
                                                 aclsCreated.stream()
@@ -234,10 +234,10 @@ public class ProvisionStatus {
                                                                                                 .toString()))
                                                         .findFirst();
                                         if (wasCreated.isPresent()) {
-                                            aclStatus.crud(CRUD.CREATED);
+                                            aclStatus.state(STATE.CREATED);
                                         }
                                         if (exception != null) {
-                                            aclStatus.crud(CRUD.FAILED);
+                                            aclStatus.state(STATE.FAILED);
                                             aclStatus.exception(exception);
                                         }
                                         return aclStatus.build();
@@ -254,7 +254,7 @@ public class ProvisionStatus {
     @Accessors(fluent = true)
     @SuppressFBWarnings
     public static class AclStatus {
-        private CRUD crud;
+        private STATE state;
         private String name;
         private ResourcePattern pattern;
         private AccessControlEntry entry;
