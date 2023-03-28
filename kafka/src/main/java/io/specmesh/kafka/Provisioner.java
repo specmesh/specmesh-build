@@ -235,7 +235,7 @@ public final class Provisioner {
             if (!validateMode) {
                 return schemaRegistryClient.register(schemaSubject, parsedSchema);
             } else {
-                return -1;
+                return 0;
             }
         } catch (IOException | RestClientException e) {
             throw new ProvisioningException(
