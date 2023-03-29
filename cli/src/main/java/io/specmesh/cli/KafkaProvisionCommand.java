@@ -23,8 +23,8 @@ import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientConfig;
 import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.kafka.KafkaApiSpec;
-import io.specmesh.kafka.ProvisionStatus;
-import io.specmesh.kafka.Provisioner;
+import io.specmesh.kafka.provision.Provisioner;
+import io.specmesh.kafka.provision.Status;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,7 +44,7 @@ import picocli.CommandLine.Option;
         description =
                 "Apply the provided specification to provision kafka resources and permissions on"
                         + " the cluster")
-public class KafkaProvisionCommand implements Callable<ProvisionStatus> {
+public class KafkaProvisionCommand implements Callable<Status> {
 
     @Option(
             names = {"-bs", "--bootstrap-server"},
@@ -97,7 +97,7 @@ public class KafkaProvisionCommand implements Callable<ProvisionStatus> {
     private boolean dryRun;
 
     @Override
-    public ProvisionStatus call() throws Exception {
+    public Status call() throws Exception {
         return Provisioner.provision(
                 dryRun, specMeshSpec(), schemaPath, adminClient(), schemaRegistryClient());
     }

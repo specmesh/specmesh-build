@@ -1,5 +1,5 @@
 asyncapi: '2.4.0'
-id: 'urn:simple:schema_demo'
+id: 'urn:simple:provision_demo'
 info:
   title: Streetlights API
   version: '1.0.0'
@@ -22,11 +22,12 @@ channels:
         envs:
           - staging
           - prod
-        partitions: 3
+        partitions: 10
         replicas: 1
-        retention: 1
         configs:
           cleanup.policy: delete
+          retention.ms: 3600000
+
 
     publish:
       summary: Inform about environmental lighting conditions for a particular streetlight.
@@ -50,9 +51,9 @@ channels:
           - prod
         partitions: 3
         replicas: 1
-        retention: 1
         configs:
           cleanup.policy: delete
+          retention.ms: 9900000
 
     publish:
       summary: User purchase confirmation

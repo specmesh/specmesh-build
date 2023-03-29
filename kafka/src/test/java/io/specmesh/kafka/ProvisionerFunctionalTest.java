@@ -26,28 +26,39 @@ import static org.apache.kafka.common.resource.ResourceType.CLUSTER;
 import static org.apache.kafka.common.resource.ResourceType.GROUP;
 import static org.apache.kafka.common.resource.ResourceType.TRANSACTIONAL_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.is;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
+import io.specmesh.kafka.provision.ProvisionTopics;
+import io.specmesh.kafka.provision.Status;
 import io.specmesh.test.TestSpecLoader;
-import java.util.Optional;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.common.TopicCollection;
 import org.apache.kafka.common.acl.AccessControlEntry;
 import org.apache.kafka.common.acl.AclBinding;
+import org.apache.kafka.common.config.ConfigResource;
+import org.apache.kafka.common.config.TopicConfig;
 import org.apache.kafka.common.resource.ResourcePattern;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 @SuppressFBWarnings(
         value = "IC_INIT_CIRCULARITY",
         justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positive")
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ProvisionerFunctionalTest {
 
     private static final KafkaApiSpec API_SPEC =
             TestSpecLoader.loadFromClassPath("provisioner-functional-test-api.yaml");
+    public static final String USER_SIGNED_UP = "simple.provision_demo._public.user_signed_up";
+    public static final String USER_CHECKOUT = "simple.provision_demo._public.user_checkout";
 
     private enum Domain {
         /** The domain associated with the spec. */
@@ -79,105 +90,128 @@ class ProvisionerFunctionalTest {
                     .build();
 
     @Test
-    void shouldProvisionFromZero() {
+    @Order(1)
+    void shouldDryRunTopicsFromEmptyCluster() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
-            final var schemaRegistryClient =
-                    new CachedSchemaRegistryClient(KAFKA_ENV.schemeRegistryServer(), 5);
-            final var validateStatus =
-                    Provisioner.provision(
-                            true,
-                            API_SPEC,
-                            "./build/resources/test",
-                            adminClient,
-                            Optional.of(schemaRegistryClient));
-            final var provisionStatus =
-                    Provisioner.provision(
-                            false,
-                            API_SPEC,
-                            "./build/resources/test",
-                            adminClient,
-                            Optional.of(schemaRegistryClient));
 
-            validateStatus.build();
-            provisionStatus.build();
+            final var changeset = ProvisionTopics.provision(true, API_SPEC, adminClient);
 
-            // Verify -- topics --  'validateMode' - only 'CREATE's
-            final var validateTopicStatusMap = validateStatus.topics().status();
-            assertThat(validateTopicStatusMap.size(), is(2));
             assertThat(
-                    validateTopicStatusMap.keySet(),
-                    is(
-                            containsInAnyOrder(
-                                    "simple.schema_demo._public.user_signed_up",
-                                    "simple.schema_demo._public.user_checkout")));
+                    changeset.stream().map(ProvisionTopics.Topic::name).collect(Collectors.toSet()),
+                    Matchers.is(Matchers.containsInAnyOrder(USER_SIGNED_UP, USER_CHECKOUT)));
+
             assertThat(
-                    validateTopicStatusMap.values().stream()
-                            .filter(tStatus -> tStatus.state() == ProvisionStatus.STATE.CREATE)
+                    "dry run should leave changeset in 'create' state",
+                    changeset.stream()
+                            .filter(topic -> topic.state() == Status.STATE.CREATE)
                             .count(),
-                    is(2L));
+                    Matchers.is(2L));
 
-            // Verify -- topics
-            final var topicStatusMap = provisionStatus.topics().status();
-            assertThat(topicStatusMap.size(), is(2));
             assertThat(
-                    topicStatusMap.keySet(),
-                    is(
-                            containsInAnyOrder(
-                                    "simple.schema_demo._public.user_signed_up",
-                                    "simple.schema_demo._public.user_checkout")));
+                    changeset.stream()
+                            .filter(topic -> topic.name().equals(USER_SIGNED_UP))
+                            .findFirst()
+                            .get()
+                            .partitions(),
+                    Matchers.is(10));
+
             assertThat(
-                    topicStatusMap.values().stream()
-                            .filter(tStatus -> tStatus.state() == ProvisionStatus.STATE.CREATED)
+                    changeset.stream()
+                            .filter(topic -> topic.name().equals(USER_SIGNED_UP))
+                            .findFirst()
+                            .get()
+                            .config()
+                            .get(TopicConfig.RETENTION_MS_CONFIG),
+                    Matchers.is("3600000"));
+
+            assertThat(
+                    changeset.stream()
+                            .filter(topic -> topic.name().equals(USER_CHECKOUT))
+                            .findFirst()
+                            .get()
+                            .config()
+                            .get(TopicConfig.CLEANUP_POLICY_CONFIG),
+                    Matchers.is(TopicConfig.CLEANUP_POLICY_DELETE));
+        }
+    }
+
+    @Test
+    @Order(2)
+    void shouldProvisionTopicsFromEmptyCluster() throws ExecutionException, InterruptedException {
+        try (Admin adminClient = KAFKA_ENV.adminClient()) {
+
+            final var changeSet = ProvisionTopics.provision(false, API_SPEC, adminClient);
+
+            // Verify - changeset
+            assertThat(
+                    changeSet.stream().map(ProvisionTopics.Topic::name).collect(Collectors.toSet()),
+                    Matchers.is(Matchers.containsInAnyOrder(USER_SIGNED_UP, USER_CHECKOUT)));
+
+            assertThat(
+                    "dry run should leave changeset in 'create' state",
+                    changeSet.stream()
+                            .filter(topic -> topic.state() == Status.STATE.CREATED)
                             .count(),
-                    is(2L));
-
-            // Verify -- ACLs
-            final var validateAclStatusMap = validateStatus.acls().status();
-            final var aclStatusMap = provisionStatus.acls().status();
-
-            assertThat(validateAclStatusMap.size(), is(10));
+                    Matchers.is(2L));
 
             assertThat(
-                    validateAclStatusMap.values().stream()
-                            .filter(tStatus -> tStatus.state() == ProvisionStatus.STATE.CREATE)
-                            .count(),
-                    is(10L));
+                    changeSet.stream()
+                            .filter(topic -> topic.name().equals(USER_SIGNED_UP))
+                            .findFirst()
+                            .get()
+                            .partitions(),
+                    Matchers.is(10));
 
             assertThat(
-                    aclStatusMap.values().stream()
-                            .filter(tStatus -> tStatus.state() == ProvisionStatus.STATE.CREATED)
-                            .count(),
-                    is(10L));
-
-            // Verify -- Schemas
-            final var validateSchemaStatusMap = validateStatus.schemas().status();
-            final var schemaStatusMap = provisionStatus.schemas().status();
-
-            assertThat(validateSchemaStatusMap.size(), is(2));
+                    changeSet.stream()
+                            .filter(topic -> topic.name().equals(USER_SIGNED_UP))
+                            .findFirst()
+                            .get()
+                            .config()
+                            .get(TopicConfig.RETENTION_MS_CONFIG),
+                    Matchers.is("3600000"));
 
             assertThat(
-                    validateSchemaStatusMap.values().stream()
-                            .filter(tStatus -> tStatus.state() == ProvisionStatus.STATE.CREATE)
-                            .count(),
-                    is(2L));
-            assertThat(
-                    validateSchemaStatusMap.keySet(),
-                    is(
-                            containsInAnyOrder(
-                                    "simple.schema_demo._public.user_signed_up-value",
-                                    "simple.schema_demo._public.user_checkout-value")));
+                    changeSet.stream()
+                            .filter(topic -> topic.name().equals(USER_CHECKOUT))
+                            .findFirst()
+                            .get()
+                            .config()
+                            .get(TopicConfig.CLEANUP_POLICY_CONFIG),
+                    Matchers.is(TopicConfig.CLEANUP_POLICY_DELETE));
 
+            // Verify cluster version of the topic matches
+            final var topicListings =
+                    adminClient.listTopics().listings().get().stream()
+                            .filter(topic -> topic.name().startsWith("simple"))
+                            .collect(Collectors.toList());
+            assertThat(topicListings, Matchers.is(Matchers.hasSize(2)));
+
+            // Verify description - check partitions and replicas
+            final var topicDescriptions =
+                    adminClient
+                            .describeTopics(
+                                    TopicCollection.ofTopicNames(
+                                            List.of(USER_SIGNED_UP, USER_CHECKOUT)))
+                            .topicNameValues();
+            final var userSignedUpDes = topicDescriptions.get(USER_SIGNED_UP).get();
+            assertThat(userSignedUpDes.partitions(), Matchers.is(Matchers.hasSize(10)));
             assertThat(
-                    schemaStatusMap.values().stream()
-                            .filter(tStatus -> tStatus.state() == ProvisionStatus.STATE.CREATED)
-                            .count(),
-                    is(2L));
+                    userSignedUpDes.partitions().get(0).replicas(),
+                    Matchers.is(Matchers.hasSize(1)));
+
+            // Verify config - check retention & cleanup
+            final var configResource =
+                    new ConfigResource(ConfigResource.Type.TOPIC, USER_SIGNED_UP);
+            final var configs = adminClient.describeConfigs(List.of(configResource)).all().get();
+
+            final var topicConfig = configs.get(configResource);
             assertThat(
-                    schemaStatusMap.keySet(),
-                    is(
-                            containsInAnyOrder(
-                                    "simple.schema_demo._public.user_signed_up-value",
-                                    "simple.schema_demo._public.user_checkout-value")));
+                    topicConfig.get(TopicConfig.CLEANUP_POLICY_CONFIG).value(),
+                    Matchers.is(TopicConfig.CLEANUP_POLICY_DELETE));
+            assertThat(
+                    topicConfig.get(TopicConfig.RETENTION_MS_CONFIG).value(),
+                    Matchers.is("3600000"));
         }
     }
 
