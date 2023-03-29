@@ -23,6 +23,7 @@ import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientConfig;
 import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.kafka.KafkaApiSpec;
+import io.specmesh.kafka.ProvisionStatus;
 import io.specmesh.kafka.Provisioner;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -43,7 +44,7 @@ import picocli.CommandLine.Option;
         description =
                 "Apply the provided specification to provision kafka resources and permissions on"
                         + " the cluster")
-public class KafkaProvisionCommand implements Callable<Provisioner.Status> {
+public class KafkaProvisionCommand implements Callable<ProvisionStatus> {
 
     @Option(
             names = {"-bs", "--bootstrap-server"},
@@ -85,10 +86,20 @@ public class KafkaProvisionCommand implements Callable<Provisioner.Status> {
             description = "secret credential for the cluster connection")
     private String secret;
 
+    @Option(
+            names = {"-d", "--dry-run"},
+            description =
+                    "Compares the cluster against the spec, outputting proposed changes if"
+                        + " compatible.If the spec incompatible with the cluster (not sure how it"
+                        + " could be) then will fail with a descriptive error message.A return"
+                        + " value of 0=indicates no changes needed; 1=changes needed; -1=not"
+                        + " compatible, blah blah")
+    private boolean dryRun;
+
     @Override
-    public Provisioner.Status call() throws Exception {
+    public ProvisionStatus call() throws Exception {
         return Provisioner.provision(
-                specMeshSpec(), schemaPath, adminClient(), schemaRegistryClient());
+                dryRun, specMeshSpec(), schemaPath, adminClient(), schemaRegistryClient());
     }
 
     private KafkaApiSpec specMeshSpec() {
