@@ -55,8 +55,8 @@ import org.testcontainers.utility.DockerImageName;
  * <p>Instantiate the Docker based Kafka environment in test cases using the Junit5
  * {@code @RegisterExtension}:
  *
- * <pre>{@code
- * @RegisterExtension
+ * <pre>
+ * &#064;RegisterExtension
  * private static final KafkaEnvironment KAFKA_ENV = DockerKafkaEnvironment.builder()
  *  .withContainerStartUpAttempts(4)
  *  .build();
