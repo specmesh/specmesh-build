@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package io.specmesh.kafka;
+package io.specmesh.kafka.provision;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.apiparser.model.SchemaInfo;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.acl.AccessControlEntry;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.resource.ResourcePattern;
@@ -41,109 +41,22 @@ import org.apache.kafka.common.resource.ResourcePattern;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Accessors(fluent = true)
 @SuppressFBWarnings
-public class ProvisionStatus {
-    private Topics topics;
+public class Status {
+
+    private Collection<ProvisionTopics.Topic> topics;
     private Schemas schemas;
     private Acls acls;
 
     /** Process the accumulated state */
     public void build() {
-        topics.build();
         schemas.build();
         acls.build();
     }
 
-    /** Topic provisioning status set */
-    @Builder
-    @Data
-    @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    @Accessors(fluent = true)
-    @SuppressFBWarnings
-    public static class Topics {
-
-        @Builder.Default private List<NewTopic> domainTopics = List.of();
-        @Builder.Default private List<String> existingTopics = Collections.emptyList();
-        @Builder.Default private List<NewTopic> topicsToCreate = Collections.emptyList();
-
-        @Builder.Default private List<NewTopic> topicsCreated = Collections.emptyList();
-
-        private Exception exception;
-        private Map<String, TopicStatus> status;
-
-        /** Process the accumulated state */
-        public void build() {
-            status =
-                    domainTopics.stream()
-                            .map(
-                                    domainTopic -> {
-                                        final var status =
-                                                TopicStatus.builder().name(domainTopic.name());
-                                        final var shouldCreate =
-                                                topicsToCreate.stream()
-                                                        .filter(
-                                                                createTopic ->
-                                                                        createTopic
-                                                                                .name()
-                                                                                .equals(
-                                                                                        domainTopic
-                                                                                                .name()))
-                                                        .findFirst();
-                                        final var wasCreated =
-                                                topicsCreated.stream()
-                                                        .filter(
-                                                                createdTopic ->
-                                                                        createdTopic
-                                                                                .name()
-                                                                                .equals(
-                                                                                        domainTopic
-                                                                                                .name()))
-                                                        .findFirst();
-
-                                        // is there an action to carry out
-                                        var createdStatus =
-                                                shouldCreate.isPresent()
-                                                        ? STATE.CREATE
-                                                        : STATE.IGNORED;
-                                        // if not ignored - was it created or updated
-                                        createdStatus =
-                                                createdStatus != STATE.IGNORED
-                                                                && shouldCreate.isPresent()
-                                                                && wasCreated.isPresent()
-                                                        ? STATE.CREATED
-                                                        : STATE.CREATE;
-
-                                        status.state(createdStatus)
-                                                .configs(domainTopic.configs())
-                                                .partitions(domainTopic.numPartitions())
-                                                .replication(domainTopic.replicationFactor());
-                                        if (exception != null) {
-                                            status.state(STATE.FAILED);
-                                            status.exception(exception);
-                                        }
-                                        return status.build();
-                                    })
-                            .collect(Collectors.toMap(TopicStatus::name, item -> item));
-        }
-    }
-    /** Topic provisioning status */
-    @Builder
-    @Data
-    @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    @Accessors(fluent = true)
-    @SuppressFBWarnings
-    public static class TopicStatus {
-        private String name;
-        private STATE state;
-        private int partitions;
-        private short replication;
-        private Map<String, String> configs;
-        private Exception exception;
-    }
-
     /** Operation result */
     public enum STATE {
+        /** represents READ state */
+        READ,
         /** intention to create */
         CREATE,
         /** successfully creates */

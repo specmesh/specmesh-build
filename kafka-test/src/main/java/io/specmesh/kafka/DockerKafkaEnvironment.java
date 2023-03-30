@@ -18,6 +18,7 @@ package io.specmesh.kafka;
 
 import static java.util.Objects.requireNonNull;
 
+import io.specmesh.kafka.provision.Provisioner;
 import io.specmesh.kafka.schema.SchemaRegistryContainer;
 import java.time.Duration;
 import java.util.Collection;

@@ -39,6 +39,7 @@ import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializerConfig;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
 import io.confluent.kafka.streams.serdes.protobuf.KafkaProtobufSerde;
+import io.specmesh.kafka.provision.Provisioner;
 import io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfo.UserInfo;
 import io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched;
 import io.specmesh.test.TestSpecLoader;
