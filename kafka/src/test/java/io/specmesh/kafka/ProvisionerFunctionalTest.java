@@ -26,15 +26,27 @@ import static org.apache.kafka.common.resource.ResourceType.CLUSTER;
 import static org.apache.kafka.common.resource.ResourceType.GROUP;
 import static org.apache.kafka.common.resource.ResourceType.TRANSACTIONAL_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.confluent.kafka.schemaregistry.ParsedSchema;
+import io.confluent.kafka.schemaregistry.SchemaProvider;
+import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
+import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
+import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
+import io.confluent.kafka.schemaregistry.json.JsonSchemaProvider;
+import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
 import io.specmesh.kafka.provision.AclProvisioner;
+import io.specmesh.kafka.provision.SchemaProvisioner;
 import io.specmesh.kafka.provision.Status;
 import io.specmesh.kafka.provision.TopicProvisioner;
 import io.specmesh.kafka.provision.TopicProvisioner.Topic;
 import io.specmesh.test.TestSpecLoader;
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -62,7 +74,7 @@ class ProvisionerFunctionalTest {
     private static final KafkaApiSpec API_SPEC =
             TestSpecLoader.loadFromClassPath("provisioner-functional-test-api.yaml");
     public static final String USER_SIGNED_UP = "simple.provision_demo._public.user_signed_up";
-    public static final String USER_CHECKOUT = "simple.provision_demo._public.user_checkout";
+    public static final String USER_INFO = "simple.provision_demo._public.user_info";
 
     private enum Domain {
         /** The domain associated with the spec. */
@@ -102,7 +114,7 @@ class ProvisionerFunctionalTest {
 
             assertThat(
                     changeset.stream().map(Topic::name).collect(Collectors.toSet()),
-                    is(Matchers.containsInAnyOrder(USER_SIGNED_UP, USER_CHECKOUT)));
+                    is(containsInAnyOrder(USER_SIGNED_UP, USER_INFO)));
 
             assertThat(
                     "dry run should leave changeset in 'create' state",
@@ -130,7 +142,7 @@ class ProvisionerFunctionalTest {
 
             assertThat(
                     changeset.stream()
-                            .filter(topic -> topic.name().equals(USER_CHECKOUT))
+                            .filter(topic -> topic.name().equals(USER_INFO))
                             .findFirst()
                             .get()
                             .config()
@@ -177,6 +189,35 @@ class ProvisionerFunctionalTest {
 
     @Test
     @Order(3)
+    void shouldDryRunSchemasFromEmptyCluster() throws RestClientException, IOException {
+
+        final var srClient = srClient();
+        final var changeset = SchemaProvisioner.provision(true, API_SPEC, ".", srClient);
+
+        // Verify - 11 created
+        assertThat(
+                "dry run should leave changeset in 'create' state",
+                changeset.stream().filter(topic -> topic.state() == Status.STATE.CREATE).count(),
+                is(2L));
+
+        // Verify - should have 2 SR entries
+        final var allSubjects = srClient.getAllSubjects();
+
+        assertThat(allSubjects, is(hasSize(0)));
+    }
+
+    private static CachedSchemaRegistryClient srClient() {
+        final List<SchemaProvider> providers =
+                List.of(
+                        new ProtobufSchemaProvider(),
+                        new AvroSchemaProvider(),
+                        new JsonSchemaProvider());
+        return new CachedSchemaRegistryClient(
+                KAFKA_ENV.schemeRegistryServer(), 5, providers, Map.of());
+    }
+
+    @Test
+    @Order(4)
     void shouldProvisionTopicsFromEmptyCluster() throws ExecutionException, InterruptedException {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
@@ -185,7 +226,7 @@ class ProvisionerFunctionalTest {
             // Verify - changeset
             assertThat(
                     changeSet.stream().map(Topic::name).collect(Collectors.toSet()),
-                    is(Matchers.containsInAnyOrder(USER_SIGNED_UP, USER_CHECKOUT)));
+                    is(containsInAnyOrder(USER_SIGNED_UP, USER_INFO)));
 
             assertThat(
                     "dry run should leave changeset in 'create' state",
@@ -213,7 +254,7 @@ class ProvisionerFunctionalTest {
 
             assertThat(
                     changeSet.stream()
-                            .filter(topic -> topic.name().equals(USER_CHECKOUT))
+                            .filter(topic -> topic.name().equals(USER_INFO))
                             .findFirst()
                             .get()
                             .config()
@@ -232,7 +273,7 @@ class ProvisionerFunctionalTest {
                     adminClient
                             .describeTopics(
                                     TopicCollection.ofTopicNames(
-                                            List.of(USER_SIGNED_UP, USER_CHECKOUT)))
+                                            List.of(USER_SIGNED_UP, USER_INFO)))
                             .topicNameValues();
             final var userSignedUpDes = topicDescriptions.get(USER_SIGNED_UP).get();
             assertThat(userSignedUpDes.partitions(), is(Matchers.hasSize(10)));
@@ -252,7 +293,7 @@ class ProvisionerFunctionalTest {
     }
 
     @Test
-    @Order(4)
+    @Order(5)
     void shouldDoRealACLsFromEmptyCluster() throws ExecutionException, InterruptedException {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
@@ -297,6 +338,37 @@ class ProvisionerFunctionalTest {
                             .count(),
                     is(1L));
         }
+    }
+
+    @Test
+    @Order(6)
+    void shouldPublishSchemasFromEmptyCluster() throws RestClientException, IOException {
+
+        final var srClient = srClient();
+        final var changeset =
+                SchemaProvisioner.provision(false, API_SPEC, "./build/resources/test", srClient);
+
+        // Verify - 11 created
+        assertThat(
+                changeset.stream().filter(topic -> topic.state() == Status.STATE.CREATED).count(),
+                is(2L));
+
+        // Verify - should have 2 SR entries
+        final var allSubjects = srClient.getAllSubjects();
+
+        assertThat(allSubjects, is(hasSize(2)));
+
+        final var schemas = srClient.getSchemas("simple", false, false);
+
+        final var schemaNames =
+                schemas.stream().map(ParsedSchema::name).collect(Collectors.toSet());
+
+        assertThat(
+                schemaNames,
+                is(
+                        containsInAnyOrder(
+                                "io.specmesh.kafka.schema.UserInfo",
+                                "simple.provision_demo._public.user_signed_up_value.UserSignedUp")));
     }
 
     private static Set<AclBinding> aclsForOtherDomain(final Domain domain) {

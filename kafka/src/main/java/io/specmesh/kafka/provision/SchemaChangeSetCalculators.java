@@ -16,32 +16,35 @@
 
 package io.specmesh.kafka.provision;
 
-import io.specmesh.kafka.provision.AclProvisioner.Acl;
+import io.specmesh.kafka.provision.SchemaProvisioner.Schema;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
 /**
- * Calculates a changeset of Acls to create or update, should also return incompatible changes for
- * existing acls
+ * Calculates a changeset of Schemas to create or update, should also return incompatible changes
+ * for existing schemas
  */
-public class AclChangeSetCalculators {
+public final class SchemaChangeSetCalculators {
 
-    /** Returns those acls to create and ignores existing */
+    /** defensive */
+    private SchemaChangeSetCalculators() {}
+
+    /** Returns those schemas to create and ignores existing */
     public static final class CreateChangeSetCalculator implements ChangeSetCalculator {
 
         /**
-         * Calculate set of Acls that dont already exist
+         * Calculate set of schemas that dont already exist
          *
-         * @param existingAcls - existing
-         * @param requiredAcls - needed
+         * @param existing - existing
+         * @param required - needed
          * @return set required to create - status set to CREATE
          */
         @Override
-        public Collection<Acl> calculate(
-                final Collection<Acl> existingAcls, final Collection<Acl> requiredAcls) {
-            return requiredAcls.stream()
-                    .filter(neededAcl -> !existingAcls.contains(neededAcl))
-                    .map(neededAcl -> neededAcl.state(Status.STATE.CREATE))
+        public Collection<Schema> calculate(
+                final Collection<Schema> existing, final Collection<Schema> required) {
+            return required.stream()
+                    .filter(schema -> !existing.contains(schema))
+                    .map(schema -> schema.state(Status.STATE.CREATE))
                     .collect(Collectors.toList());
         }
     }
@@ -49,14 +52,23 @@ public class AclChangeSetCalculators {
     /** Main API */
     interface ChangeSetCalculator {
         /**
-         * Returns changeset of acls to create/update with the 'state' flag determining which
+         * Returns changeset of schemas to create/update with the 'state' flag determining which
          * actions to carry out
          *
-         * @param existingAcls - existing
-         * @param requiredAcls - needed
+         * @param existing - existing
+         * @param required - needed
          * @return - set of those that dont exist
          */
-        Collection<Acl> calculate(Collection<Acl> existingAcls, Collection<Acl> requiredAcls);
+        Collection<Schema> calculate(Collection<Schema> existing, Collection<Schema> required);
+    }
+
+    /**
+     * brevity
+     *
+     * @return builder
+     */
+    public static ChangeSetBuilder builder() {
+        return ChangeSetBuilder.builder();
     }
 
     /** Builder of the things */
