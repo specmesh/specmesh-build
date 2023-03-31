@@ -26,10 +26,13 @@ import static org.apache.kafka.common.resource.ResourceType.CLUSTER;
 import static org.apache.kafka.common.resource.ResourceType.GROUP;
 import static org.apache.kafka.common.resource.ResourceType.TRANSACTIONAL_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.specmesh.kafka.provision.ProvisionTopics;
+import io.specmesh.kafka.provision.AclProvisioner;
 import io.specmesh.kafka.provision.Status;
+import io.specmesh.kafka.provision.TopicProvisioner;
+import io.specmesh.kafka.provision.TopicProvisioner.Topic;
 import io.specmesh.test.TestSpecLoader;
 import java.util.List;
 import java.util.Set;
@@ -39,6 +42,7 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.common.TopicCollection;
 import org.apache.kafka.common.acl.AccessControlEntry;
 import org.apache.kafka.common.acl.AclBinding;
+import org.apache.kafka.common.acl.AclBindingFilter;
 import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.config.TopicConfig;
 import org.apache.kafka.common.resource.ResourcePattern;
@@ -94,18 +98,18 @@ class ProvisionerFunctionalTest {
     void shouldDryRunTopicsFromEmptyCluster() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
-            final var changeset = ProvisionTopics.provision(true, API_SPEC, adminClient);
+            final var changeset = TopicProvisioner.provision(true, API_SPEC, adminClient);
 
             assertThat(
-                    changeset.stream().map(ProvisionTopics.Topic::name).collect(Collectors.toSet()),
-                    Matchers.is(Matchers.containsInAnyOrder(USER_SIGNED_UP, USER_CHECKOUT)));
+                    changeset.stream().map(Topic::name).collect(Collectors.toSet()),
+                    is(Matchers.containsInAnyOrder(USER_SIGNED_UP, USER_CHECKOUT)));
 
             assertThat(
                     "dry run should leave changeset in 'create' state",
                     changeset.stream()
                             .filter(topic -> topic.state() == Status.STATE.CREATE)
                             .count(),
-                    Matchers.is(2L));
+                    is(2L));
 
             assertThat(
                     changeset.stream()
@@ -113,7 +117,7 @@ class ProvisionerFunctionalTest {
                             .findFirst()
                             .get()
                             .partitions(),
-                    Matchers.is(10));
+                    is(10));
 
             assertThat(
                     changeset.stream()
@@ -122,7 +126,7 @@ class ProvisionerFunctionalTest {
                             .get()
                             .config()
                             .get(TopicConfig.RETENTION_MS_CONFIG),
-                    Matchers.is("3600000"));
+                    is("3600000"));
 
             assertThat(
                     changeset.stream()
@@ -131,28 +135,64 @@ class ProvisionerFunctionalTest {
                             .get()
                             .config()
                             .get(TopicConfig.CLEANUP_POLICY_CONFIG),
-                    Matchers.is(TopicConfig.CLEANUP_POLICY_DELETE));
+                    is(TopicConfig.CLEANUP_POLICY_DELETE));
         }
     }
 
     @Test
     @Order(2)
+    void shouldDryRunACLsFromEmptyCluster() {
+        try (Admin adminClient = KAFKA_ENV.adminClient()) {
+
+            final var changeset = AclProvisioner.provision(true, API_SPEC, adminClient);
+
+            // Verify - 11 created
+            assertThat(
+                    "dry run should leave changeset in 'create' state",
+                    changeset.stream()
+                            .filter(topic -> topic.state() == Status.STATE.CREATE)
+                            .count(),
+                    is(10L));
+
+            // Verify - should have 6 TOPIC, 2 GROUP, 2 TRANSACTIONAL and 1 CLUSTER Acls
+            assertThat(
+                    changeset.stream().filter(aacl -> aacl.name().contains("TOPIC")).count(),
+                    is(6L));
+
+            assertThat(
+                    changeset.stream()
+                            .filter(aacl -> aacl.name().contains("TRANSACTIONAL_ID"))
+                            .count(),
+                    is(2L));
+
+            assertThat(
+                    changeset.stream().filter(aacl -> aacl.name().contains("GROUP")).count(),
+                    is(1L));
+
+            assertThat(
+                    changeset.stream().filter(aacl -> aacl.name().contains("CLUSTER")).count(),
+                    is(1L));
+        }
+    }
+
+    @Test
+    @Order(3)
     void shouldProvisionTopicsFromEmptyCluster() throws ExecutionException, InterruptedException {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
-            final var changeSet = ProvisionTopics.provision(false, API_SPEC, adminClient);
+            final var changeSet = TopicProvisioner.provision(false, API_SPEC, adminClient);
 
             // Verify - changeset
             assertThat(
-                    changeSet.stream().map(ProvisionTopics.Topic::name).collect(Collectors.toSet()),
-                    Matchers.is(Matchers.containsInAnyOrder(USER_SIGNED_UP, USER_CHECKOUT)));
+                    changeSet.stream().map(Topic::name).collect(Collectors.toSet()),
+                    is(Matchers.containsInAnyOrder(USER_SIGNED_UP, USER_CHECKOUT)));
 
             assertThat(
                     "dry run should leave changeset in 'create' state",
                     changeSet.stream()
                             .filter(topic -> topic.state() == Status.STATE.CREATED)
                             .count(),
-                    Matchers.is(2L));
+                    is(2L));
 
             assertThat(
                     changeSet.stream()
@@ -160,7 +200,7 @@ class ProvisionerFunctionalTest {
                             .findFirst()
                             .get()
                             .partitions(),
-                    Matchers.is(10));
+                    is(10));
 
             assertThat(
                     changeSet.stream()
@@ -169,7 +209,7 @@ class ProvisionerFunctionalTest {
                             .get()
                             .config()
                             .get(TopicConfig.RETENTION_MS_CONFIG),
-                    Matchers.is("3600000"));
+                    is("3600000"));
 
             assertThat(
                     changeSet.stream()
@@ -178,14 +218,14 @@ class ProvisionerFunctionalTest {
                             .get()
                             .config()
                             .get(TopicConfig.CLEANUP_POLICY_CONFIG),
-                    Matchers.is(TopicConfig.CLEANUP_POLICY_DELETE));
+                    is(TopicConfig.CLEANUP_POLICY_DELETE));
 
             // Verify cluster version of the topic matches
             final var topicListings =
                     adminClient.listTopics().listings().get().stream()
                             .filter(topic -> topic.name().startsWith("simple"))
                             .collect(Collectors.toList());
-            assertThat(topicListings, Matchers.is(Matchers.hasSize(2)));
+            assertThat(topicListings, is(Matchers.hasSize(2)));
 
             // Verify description - check partitions and replicas
             final var topicDescriptions =
@@ -195,10 +235,8 @@ class ProvisionerFunctionalTest {
                                             List.of(USER_SIGNED_UP, USER_CHECKOUT)))
                             .topicNameValues();
             final var userSignedUpDes = topicDescriptions.get(USER_SIGNED_UP).get();
-            assertThat(userSignedUpDes.partitions(), Matchers.is(Matchers.hasSize(10)));
-            assertThat(
-                    userSignedUpDes.partitions().get(0).replicas(),
-                    Matchers.is(Matchers.hasSize(1)));
+            assertThat(userSignedUpDes.partitions(), is(Matchers.hasSize(10)));
+            assertThat(userSignedUpDes.partitions().get(0).replicas(), is(Matchers.hasSize(1)));
 
             // Verify config - check retention & cleanup
             final var configResource =
@@ -208,10 +246,56 @@ class ProvisionerFunctionalTest {
             final var topicConfig = configs.get(configResource);
             assertThat(
                     topicConfig.get(TopicConfig.CLEANUP_POLICY_CONFIG).value(),
-                    Matchers.is(TopicConfig.CLEANUP_POLICY_DELETE));
+                    is(TopicConfig.CLEANUP_POLICY_DELETE));
+            assertThat(topicConfig.get(TopicConfig.RETENTION_MS_CONFIG).value(), is("3600000"));
+        }
+    }
+
+    @Test
+    @Order(4)
+    void shouldDoRealACLsFromEmptyCluster() throws ExecutionException, InterruptedException {
+        try (Admin adminClient = KAFKA_ENV.adminClient()) {
+
+            final var changeset = AclProvisioner.provision(false, API_SPEC, adminClient);
+
+            // Verify - 11 created
             assertThat(
-                    topicConfig.get(TopicConfig.RETENTION_MS_CONFIG).value(),
-                    Matchers.is("3600000"));
+                    "dry run should leave changeset in 'create' state",
+                    changeset.stream()
+                            .filter(topic -> topic.state() == Status.STATE.CREATED)
+                            .count(),
+                    is(10L));
+
+            final var bindings = adminClient.describeAcls(AclBindingFilter.ANY).values().get();
+
+            final var provisionDemoBindings =
+                    bindings.stream()
+                            .filter(binding -> binding.toString().contains("provision_demo"))
+                            .collect(Collectors.toList());
+
+            // Verfiy 'provision_demo' has 6 topics, 2 transqction and 1 group
+
+            assertThat(
+                    provisionDemoBindings.stream()
+                            .filter(binding -> binding.toString().contains("TOPIC"))
+                            .count(),
+                    is(6L));
+            assertThat(
+                    provisionDemoBindings.stream()
+                            .filter(binding -> binding.toString().contains("TRANSACTIONAL_ID"))
+                            .count(),
+                    is(2L));
+            assertThat(
+                    provisionDemoBindings.stream()
+                            .filter(binding -> binding.toString().contains("GROUP"))
+                            .count(),
+                    is(1L));
+
+            assertThat(
+                    provisionDemoBindings.stream()
+                            .filter(binding -> binding.toString().contains("CLUSTER"))
+                            .count(),
+                    is(1L));
         }
     }
 

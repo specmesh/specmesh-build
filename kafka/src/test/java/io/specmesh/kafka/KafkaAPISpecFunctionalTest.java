@@ -34,9 +34,9 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.specmesh.kafka.provision.ProvisionAcls;
-import io.specmesh.kafka.provision.ProvisionTopics;
+import io.specmesh.kafka.provision.AclProvisioner;
 import io.specmesh.kafka.provision.Provisioner;
+import io.specmesh.kafka.provision.TopicProvisioner;
 import io.specmesh.test.TestSpecLoader;
 import java.time.Duration;
 import java.util.HashMap;
@@ -129,8 +129,8 @@ class KafkaAPISpecFunctionalTest {
     @BeforeAll
     static void setUp() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
-            ProvisionTopics.provision(false, API_SPEC, adminClient);
-            ProvisionAcls.provision(false, API_SPEC, adminClient);
+            TopicProvisioner.provision(false, API_SPEC, adminClient);
+            AclProvisioner.provision(false, API_SPEC, adminClient);
         }
     }
 

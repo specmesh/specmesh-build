@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -30,9 +29,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-import org.apache.kafka.common.acl.AccessControlEntry;
-import org.apache.kafka.common.acl.AclBinding;
-import org.apache.kafka.common.resource.ResourcePattern;
 
 /** Accumulated Provision status of Underlying resources */
 @Builder
@@ -43,14 +39,13 @@ import org.apache.kafka.common.resource.ResourcePattern;
 @SuppressFBWarnings
 public class Status {
 
-    private Collection<ProvisionTopics.Topic> topics;
+    private Collection<TopicProvisioner.Topic> topics;
     private Schemas schemas;
-    private Acls acls;
+    private Collection<AclProvisioner.Acl> acls;
 
     /** Process the accumulated state */
     public void build() {
         schemas.build();
-        acls.build();
     }
 
     /** Operation result */
@@ -107,70 +102,6 @@ public class Status {
         private String schemaSubject;
         private SchemaInfo schemaInfo;
         private String schemaPath;
-        private Exception exception;
-    }
-
-    /** Acl Provisioning status */
-    @Builder
-    @Data
-    @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    @Accessors(fluent = true)
-    @SuppressFBWarnings
-    public static class Acls {
-        @Builder.Default private Set<AclBinding> aclsToCreate = Collections.emptySet();
-        @Builder.Default private Set<AclBinding> aclsCreated = Collections.emptySet();
-        private Map<String, AclStatus> status;
-        private Exception exception;
-
-        /** compile state collections into the validation state map */
-        public void build() {
-            status =
-                    aclsToCreate.stream()
-                            .map(
-                                    acl -> {
-                                        final var aclStatus =
-                                                AclStatus.builder()
-                                                        .name(acl.toString())
-                                                        .entry(acl.entry())
-                                                        .pattern(acl.pattern())
-                                                        .state(STATE.CREATE);
-
-                                        final var wasCreated =
-                                                aclsCreated.stream()
-                                                        .filter(
-                                                                createdAcl ->
-                                                                        createdAcl
-                                                                                .toString()
-                                                                                .equals(
-                                                                                        acl
-                                                                                                .toString()))
-                                                        .findFirst();
-                                        if (wasCreated.isPresent()) {
-                                            aclStatus.state(STATE.CREATED);
-                                        }
-                                        if (exception != null) {
-                                            aclStatus.state(STATE.FAILED);
-                                            aclStatus.exception(exception);
-                                        }
-                                        return aclStatus.build();
-                                    })
-                            .collect(Collectors.toMap(AclStatus::name, aclStatus -> aclStatus));
-        }
-    }
-
-    /** Acl status */
-    @Builder
-    @Data
-    @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    @Accessors(fluent = true)
-    @SuppressFBWarnings
-    public static class AclStatus {
-        private STATE state;
-        private String name;
-        private ResourcePattern pattern;
-        private AccessControlEntry entry;
         private Exception exception;
     }
 }

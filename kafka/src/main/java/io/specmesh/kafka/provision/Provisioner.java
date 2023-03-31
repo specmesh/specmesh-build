@@ -34,7 +34,7 @@ public final class Provisioner {
     /**
      * Provision Topics, ACLS and schemas
      *
-     * @param validateMode test or execute
+     * @param dryRun test or execute
      * @param apiSpec given spec
      * @param schemaResources schema path
      * @param adminClient kafka admin client
@@ -43,21 +43,20 @@ public final class Provisioner {
      * @throws ProvisioningException when cant provision resources
      */
     public static Status provision(
-            final boolean validateMode,
+            final boolean dryRun,
             final KafkaApiSpec apiSpec,
             final String schemaResources,
             final Admin adminClient,
             final Optional<SchemaRegistryClient> schemaRegistryClient) {
 
         final var status =
-                Status.builder()
-                        .topics(ProvisionTopics.provision(validateMode, apiSpec, adminClient));
+                Status.builder().topics(TopicProvisioner.provision(dryRun, apiSpec, adminClient));
         schemaRegistryClient.ifPresent(
                 registryClient ->
                         status.schemas(
                                 ProvisionSchemas.provision(
-                                        validateMode, apiSpec, schemaResources, registryClient)));
-        status.acls(ProvisionAcls.provision(validateMode, apiSpec, adminClient));
+                                        dryRun, apiSpec, schemaResources, registryClient)));
+        status.acls(AclProvisioner.provision(dryRun, apiSpec, adminClient));
         return status.build();
     }
 
