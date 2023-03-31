@@ -42,14 +42,14 @@ public final class ProvisionSchemas {
     /**
      * Provision schemas to Schema Registry
      *
-     * @param validateMode for mode of operation
+     * @param dryRun for mode of operation
      * @param apiSpec the api spec
      * @param baseResourcePath the path under which external schemas are stored.
      * @param schemaRegistryClient the client for the schema registry
      * @return status of actions
      */
     public static Status.Schemas provision(
-            final boolean validateMode,
+            final boolean dryRun,
             final KafkaApiSpec apiSpec,
             final String baseResourcePath,
             final SchemaRegistryClient schemaRegistryClient) {
@@ -73,7 +73,7 @@ public final class ProvisionSchemas {
                         // register the schema against the topic (subject)
                         final var id =
                                 registerSchema(
-                                        validateMode,
+                                        dryRun,
                                         baseResourcePath,
                                         schemaRegistryClient,
                                         topic,
@@ -99,7 +99,7 @@ public final class ProvisionSchemas {
 
     @SuppressWarnings("checkstyle:ParameterNumber")
     static int registerSchema(
-            final boolean validateMode,
+            final boolean dryRun,
             final String baseResourcePath,
             final SchemaRegistryClient schemaRegistryClient,
             final NewTopic topic,
@@ -110,7 +110,7 @@ public final class ProvisionSchemas {
         try {
             final var parsedSchema =
                     getSchema(topic.name(), schemaRef, baseResourcePath, schemaContent);
-            if (!validateMode) {
+            if (!dryRun) {
                 return schemaRegistryClient.register(schemaSubject, parsedSchema);
             } else {
                 return 0;

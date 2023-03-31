@@ -16,46 +16,47 @@
 
 package io.specmesh.kafka.provision;
 
-import io.specmesh.kafka.provision.TopicProvisioner.Topic;
+import io.specmesh.kafka.provision.AclProvisioner.Acl;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
 /**
- * Calculates a changeset of topics to create or update, should also return incompatible changes for
+ * Calculates a changeset of Acls to create or update, should also return incompatible changes for
  * existing topics
  */
-public class TopicChangeSetCalculators {
+public class AclChangeSetCalculators {
 
     /** Returns those topics to create and ignores existing topics */
     public static final class CreateChangeSetCalculator implements ChangeSetCalculator {
 
         /**
-         * Calculate changes of topics to 'create' (ignored updates)
+         * Calculate set of Acls that dont already exist
          *
-         * @param existingTopics - existing
-         * @param requiredTopics - set of topics that should exist
-         * @return list of new topics with 'CREATE' flag
+         * @param existingAcls - existing
+         * @param requiredAcls - needed
+         * @return set required to create - status set to CREATE
          */
-        public Collection<Topic> calculate(
-                final Collection<Topic> existingTopics, final Collection<Topic> requiredTopics) {
-            return requiredTopics.stream()
-                    .filter(dTopic -> !existingTopics.contains(dTopic))
-                    .map(dTopic -> dTopic.state(Status.STATE.CREATE))
+        @Override
+        public Collection<Acl> calculate(
+                final Collection<Acl> existingAcls, final Collection<Acl> requiredAcls) {
+            return requiredAcls.stream()
+                    .filter(neededAcl -> !existingAcls.contains(neededAcl))
+                    .map(neededAcl -> neededAcl.state(Status.STATE.CREATE))
                     .collect(Collectors.toList());
         }
     }
+
     /** Main API */
     interface ChangeSetCalculator {
         /**
          * Returns changeset of topics to create/update with the 'state' flag determining which
          * actions to carry out
          *
-         * @param existingTopics - existing set of topics
-         * @param requiredTopics - ownership topics
+         * @param existingAcls - existing
+         * @param requiredAcls - needed
          * @return - set of those that dont exist
          */
-        Collection<Topic> calculate(
-                Collection<Topic> existingTopics, Collection<Topic> requiredTopics);
+        Collection<Acl> calculate(Collection<Acl> existingAcls, Collection<Acl> requiredAcls);
     }
 
     /** Builder of the things */

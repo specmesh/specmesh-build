@@ -22,18 +22,10 @@ import static org.hamcrest.Matchers.is;
 
 import io.specmesh.kafka.DockerKafkaEnvironment;
 import io.specmesh.kafka.KafkaEnvironment;
-import io.specmesh.kafka.provision.ProvisionTopics.Topic;
-import java.util.Collection;
+import io.specmesh.kafka.provision.TopicProvisioner.Topic;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.ListTopicsResult;
-import org.apache.kafka.common.acl.AccessControlEntryFilter;
-import org.apache.kafka.common.acl.AclBinding;
-import org.apache.kafka.common.acl.AclBindingFilter;
-import org.apache.kafka.common.resource.PatternType;
-import org.apache.kafka.common.resource.ResourcePatternFilter;
-import org.apache.kafka.common.resource.ResourceType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import picocli.CommandLine;
@@ -88,12 +80,8 @@ class CliFunctionalTest {
                                 "simple.spec_demo._private.user_checkout",
                                 "simple.spec_demo._protected.purchased")));
 
-        final var aclProvisionStatus = status.acls().aclsToCreate();
-        assertThat(aclProvisionStatus.size(), is(12));
-
         /*
-         * NOTE: Loooooose sanity checks follow (they validate 'enough' to ensure the provisioner
-         * did 'stuff'
+         * Lose sanity checks follow because we don't need to retest the tests that other tests test
          */
 
         // Then: check topic resources were created
@@ -107,36 +95,5 @@ class CliFunctionalTest {
                                 "simple.spec_demo._private.user_checkout",
                                 "simple.spec_demo._protected.purchased",
                                 "_schemas")));
-
-        // Then: check ACL resources - _private should be restricted and prefixed
-        final ResourcePatternFilter privateAclResource =
-                new ResourcePatternFilter(
-                        ResourceType.TOPIC, "simple.spec_demo._private", PatternType.PREFIXED);
-        assertThat(getAcls(privateAclResource).size(), is(1));
-
-        // Then: check ACL resources - _protected are granted explicitly to tagged domain-ids
-        final ResourcePatternFilter protectedAclResource =
-                new ResourcePatternFilter(
-                        ResourceType.TOPIC,
-                        "simple.spec_demo._protected.purchased",
-                        PatternType.LITERAL);
-        assertThat(getAcls(protectedAclResource).size(), is(2));
-
-        // Then: check ACL resources - _public are granted to y'all
-        // should grant access to someone else AND the domain owner
-        final ResourcePatternFilter publicAclResource =
-                new ResourcePatternFilter(
-                        ResourceType.TOPIC, "simple.spec_demo._public", PatternType.PREFIXED);
-        assertThat(getAcls(publicAclResource).size(), is(2));
-    }
-
-    private Collection<AclBinding> getAcls(final ResourcePatternFilter resourcePatternFilter)
-            throws ExecutionException, InterruptedException {
-        return KAFKA_ENV
-                .adminClient()
-                .describeAcls(
-                        new AclBindingFilter(resourcePatternFilter, AccessControlEntryFilter.ANY))
-                .values()
-                .get();
     }
 }

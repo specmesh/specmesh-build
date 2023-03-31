@@ -58,7 +58,7 @@ public final class TopicReaders {
          *
          * @return the matched topics
          */
-        public Collection<ProvisionTopics.Topic> readall() {
+        public Collection<TopicProvisioner.Topic> readall() {
             final var topicList = topicsForPrefix(adminClient, prefix);
 
             final var topicDescriptions = topicDescriptions(topicList);
@@ -69,7 +69,7 @@ public final class TopicReaders {
                     .map(
                             topicName -> {
                                 final var topicBuilder =
-                                        ProvisionTopics.Topic.builder()
+                                        TopicProvisioner.Topic.builder()
                                                 .name(topicName)
                                                 .state(Status.STATE.READ);
                                 try {
@@ -175,7 +175,7 @@ public final class TopicReaders {
 
     /** Reader API */
     interface TopicReader {
-        Collection<ProvisionTopics.Topic> readall();
+        Collection<TopicProvisioner.Topic> readall();
     }
 
     /** Builder for readers */

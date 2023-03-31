@@ -49,8 +49,8 @@ public class TopicWriters {
          * @return topics with updated flag
          * @throws Provisioner.ProvisioningException when things break
          */
-        public Collection<ProvisionTopics.Topic> write(
-                final Collection<ProvisionTopics.Topic> topics)
+        public Collection<TopicProvisioner.Topic> write(
+                final Collection<TopicProvisioner.Topic> topics)
                 throws Provisioner.ProvisioningException {
             try {
                 adminClient
@@ -78,7 +78,7 @@ public class TopicWriters {
          * @param topics to create from
          * @return kafka type object
          */
-        private Collection<NewTopic> asNewTopic(final Collection<ProvisionTopics.Topic> topics) {
+        private Collection<NewTopic> asNewTopic(final Collection<TopicProvisioner.Topic> topics) {
             return topics.stream()
                     .map(
                             topic ->
@@ -100,8 +100,8 @@ public class TopicWriters {
          * @return upmodified list
          * @throws Provisioner.ProvisioningException when things go wrong
          */
-        public Collection<ProvisionTopics.Topic> write(
-                final Collection<ProvisionTopics.Topic> topics)
+        public Collection<TopicProvisioner.Topic> write(
+                final Collection<TopicProvisioner.Topic> topics)
                 throws Provisioner.ProvisioningException {
             return topics;
         }
@@ -115,7 +115,7 @@ public class TopicWriters {
          * @param topics to write
          * @return updated state of topics written
          */
-        Collection<ProvisionTopics.Topic> write(Collection<ProvisionTopics.Topic> topics);
+        Collection<TopicProvisioner.Topic> write(Collection<TopicProvisioner.Topic> topics);
     }
 
     /** TopicWriter builder */
@@ -143,10 +143,11 @@ public class TopicWriters {
         /**
          * use a noop writer
          *
+         * @param dryRun - true is dry running
          * @return the builder
          */
-        public TopicWriterBuilder noopWriter() {
-            this.noopWriter = true;
+        public TopicWriterBuilder noopWriter(final boolean dryRun) {
+            this.noopWriter = dryRun;
             return this;
         }
 

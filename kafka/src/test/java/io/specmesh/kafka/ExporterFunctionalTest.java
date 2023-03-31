@@ -34,8 +34,8 @@ import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.apiparser.model.Bindings;
 import io.specmesh.apiparser.model.Channel;
 import io.specmesh.apiparser.model.KafkaBinding;
-import io.specmesh.kafka.provision.ProvisionAcls;
-import io.specmesh.kafka.provision.ProvisionTopics;
+import io.specmesh.kafka.provision.AclProvisioner;
+import io.specmesh.kafka.provision.TopicProvisioner;
 import io.specmesh.test.TestSpecLoader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -96,8 +96,8 @@ class ExporterFunctionalTest {
     @BeforeAll
     static void setUp() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
-            ProvisionTopics.provision(false, API_SPEC, adminClient);
-            ProvisionAcls.provision(false, API_SPEC, adminClient);
+            TopicProvisioner.provision(false, API_SPEC, adminClient);
+            AclProvisioner.provision(false, API_SPEC, adminClient);
         }
     }
 

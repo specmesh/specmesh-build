@@ -30,9 +30,9 @@ import lombok.experimental.Accessors;
 import org.apache.kafka.clients.admin.Admin;
 
 /** Provisions topics */
-public final class ProvisionTopics {
+public final class TopicProvisioner {
 
-    private ProvisionTopics() {}
+    private TopicProvisioner() {}
 
     /**
      * Provision topics in the Kafka cluster.
@@ -47,7 +47,7 @@ public final class ProvisionTopics {
             final boolean dryRun, final KafkaApiSpec apiSpec, final Admin adminClient) {
         final var domain = domainTopicsFromApiSpec(apiSpec);
         final var existing = reader(apiSpec, adminClient).readall();
-        final var changeSet = comparator().calculate(domain, existing);
+        final var changeSet = comparator().calculate(existing, domain);
         return writer(dryRun, adminClient).write(changeSet);
     }
 
@@ -68,10 +68,7 @@ public final class ProvisionTopics {
      * @return configured writer
      */
     private static TopicWriters.TopicWriter writer(final boolean dryRun, final Admin adminClient) {
-        final var topicWriterBuilder = TopicWriters.TopicWriterBuilder.builder();
-        if (dryRun) {
-            topicWriterBuilder.noopWriter();
-        }
+        final var topicWriterBuilder = TopicWriters.TopicWriterBuilder.builder().noopWriter(dryRun);
         return topicWriterBuilder.adminClient(adminClient).build();
     }
 
@@ -121,5 +118,6 @@ public final class ProvisionTopics {
         private short replication;
         private Map<String, String> config;
         private Exception exception;
+        private String messages;
     }
 }
