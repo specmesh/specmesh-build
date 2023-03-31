@@ -17,12 +17,7 @@
 package io.specmesh.kafka.provision;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.specmesh.apiparser.model.SchemaInfo;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -40,13 +35,8 @@ import lombok.experimental.Accessors;
 public class Status {
 
     private Collection<TopicProvisioner.Topic> topics;
-    private Schemas schemas;
+    private Collection<SchemaProvisioner.Schema> schemas;
     private Collection<AclProvisioner.Acl> acls;
-
-    /** Process the accumulated state */
-    public void build() {
-        schemas.build();
-    }
 
     /** Operation result */
     public enum STATE {
@@ -68,40 +58,5 @@ public class Status {
         IGNORED,
         /** operation failed */
         FAILED
-    }
-
-    /** Schema provisioning status */
-    @Builder
-    @Data
-    @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    @Accessors(fluent = true)
-    @SuppressFBWarnings
-    public static class Schemas {
-        @Builder.Default private List<SchemaStatus> schemas = Collections.emptyList();
-        private Map<String, SchemaStatus> status;
-
-        /** compile state collections into the validation state map */
-        public void build() {
-            status =
-                    schemas.stream()
-                            .collect(Collectors.toMap(SchemaStatus::schemaSubject, sss -> sss));
-        }
-    }
-
-    /** Schema provisioning status */
-    @Builder
-    @Data
-    @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    @Accessors(fluent = true)
-    @SuppressFBWarnings
-    public static class SchemaStatus {
-        private STATE state;
-        private int id;
-        private String schemaSubject;
-        private SchemaInfo schemaInfo;
-        private String schemaPath;
-        private Exception exception;
     }
 }

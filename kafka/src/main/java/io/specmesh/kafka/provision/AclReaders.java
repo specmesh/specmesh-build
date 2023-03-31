@@ -28,7 +28,7 @@ import org.apache.kafka.common.resource.PatternType;
 import org.apache.kafka.common.resource.ResourcePatternFilter;
 import org.apache.kafka.common.resource.ResourceType;
 
-/** AclsWriters for writing Acls */
+/** AclReaders for reading Acls */
 public class AclReaders {
 
     /** Read Acls for given prefix */
@@ -85,15 +85,15 @@ public class AclReaders {
     /** Read Acls API */
     interface AclReader {
         /**
-         * Write some acls
+         * read some acls
          *
-         * @param prefix to write
+         * @param prefix to read
          * @return updated status of acls
          */
         Collection<Acl> read(String prefix);
     }
 
-    /** TopicWriter builder */
+    /** builder */
     @SuppressFBWarnings(
             value = "EI_EXPOSE_REP2",
             justification = "adminClient() passed as param to prevent API pollution")
@@ -126,7 +126,7 @@ public class AclReaders {
         /**
          * build it
          *
-         * @return the specified topic writer impl
+         * @return the specified reader impl
          */
         public AclReader build() {
             return new SimpleAclReader(adminClient);
