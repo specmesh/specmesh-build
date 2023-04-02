@@ -18,7 +18,7 @@ plugins {
     java
     `maven-publish`
     signing
-    id("com.github.spotbugs") version "5.0.13"
+    id("com.github.spotbugs") version "5.0.14"
     id("com.diffplug.spotless") version "6.16.0"
     id("pl.allegro.tech.build.axion-release") version "1.14.4"
     id("io.github.gradle-nexus.publish-plugin") version "1.2.0"
