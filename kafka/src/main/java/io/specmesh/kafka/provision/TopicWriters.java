@@ -52,24 +52,29 @@ public class TopicWriters {
         public Collection<TopicProvisioner.Topic> write(
                 final Collection<TopicProvisioner.Topic> topics)
                 throws Provisioner.ProvisioningException {
+
+            final var topicsToCreate =
+                    topics.stream()
+                            .filter(topic -> topic.state().equals(Status.STATE.CREATE))
+                            .collect(Collectors.toList());
             try {
                 adminClient
-                        .createTopics(asNewTopic(topics))
+                        .createTopics(asNewTopic(topicsToCreate))
                         .all()
                         .get(Provisioner.REQUEST_TIMEOUT, TimeUnit.SECONDS);
                 return topics.stream()
                         .map(topic -> topic.state(Status.STATE.CREATED))
                         .collect(Collectors.toList());
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                return topics.stream()
-                        .map(
+                topicsToCreate
+                        .forEach(
                                 topic ->
                                         topic.exception(
                                                         new Provisioner.ProvisioningException(
                                                                 "failed to write topics", e))
-                                                .state(Status.STATE.FAILED))
-                        .collect(Collectors.toList());
+                                                .state(Status.STATE.FAILED));
             }
+            return topics;
         }
 
         /**
