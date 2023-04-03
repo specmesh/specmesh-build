@@ -66,13 +66,12 @@ public class TopicWriters {
                         .map(topic -> topic.state(Status.STATE.CREATED))
                         .collect(Collectors.toList());
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                topicsToCreate
-                        .forEach(
-                                topic ->
-                                        topic.exception(
-                                                        new Provisioner.ProvisioningException(
-                                                                "failed to write topics", e))
-                                                .state(Status.STATE.FAILED));
+                topicsToCreate.forEach(
+                        topic ->
+                                topic.exception(
+                                                new Provisioner.ProvisioningException(
+                                                        "failed to write topics", e))
+                                        .state(Status.STATE.FAILED));
             }
             return topics;
         }
