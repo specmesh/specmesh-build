@@ -174,7 +174,7 @@ public final class TopicReaders {
     }
 
     /** Reader API */
-    interface TopicReader {
+    public interface TopicReader {
         Collection<TopicProvisioner.Topic> readall();
     }
 
