@@ -20,18 +20,12 @@ import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.apiparser.model.Bindings;
 import io.specmesh.apiparser.model.Channel;
 import io.specmesh.apiparser.model.KafkaBinding;
-import java.util.List;
+import io.specmesh.kafka.provision.TopicProvisioner.Topic;
+import io.specmesh.kafka.provision.TopicReaders;
+import io.specmesh.kafka.provision.TopicReaders.TopicsReaderBuilder;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.Admin;
-import org.apache.kafka.clients.admin.Config;
-import org.apache.kafka.clients.admin.ConfigEntry;
-import org.apache.kafka.clients.admin.TopicDescription;
-import org.apache.kafka.clients.admin.TopicListing;
-import org.apache.kafka.common.KafkaFuture;
-import org.apache.kafka.common.config.ConfigResource;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Builds a simplified topic resources structure as the async-api spec limitations: atm only exports
@@ -62,107 +56,45 @@ public final class Exporter {
 
     private static Map<String, Channel> channels(final String aggregateId, final Admin adminClient)
             throws ExporterException {
-        final List<TopicListing> topicListings = getTopicListings(aggregateId, adminClient);
-        final Map<String, Config> topicConfigs = getTopicConfigs(adminClient, topicListings);
-        final Map<String, KafkaFuture<TopicDescription>> topicDescriptions =
-                topicDescriptions(adminClient, topicListings);
 
-        return topicListings.stream()
+        return reader(aggregateId, adminClient).readall().stream()
                 .collect(
                         Collectors.toMap(
-                                listing -> listing.name().substring(aggregateId.length() + 1),
-                                listing -> {
-                                    try {
-                                        return channel(
-                                                topicConfigs.get(listing.name()),
-                                                topicDescriptions.get(listing.name()).get());
-                                    } catch (InterruptedException | ExecutionException e) {
-                                        throw new ExporterException(
-                                                "Failed to get descriptions", e);
-                                    }
-                                }));
+                                topic -> topic.name().substring(aggregateId.length() + 1),
+                                Exporter::channel));
     }
 
-    private static Map<String, KafkaFuture<TopicDescription>> topicDescriptions(
-            final Admin adminClient, final List<TopicListing> topicListings) {
-        return adminClient
-                .describeTopics(
-                        topicListings.stream().map(TopicListing::name).collect(Collectors.toList()))
-                .topicNameValues();
-    }
-
-    @NotNull
-    private static List<TopicListing> getTopicListings(
+    /**
+     * Get a topic reader
+     *
+     * @param aggregateId - filter prefix
+     * @param adminClient - cluster connection
+     * @return topic reader
+     */
+    private static TopicReaders.TopicReader reader(
             final String aggregateId, final Admin adminClient) {
-        final List<TopicListing> topicListings;
-        try {
-            topicListings =
-                    adminClient.listTopics().listings().get().stream()
-                            .filter(
-                                    listing ->
-                                            !listing.isInternal()
-                                                    && listing.name().startsWith(aggregateId))
-                            .collect(Collectors.toList());
-        } catch (InterruptedException | ExecutionException e) {
-            throw new ExporterException("Failed to list topics", e);
-        }
-        return topicListings;
-    }
-
-    @NotNull
-    private static Map<String, Config> getTopicConfigs(
-            final Admin adminClient, final List<TopicListing> topicListings) {
-        final Map<String, Config> topicConfigs;
-        try {
-            topicConfigs =
-                    adminClient
-                            .describeConfigs(
-                                    topicListings.stream()
-                                            .map(
-                                                    item ->
-                                                            new ConfigResource(
-                                                                    ConfigResource.Type.TOPIC,
-                                                                    item.name()))
-                                            .collect(Collectors.toList()))
-                            .all()
-                            .get()
-                            .entrySet()
-                            .stream()
-                            .collect(
-                                    Collectors.toMap(
-                                            entry -> entry.getKey().name(), Map.Entry::getValue));
-        } catch (InterruptedException | ExecutionException e) {
-            throw new ExporterException("Failed to describe topic configs", e);
-        }
-        return topicConfigs;
+        return TopicsReaderBuilder.builder(adminClient, aggregateId).build();
     }
 
     /**
      * Extract the Channel - todo Produce/Consume info
      *
-     * @param config - kafka topic config map
-     * @param topicDescription - topic details
+     * @param topic - kafka topic config map
      * @return decorated channel
      */
-    private static Channel channel(final Config config, final TopicDescription topicDescription) {
+    private static Channel channel(final Topic topic) {
         return Channel.builder()
-                .bindings(Bindings.builder().kafka(kafkaBindings(config, topicDescription)).build())
+                .bindings(Bindings.builder().kafka(kafkaBindings(topic)).build())
                 .build();
     }
 
-    private static KafkaBinding kafkaBindings(
-            final Config config, final TopicDescription topicDescription) {
+    private static KafkaBinding kafkaBindings(final Topic topic) {
         return KafkaBinding.builder()
                 .bindingVersion("unknown")
-                .replicas(topicDescription.partitions().get(0).replicas().size())
-                .partitions(topicDescription.partitions().size())
-                .configs(configs(config))
+                .replicas(topic.replication())
+                .partitions(topic.partitions())
+                .configs(topic.config())
                 .build();
-    }
-
-    private static Map<String, String> configs(final Config config) {
-        return config.entries().stream()
-                .collect(Collectors.toMap(ConfigEntry::name, ConfigEntry::value));
     }
 
     /** Thrown when the admin client cannot interact with the cluster */
