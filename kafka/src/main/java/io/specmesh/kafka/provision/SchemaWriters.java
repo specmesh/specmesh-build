@@ -27,6 +27,7 @@ import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientExcept
 import io.confluent.kafka.schemaregistry.json.JsonSchema;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchema;
 import io.specmesh.kafka.provision.SchemaProvisioner.Schema;
+import io.specmesh.kafka.provision.Status.STATE;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.stream.Collectors;
@@ -61,6 +62,7 @@ public final class SchemaWriters {
         public Collection<Schema> write(final Collection<Schema> schemas) {
 
             return schemas.stream()
+                    .filter(schema -> schema.state().equals(STATE.CREATE))
                     .peek(
                             schema -> {
                                 final var parsedSchema = getSchema(schema.type(), schema.payload());
