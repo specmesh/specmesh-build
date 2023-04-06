@@ -49,16 +49,21 @@ public class AclWriters {
         @Override
         public Collection<Acl> write(final Collection<Acl> acls) {
 
-            final var aclBindings = acls.stream().map(Acl::aclBinding).collect(Collectors.toList());
+            final var createAcls =
+                    acls.stream()
+                            .filter(acl -> acl.state().equals(Status.STATE.CREATE))
+                            .collect(Collectors.toList());
+            final var aclBindingsToCreate =
+                    createAcls.stream().map(Acl::aclBinding).collect(Collectors.toList());
 
             try {
                 adminClient
-                        .createAcls(aclBindings)
+                        .createAcls(aclBindingsToCreate)
                         .all()
                         .get(Provisioner.REQUEST_TIMEOUT, TimeUnit.SECONDS);
-                acls.forEach(acl -> acl.state(Status.STATE.CREATED));
+                createAcls.forEach(acl -> acl.state(Status.STATE.CREATED));
             } catch (Exception ex) {
-                acls.forEach(
+                createAcls.forEach(
                         acl -> {
                             acl.state(Status.STATE.FAILED);
                             acl.exception(
