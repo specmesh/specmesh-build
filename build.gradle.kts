@@ -18,10 +18,10 @@ plugins {
     java
     `maven-publish`
     signing
-    id("com.github.spotbugs") version "5.0.13"
-    id("com.diffplug.spotless") version "6.16.0"
-    id("pl.allegro.tech.build.axion-release") version "1.14.4"
-    id("io.github.gradle-nexus.publish-plugin") version "1.2.0"
+    id("com.github.spotbugs") version "5.0.14"
+    id("com.diffplug.spotless") version "6.18.0"
+    id("pl.allegro.tech.build.axion-release") version "1.15.0"
+    id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
 }
 
 project.version = scmVersion.version
@@ -63,16 +63,16 @@ subprojects {
     }
 
     extra.apply {
-        set("kafkaVersion", "3.3.2")
+        set("kafkaVersion", "7.3.3-ce")
         set("openTracingVersion", "0.33.0")
         set("observabilityVersion", "1.1.8")
         set("guavaVersion", "31.1-jre")
         set("confluentVersion", "7.3.3")
         set("jacksonVersion", "2.14.2")
-        set("protobufVersion", "3.22.0")
+        set("protobufVersion", "3.22.2")
         set("medeiaValidatorVersion", "1.1.0")
         set("junitVersion", "5.9.2")
-        set("mockitoVersion", "5.1.1")
+        set("mockitoVersion", "5.2.0")
         set("junitPioneerVersion", "2.0.0")
         set("spotBugsVersion", "4.7.3")
         set("hamcrestVersion", "1.3")
