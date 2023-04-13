@@ -35,15 +35,19 @@ public final class SchemaChangeSetCalculators {
         /**
          * Calculate set of schemas that dont already exist
          *
-         * @param existing - existing
-         * @param required - needed
+         * @param existing - existing schemas - state READ
+         * @param required - needed schemas - state CREATE
          * @return set required to create - status set to CREATE
          */
         @Override
         public Collection<Schema> calculate(
                 final Collection<Schema> existing, final Collection<Schema> required) {
             return required.stream()
-                    .filter(schema -> !existing.contains(schema))
+                    .filter(
+                            schema ->
+                                    !existing.contains(schema)
+                                            && (schema.state().equals(Status.STATE.READ)
+                                                    || schema.state().equals(Status.STATE.CREATE)))
                     .map(schema -> schema.state(Status.STATE.CREATE))
                     .collect(Collectors.toList());
         }
