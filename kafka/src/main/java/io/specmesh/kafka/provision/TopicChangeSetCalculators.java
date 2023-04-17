@@ -20,9 +20,10 @@ import io.specmesh.kafka.provision.TopicProvisioner.Topic;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.kafka.common.config.TopicConfig;
 
 /**
  * Calculates a changeset of topics to create or update, should also return incompatible changes for
@@ -80,36 +81,35 @@ public class TopicChangeSetCalculators {
             return required.stream()
                     .filter(
                             rtopic -> {
+                                boolean plannedUpdates = false;
                                 if (existing.contains(rtopic)) {
-                                    final var existingTopicItem =
+                                    final var existingTopic =
                                             existTopicsList.get(existTopicsList.indexOf(rtopic));
-                                    if (isPartitionChange(rtopic, existingTopicItem)) {
+                                    if (isPartitionChange(rtopic, existingTopic)) {
                                         rtopic.messages(
                                                 rtopic.messages()
-                                                        + "\nUpdating partitions, before:"
-                                                        + existingTopicItem.partitions()
+                                                        + "\nUpdate partitions:"
+                                                        + existingTopic.partitions()
                                                         + " -> "
                                                         + rtopic.partitions());
-                                        return true;
+                                        plannedUpdates = true;
                                     }
-                                    if (isRetentionChange(rtopic, existingTopicItem)) {
-                                        rtopic.messages(
-                                                rtopic.messages()
-                                                        + "\nUpdating retention, before:"
-                                                        + existingTopicItem
-                                                                .config()
-                                                                .get(
-                                                                        TopicConfig
-                                                                                .RETENTION_MS_CONFIG)
-                                                        + " -> "
-                                                        + rtopic.config()
-                                                                .get(
-                                                                        TopicConfig
-                                                                                .RETENTION_MS_CONFIG));
-                                        return true;
-                                    }
+                                    final var configChanges = configChanges(rtopic, existingTopic);
+                                    configChanges.forEach(
+                                            change ->
+                                                    rtopic.messages(
+                                                            rtopic.messages()
+                                                                    + "\nUpdate config "
+                                                                    + change.getKey()
+                                                                    + ":"
+                                                                    + existingTopic
+                                                                            .config()
+                                                                            .get(change.getKey())
+                                                                    + " -> "
+                                                                    + change.getValue()));
+                                    plannedUpdates = plannedUpdates || !configChanges.isEmpty();
                                 }
-                                return false;
+                                return plannedUpdates;
                             })
                     .map(dTopic -> dTopic.state(Status.STATE.UPDATE))
                     .collect(Collectors.toList());
@@ -119,11 +119,16 @@ public class TopicChangeSetCalculators {
             return requested.partitions() > existing.partitions();
         }
 
-        private static boolean isRetentionChange(final Topic requested, final Topic existing) {
-            return !requested
-                    .config()
-                    .getOrDefault(TopicConfig.RETENTION_MS_CONFIG, "-1")
-                    .equals(existing.config().getOrDefault(TopicConfig.RETENTION_MS_CONFIG, "-1"));
+        private static List<Map.Entry<String, String>> configChanges(
+                final Topic requested, final Topic existing) {
+            return requested.config().entrySet().stream()
+                    .filter(
+                            requestedChange ->
+                                    existing.config().containsKey(requestedChange.getKey())
+                                            && !existing.config()
+                                                    .get(requestedChange.getKey())
+                                                    .equals(requestedChange.getValue()))
+                    .collect(Collectors.toList());
         }
     }
 
