@@ -25,6 +25,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.apache.kafka.clients.admin.Admin;
@@ -111,13 +112,14 @@ public final class TopicProvisioner {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     @Accessors(fluent = true)
     @SuppressFBWarnings
+    @EqualsAndHashCode(onlyExplicitlyIncluded = true)
     public static class Topic {
-        private String name;
+        @EqualsAndHashCode.Include private String name;
         private Status.STATE state;
         private int partitions;
         private short replication;
-        private Map<String, String> config;
+        @Builder.Default private Map<String, String> config = Map.of();
         private Exception exception;
-        private String messages;
+        @Builder.Default private String messages = "";
     }
 }

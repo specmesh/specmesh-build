@@ -16,20 +16,65 @@
 
 package io.specmesh.kafka.provision;
 
+import static org.apache.kafka.common.config.TopicConfig.RETENTION_MS_CONFIG;
+
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.specmesh.kafka.provision.Provisioner.ProvisioningException;
+import io.specmesh.kafka.provision.Status.STATE;
+import io.specmesh.kafka.provision.TopicProvisioner.Topic;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.AlterConfigOp;
+import org.apache.kafka.clients.admin.AlterConfigsOptions;
+import org.apache.kafka.clients.admin.ConfigEntry;
+import org.apache.kafka.clients.admin.CreatePartitionsOptions;
+import org.apache.kafka.clients.admin.NewPartitions;
 import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.admin.TopicDescription;
+import org.apache.kafka.common.config.ConfigResource;
 
 /** Write topics using provided input set */
 public class TopicWriters {
 
-    /** Does real topic writing */
-    public static final class RealTopicWriter implements TopicWriter {
+    /** Collection based */
+    public static final class CollectiveWriter implements TopicWriter {
+
+        private final Stream<TopicWriter> writers;
+
+        /**
+         * iterate over the writers
+         *
+         * @param writers to iterate
+         */
+        private CollectiveWriter(final TopicWriter... writers) {
+            this.writers = Arrays.stream(writers);
+        }
+
+        /**
+         * write topic updates
+         *
+         * @param topics to write
+         * @return updated status
+         */
+        @Override
+        public Collection<Topic> write(final Collection<Topic> topics) {
+            return this.writers
+                    .map(writer -> writer.write(topics))
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toList());
+        }
+    }
+
+    /** only handles update requests */
+    public static final class UpdateTopicWriter implements TopicWriter {
 
         private final Admin adminClient;
 
@@ -38,7 +83,7 @@ public class TopicWriters {
          *
          * @param adminClient - cluster connection
          */
-        private RealTopicWriter(final Admin adminClient) {
+        UpdateTopicWriter(final Admin adminClient) {
             this.adminClient = adminClient;
         }
 
@@ -47,31 +92,158 @@ public class TopicWriters {
          *
          * @param topics to write
          * @return topics with updated flag
-         * @throws Provisioner.ProvisioningException when things break
+         * @throws ProvisioningException when things break
          */
-        public Collection<TopicProvisioner.Topic> write(
-                final Collection<TopicProvisioner.Topic> topics)
-                throws Provisioner.ProvisioningException {
+        public Collection<Topic> write(final Collection<Topic> topics)
+                throws ProvisioningException {
+
+            final var topicsToUpdate =
+                    topics.stream()
+                            .filter(topic -> topic.state().equals(STATE.UPDATE))
+                            .collect(Collectors.toList());
+
+            final var topicNames = toTopicNames(topicsToUpdate);
+            final var describeTopics = adminClient.describeTopics(topicNames).topicNameValues();
+
+            topicsToUpdate.forEach(
+                    topic -> {
+                        try {
+                            final var description =
+                                    describeTopics
+                                            .get(topic.name())
+                                            .get(Provisioner.REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                            updatePartitions(topic, description);
+                            updateConfigs(topic);
+                        } catch (InterruptedException | ExecutionException | TimeoutException ex) {
+                            throw new ProvisioningException("Failed to update configs", ex);
+                        }
+                    });
+            return topicsToUpdate;
+        }
+
+        /**
+         * convert to names
+         *
+         * @param topicsToUpdate source list
+         * @return just the names
+         */
+        private List<String> toTopicNames(final List<Topic> topicsToUpdate) {
+            return topicsToUpdate.stream().map(Topic::name).collect(Collectors.toList());
+        }
+
+        /**
+         * See
+         * https://cwiki.apache.org/confluence/display/KAFKA/KIP-339%3A+Create+a+new+IncrementalAlterConfigs+API
+         * for more details update topic.config retention without a change ij value is a noop
+         *
+         * @param topic to update
+         */
+        private void updateConfigs(final Topic topic) {
+
+            try {
+
+                if (topic.config().containsKey(RETENTION_MS_CONFIG)) {
+
+                    final var configEntry =
+                            new ConfigEntry(
+                                    RETENTION_MS_CONFIG, topic.config().get(RETENTION_MS_CONFIG));
+
+                    final Map<ConfigResource, Collection<AlterConfigOp>> configs =
+                            Map.of(
+                                    new ConfigResource(ConfigResource.Type.TOPIC, topic.name()),
+                                    List.of(
+                                            new AlterConfigOp(
+                                                    configEntry, AlterConfigOp.OpType.SET)));
+                    adminClient.incrementalAlterConfigs(
+                            configs,
+                            new AlterConfigsOptions().timeoutMs(Provisioner.REQUEST_TIMEOUT));
+                    topic.messages(
+                            topic.messages()
+                                    + "\nUpdated config: "
+                                    + RETENTION_MS_CONFIG
+                                    + " -> "
+                                    + topic.config().get(RETENTION_MS_CONFIG));
+                    topic.state(STATE.UPDATED);
+                }
+
+            } catch (Exception ex) {
+                topic.state(STATE.FAILED)
+                        .exception(new ProvisioningException("Failed to update config ", ex));
+            }
+        }
+
+        private void updatePartitions(final Topic topic, final TopicDescription description) {
+
+            try {
+                if (description.partitions().size() < topic.partitions()) {
+
+                    final var parts =
+                            adminClient.createPartitions(
+                                    Map.of(
+                                            topic.name(),
+                                            NewPartitions.increaseTo(topic.partitions())),
+                                    new CreatePartitionsOptions().retryOnQuotaViolation(false));
+
+                    parts.all().get(Provisioner.REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                    topic.state(STATE.UPDATED);
+                    topic.messages(topic.messages() + "\n" + " Updated partitionCount");
+                } else {
+                    topic.messages(
+                            topic.messages()
+                                    + "\n"
+                                    + " Ignoring partition increase because new count is not"
+                                    + " higher");
+                }
+            } catch (Exception ex) {
+                topic.state(STATE.FAILED)
+                        .exception(new ProvisioningException("Failed to update partitions", ex));
+            }
+        }
+    }
+
+    /** creates the topic */
+    public static final class CreateTopicWriter implements TopicWriter {
+
+        private final Admin adminClient;
+
+        /**
+         * Needs the admin client
+         *
+         * @param adminClient - cluster connection
+         */
+        private CreateTopicWriter(final Admin adminClient) {
+            this.adminClient = adminClient;
+        }
+
+        /**
+         * Write the given topics and update the status flag appropriately
+         *
+         * @param topics to write
+         * @return topics with updated flag
+         * @throws ProvisioningException when things break
+         */
+        public Collection<Topic> write(final Collection<Topic> topics)
+                throws ProvisioningException {
 
             final var topicsToCreate =
                     topics.stream()
-                            .filter(topic -> topic.state().equals(Status.STATE.CREATE))
+                            .filter(topic -> topic.state().equals(STATE.CREATE))
                             .collect(Collectors.toList());
             try {
                 adminClient
                         .createTopics(asNewTopic(topicsToCreate))
                         .all()
                         .get(Provisioner.REQUEST_TIMEOUT, TimeUnit.SECONDS);
-                return topics.stream()
-                        .map(topic -> topic.state(Status.STATE.CREATED))
+                return topicsToCreate.stream()
+                        .map(topic -> topic.state(STATE.CREATED))
                         .collect(Collectors.toList());
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
                 topicsToCreate.forEach(
                         topic ->
                                 topic.exception(
-                                                new Provisioner.ProvisioningException(
+                                                new ProvisioningException(
                                                         "failed to write topics", e))
-                                        .state(Status.STATE.FAILED));
+                                        .state(STATE.FAILED));
             }
             return topics;
         }
@@ -82,7 +254,7 @@ public class TopicWriters {
          * @param topics to create from
          * @return kafka type object
          */
-        private Collection<NewTopic> asNewTopic(final Collection<TopicProvisioner.Topic> topics) {
+        private Collection<NewTopic> asNewTopic(final Collection<Topic> topics) {
             return topics.stream()
                     .map(
                             topic ->
@@ -101,17 +273,16 @@ public class TopicWriters {
          * Do nothing write
          *
          * @param topics to ignore
-         * @return upmodified list
-         * @throws Provisioner.ProvisioningException when things go wrong
+         * @return unmodified list
+         * @throws ProvisioningException when things go wrong
          */
-        public Collection<TopicProvisioner.Topic> write(
-                final Collection<TopicProvisioner.Topic> topics)
-                throws Provisioner.ProvisioningException {
+        public Collection<Topic> write(final Collection<Topic> topics)
+                throws ProvisioningException {
             return topics;
         }
     }
 
-    /** Interfacer for writing topics to kafka */
+    /** Interface for writing topics to kafka */
     interface TopicWriter {
         /**
          * Api for writing
@@ -119,7 +290,7 @@ public class TopicWriters {
          * @param topics to write
          * @return updated state of topics written
          */
-        Collection<TopicProvisioner.Topic> write(Collection<TopicProvisioner.Topic> topics);
+        Collection<Topic> write(Collection<Topic> topics);
     }
 
     /** TopicWriter builder */
@@ -173,7 +344,8 @@ public class TopicWriters {
             if (noopWriter) {
                 return new NoopTopicWriter();
             } else {
-                return new RealTopicWriter(adminClient);
+                return new CollectiveWriter(
+                        new CreateTopicWriter(adminClient), new UpdateTopicWriter(adminClient));
             }
         }
     }

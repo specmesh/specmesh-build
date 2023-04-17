@@ -58,18 +58,21 @@ import org.apache.kafka.common.acl.AclBindingFilter;
 import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.config.TopicConfig;
 import org.apache.kafka.common.resource.ResourcePattern;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+/**
+ * Tests execution DryRuns and UPDATES where the provisioner-functional-test-api.yml is NOT
+ * provisioned
+ */
 @SuppressFBWarnings(
         value = "IC_INIT_CIRCULARITY",
         justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positive")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class ProvisionerFunctionalTest {
+class ProvisionerFreshStartFunctionalTest {
 
     private static final KafkaApiSpec API_SPEC =
             TestSpecLoader.loadFromClassPath("provisioner-functional-test-api.yaml");
@@ -192,7 +195,8 @@ class ProvisionerFunctionalTest {
     void shouldDryRunSchemasFromEmptyCluster() throws RestClientException, IOException {
 
         final var srClient = srClient();
-        final var changeset = SchemaProvisioner.provision(true, API_SPEC, ".", srClient);
+        final var changeset =
+                SchemaProvisioner.provision(true, API_SPEC, "./build/resources/test", srClient);
 
         // Verify - 11 created
         assertThat(
@@ -229,7 +233,7 @@ class ProvisionerFunctionalTest {
                     is(containsInAnyOrder(USER_SIGNED_UP, USER_INFO)));
 
             assertThat(
-                    "dry run should leave changeset in 'create' state",
+                    "changeset should only have 2 updates",
                     changeSet.stream()
                             .filter(topic -> topic.state() == Status.STATE.CREATED)
                             .count(),
@@ -266,7 +270,7 @@ class ProvisionerFunctionalTest {
                     adminClient.listTopics().listings().get().stream()
                             .filter(topic -> topic.name().startsWith("simple"))
                             .collect(Collectors.toList());
-            assertThat(topicListings, is(Matchers.hasSize(2)));
+            assertThat(topicListings, is(hasSize(2)));
 
             // Verify description - check partitions and replicas
             final var topicDescriptions =
@@ -276,8 +280,8 @@ class ProvisionerFunctionalTest {
                                             List.of(USER_SIGNED_UP, USER_INFO)))
                             .topicNameValues();
             final var userSignedUpDes = topicDescriptions.get(USER_SIGNED_UP).get();
-            assertThat(userSignedUpDes.partitions(), is(Matchers.hasSize(10)));
-            assertThat(userSignedUpDes.partitions().get(0).replicas(), is(Matchers.hasSize(1)));
+            assertThat(userSignedUpDes.partitions(), is(hasSize(10)));
+            assertThat(userSignedUpDes.partitions().get(0).replicas(), is(hasSize(1)));
 
             // Verify config - check retention & cleanup
             final var configResource =

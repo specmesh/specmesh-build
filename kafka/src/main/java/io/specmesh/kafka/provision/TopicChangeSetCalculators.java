@@ -17,14 +17,115 @@
 package io.specmesh.kafka.provision;
 
 import io.specmesh.kafka.provision.TopicProvisioner.Topic;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.kafka.common.config.TopicConfig;
 
 /**
  * Calculates a changeset of topics to create or update, should also return incompatible changes for
  * existing topics
  */
 public class TopicChangeSetCalculators {
+
+    /** Collection based one */
+    public static final class CollectiveChangeSetCalculator implements ChangeSetCalculator {
+
+        private final Stream<ChangeSetCalculator> calculators;
+
+        /**
+         * Collection of calcs
+         *
+         * @param calculators to iterate over
+         */
+        private CollectiveChangeSetCalculator(final ChangeSetCalculator... calculators) {
+            this.calculators = Arrays.stream(calculators);
+        }
+
+        /**
+         * Call all the calcs
+         *
+         * @param existingTopics - existing set of topics
+         * @param requiredTopics - ownership topics
+         * @return updates
+         */
+        @Override
+        public Collection<Topic> calculate(
+                final Collection<Topic> existingTopics, final Collection<Topic> requiredTopics) {
+            return calculators
+                    .map(calculator -> calculator.calculate(existingTopics, requiredTopics))
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toList());
+        }
+    }
+
+    /** Returns those topics to create and ignores existing topics */
+    public static final class UpdateChangeSetCalculator implements ChangeSetCalculator {
+
+        /**
+         * Calculate changes of topics to 'create' and 'update' ops - Update ONLY supports -
+         * increasing partition size (topic config) - changing topic retention (config change)
+         *
+         * @param existing - existing
+         * @param required - set of topics that should exist
+         * @return list of new topics with 'CREATE' flag
+         */
+        public Collection<Topic> calculate(
+                final Collection<Topic> existing, final Collection<Topic> required) {
+
+            final var existTopicsList = new ArrayList<>(existing);
+
+            return required.stream()
+                    .filter(
+                            rtopic -> {
+                                if (existing.contains(rtopic)) {
+                                    final var existingTopicItem =
+                                            existTopicsList.get(existTopicsList.indexOf(rtopic));
+                                    if (isPartitionChange(rtopic, existingTopicItem)) {
+                                        rtopic.messages(
+                                                rtopic.messages()
+                                                        + "\nUpdating partitions, before:"
+                                                        + existingTopicItem.partitions()
+                                                        + " -> "
+                                                        + rtopic.partitions());
+                                        return true;
+                                    }
+                                    if (isRetentionChange(rtopic, existingTopicItem)) {
+                                        rtopic.messages(
+                                                rtopic.messages()
+                                                        + "\nUpdating retention, before:"
+                                                        + existingTopicItem
+                                                                .config()
+                                                                .get(
+                                                                        TopicConfig
+                                                                                .RETENTION_MS_CONFIG)
+                                                        + " -> "
+                                                        + rtopic.config()
+                                                                .get(
+                                                                        TopicConfig
+                                                                                .RETENTION_MS_CONFIG));
+                                        return true;
+                                    }
+                                }
+                                return false;
+                            })
+                    .map(dTopic -> dTopic.state(Status.STATE.UPDATE))
+                    .collect(Collectors.toList());
+        }
+
+        private static boolean isPartitionChange(final Topic requested, final Topic existing) {
+            return requested.partitions() > existing.partitions();
+        }
+
+        private static boolean isRetentionChange(final Topic requested, final Topic existing) {
+            return !requested
+                    .config()
+                    .getOrDefault(TopicConfig.RETENTION_MS_CONFIG, "-1")
+                    .equals(existing.config().getOrDefault(TopicConfig.RETENTION_MS_CONFIG, "-1"));
+        }
+    }
 
     /** Returns those topics to create and ignores existing topics */
     public static final class CreateChangeSetCalculator implements ChangeSetCalculator {
@@ -79,7 +180,8 @@ public class TopicChangeSetCalculators {
          * @return required calculator
          */
         public ChangeSetCalculator build() {
-            return new CreateChangeSetCalculator();
+            return new CollectiveChangeSetCalculator(
+                    new CreateChangeSetCalculator(), new UpdateChangeSetCalculator());
         }
     }
 }

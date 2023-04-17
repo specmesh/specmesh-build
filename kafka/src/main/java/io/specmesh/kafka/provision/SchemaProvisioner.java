@@ -63,6 +63,11 @@ public final class SchemaProvisioner {
 
         final var required = requiredSchemas(apiSpec, baseResourcePath);
 
+        if (required.stream().anyMatch(schema -> schema.state.equals(FAILED))) {
+            throw new Provisioner.ProvisioningException(
+                    "Required Schemas Failed to load:" + required);
+        }
+
         return writer(dryRun, client).write(calculator().calculate(existing, required));
     }
 
