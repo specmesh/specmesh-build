@@ -18,6 +18,7 @@ package io.specmesh.kafka.provision;
 
 import static io.specmesh.kafka.provision.Status.STATE.CREATED;
 import static io.specmesh.kafka.provision.Status.STATE.FAILED;
+import static io.specmesh.kafka.provision.Status.STATE.UPDATED;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
@@ -29,14 +30,89 @@ import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchema;
 import io.specmesh.kafka.provision.SchemaProvisioner.Schema;
 import io.specmesh.kafka.provision.Status.STATE;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** Writers for writing Schemas */
 public final class SchemaWriters {
 
+    public static final String DEFAULT_EVOLUTION = "FORWARD_TRANSITIVE";
+
     /** defensive */
     private SchemaWriters() {}
+
+    /** Collection based */
+    public static final class CollectiveWriter implements SchemaWriter {
+
+        private final Stream<SchemaWriter> writers;
+
+        /**
+         * iterate over the writers
+         *
+         * @param writers to iterate
+         */
+        private CollectiveWriter(final SchemaWriter... writers) {
+            this.writers = Arrays.stream(writers);
+        }
+
+        /**
+         * writes updates
+         *
+         * @param topics to write
+         * @return updated status
+         */
+        @Override
+        public Collection<Schema> write(final Collection<Schema> topics) {
+            return this.writers
+                    .map(writer -> writer.write(topics))
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toList());
+        }
+    }
+
+    /** Handles schema updates */
+    public static final class UpdateWriter implements SchemaWriter {
+
+        private final SchemaRegistryClient client;
+
+        @SuppressFBWarnings(
+                value = "EI_EXPOSE_REP2",
+                justification = "client passed as param to prevent API pollution")
+        public UpdateWriter(final SchemaRegistryClient client) {
+            this.client = client;
+        }
+
+        /**
+         * Write updated schemas
+         *
+         * @param schemas to write
+         * @return updated set of schemas
+         */
+        @Override
+        public Collection<Schema> write(final Collection<Schema> schemas) {
+            return schemas.stream()
+                    .filter(schema -> schema.state().equals(STATE.UPDATE))
+                    .peek(
+                            schema -> {
+                                final var parsedSchema = getSchema(schema.type(), schema.payload());
+                                try {
+                                    final var schemaId =
+                                            client.register(schema.subject(), parsedSchema);
+                                    schema.state(UPDATED);
+                                    schema.messages("Updated with id: " + schemaId);
+                                } catch (IOException | RestClientException e) {
+                                    schema.exception(
+                                            new Provisioner.ProvisioningException(
+                                                    "Failed to update schema:" + schema.subject(),
+                                                    e));
+                                    schema.state(FAILED);
+                                }
+                            })
+                    .collect(Collectors.toList());
+        }
+    }
 
     /** Writes Schemas */
     public static final class SimpleWriter implements SchemaWriter {
@@ -69,7 +145,12 @@ public final class SchemaWriters {
                                 try {
                                     final var schemaId =
                                             client.register(schema.subject(), parsedSchema);
-                                    schema.message("Created with id: " + schemaId);
+                                    client.updateCompatibility(schema.subject(), DEFAULT_EVOLUTION);
+                                    schema.messages(
+                                            "Created with id: "
+                                                    + schemaId
+                                                    + ", evolution set to:"
+                                                    + DEFAULT_EVOLUTION);
                                     schema.state(CREATED);
                                 } catch (IOException | RestClientException e) {
                                     schema.exception(
@@ -81,20 +162,20 @@ public final class SchemaWriters {
                             })
                     .collect(Collectors.toList());
         }
+    }
 
-        static ParsedSchema getSchema(final String schemaRefType, final String content) {
+    static ParsedSchema getSchema(final String schemaRefType, final String content) {
 
-            if (schemaRefType.endsWith(".avsc")) {
-                return new AvroSchema(content);
-            }
-            if (schemaRefType.endsWith(".yml")) {
-                return new JsonSchema(content);
-            }
-            if (schemaRefType.endsWith(".proto")) {
-                return new ProtobufSchema(content);
-            }
-            throw new Provisioner.ProvisioningException("Unsupported schema type");
+        if (schemaRefType.endsWith(".avsc")) {
+            return new AvroSchema(content);
         }
+        if (schemaRefType.endsWith(".yml")) {
+            return new JsonSchema(content);
+        }
+        if (schemaRefType.endsWith(".proto")) {
+            return new ProtobufSchema(content);
+        }
+        throw new Provisioner.ProvisioningException("Unsupported schema type");
     }
 
     /** Do nothing writer */
@@ -183,7 +264,7 @@ public final class SchemaWriters {
             if (noopWriter) {
                 return new NoopSchemaWriter();
             } else {
-                return new SimpleWriter(client);
+                return new CollectiveWriter(new UpdateWriter(client), new SimpleWriter(client));
             }
         }
     }
