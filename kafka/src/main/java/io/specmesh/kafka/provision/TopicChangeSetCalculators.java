@@ -31,7 +31,7 @@ import org.apache.kafka.common.config.TopicConfig;
 public class TopicChangeSetCalculators {
 
     /** Collection based one */
-    public static final class CollectiveChangeSetCalculator implements ChangeSetCalculator {
+    public static final class CollectiveCalculator implements ChangeSetCalculator {
 
         private final Stream<ChangeSetCalculator> calculators;
 
@@ -40,7 +40,7 @@ public class TopicChangeSetCalculators {
          *
          * @param calculators to iterate over
          */
-        private CollectiveChangeSetCalculator(final ChangeSetCalculator... calculators) {
+        private CollectiveCalculator(final ChangeSetCalculator... calculators) {
             this.calculators = Arrays.stream(calculators);
         }
 
@@ -61,8 +61,8 @@ public class TopicChangeSetCalculators {
         }
     }
 
-    /** Returns those topics to create and ignores existing topics */
-    public static final class UpdateChangeSetCalculator implements ChangeSetCalculator {
+    /** Returns those topics to update and ignores existing topics */
+    public static final class UpdateCalculator implements ChangeSetCalculator {
 
         /**
          * Calculate changes of topics to 'create' and 'update' ops - Update ONLY supports -
@@ -128,7 +128,7 @@ public class TopicChangeSetCalculators {
     }
 
     /** Returns those topics to create and ignores existing topics */
-    public static final class CreateChangeSetCalculator implements ChangeSetCalculator {
+    public static final class CreateCalculator implements ChangeSetCalculator {
 
         /**
          * Calculate changes of topics to 'create' (ignored updates)
@@ -180,8 +180,7 @@ public class TopicChangeSetCalculators {
          * @return required calculator
          */
         public ChangeSetCalculator build() {
-            return new CollectiveChangeSetCalculator(
-                    new CreateChangeSetCalculator(), new UpdateChangeSetCalculator());
+            return new CollectiveCalculator(new CreateCalculator(), new UpdateCalculator());
         }
     }
 }

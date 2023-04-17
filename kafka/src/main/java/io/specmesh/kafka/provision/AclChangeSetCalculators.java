@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 public class AclChangeSetCalculators {
 
     /** Returns those acls to create and ignores existing */
-    public static final class CreateChangeSetCalculator implements ChangeSetCalculator {
+    public static final class CreateCalculator implements ChangeSetCalculator {
 
         /**
          * Calculate set of Acls that dont already exist
@@ -80,7 +80,7 @@ public class AclChangeSetCalculators {
          * @return required calculator
          */
         public ChangeSetCalculator build() {
-            return new CreateChangeSetCalculator();
+            return new CreateCalculator();
         }
     }
 }

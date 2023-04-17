@@ -74,7 +74,7 @@ public class TopicWriters {
     }
 
     /** only handles update requests */
-    public static final class UpdateTopicWriter implements TopicWriter {
+    public static final class UpdateWriter implements TopicWriter {
 
         private final Admin adminClient;
 
@@ -83,7 +83,7 @@ public class TopicWriters {
          *
          * @param adminClient - cluster connection
          */
-        UpdateTopicWriter(final Admin adminClient) {
+        UpdateWriter(final Admin adminClient) {
             this.adminClient = adminClient;
         }
 
@@ -133,7 +133,7 @@ public class TopicWriters {
 
         /**
          * See
-         * https://cwiki.apache.org/confluence/display/KAFKA/KIP-339%3A+Create+a+new+IncrementalAlterConfigs+API
+         * <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-339%3A+Create+a+new+IncrementalAlterConfigs+API">...</a>
          * for more details update topic.config retention without a change ij value is a noop
          *
          * @param topic to update
@@ -141,30 +141,29 @@ public class TopicWriters {
         private void updateConfigs(final Topic topic) {
 
             try {
+                final var alterConfigOps =
+                        topic.config().entrySet().stream()
+                                .map(
+                                        entry ->
+                                                new AlterConfigOp(
+                                                        new ConfigEntry(
+                                                                entry.getKey(), entry.getValue()),
+                                                        AlterConfigOp.OpType.SET))
+                                .collect(Collectors.toList());
 
-                if (topic.config().containsKey(RETENTION_MS_CONFIG)) {
-
-                    final var configEntry =
-                            new ConfigEntry(
-                                    RETENTION_MS_CONFIG, topic.config().get(RETENTION_MS_CONFIG));
-
-                    final Map<ConfigResource, Collection<AlterConfigOp>> configs =
-                            Map.of(
-                                    new ConfigResource(ConfigResource.Type.TOPIC, topic.name()),
-                                    List.of(
-                                            new AlterConfigOp(
-                                                    configEntry, AlterConfigOp.OpType.SET)));
-                    adminClient.incrementalAlterConfigs(
-                            configs,
-                            new AlterConfigsOptions().timeoutMs(Provisioner.REQUEST_TIMEOUT));
-                    topic.messages(
-                            topic.messages()
-                                    + "\nUpdated config: "
-                                    + RETENTION_MS_CONFIG
-                                    + " -> "
-                                    + topic.config().get(RETENTION_MS_CONFIG));
-                    topic.state(STATE.UPDATED);
-                }
+                final Map<ConfigResource, Collection<AlterConfigOp>> configs =
+                        Map.of(
+                                new ConfigResource(ConfigResource.Type.TOPIC, topic.name()),
+                                alterConfigOps);
+                adminClient.incrementalAlterConfigs(
+                        configs, new AlterConfigsOptions().timeoutMs(Provisioner.REQUEST_TIMEOUT));
+                topic.messages(
+                        topic.messages()
+                                + "\nUpdated config: "
+                                + RETENTION_MS_CONFIG
+                                + " -> "
+                                + topic.config().get(RETENTION_MS_CONFIG));
+                topic.state(STATE.UPDATED);
 
             } catch (Exception ex) {
                 topic.state(STATE.FAILED)
@@ -202,7 +201,7 @@ public class TopicWriters {
     }
 
     /** creates the topic */
-    public static final class CreateTopicWriter implements TopicWriter {
+    public static final class CreateWriter implements TopicWriter {
 
         private final Admin adminClient;
 
@@ -211,7 +210,7 @@ public class TopicWriters {
          *
          * @param adminClient - cluster connection
          */
-        private CreateTopicWriter(final Admin adminClient) {
+        private CreateWriter(final Admin adminClient) {
             this.adminClient = adminClient;
         }
 
@@ -268,7 +267,7 @@ public class TopicWriters {
     }
 
     /** Noop write that does nada */
-    public static final class NoopTopicWriter implements TopicWriter {
+    public static final class NoopWriter implements TopicWriter {
         /**
          * Do nothing write
          *
@@ -342,10 +341,10 @@ public class TopicWriters {
          */
         public TopicWriter build() {
             if (noopWriter) {
-                return new NoopTopicWriter();
+                return new NoopWriter();
             } else {
                 return new CollectiveWriter(
-                        new CreateTopicWriter(adminClient), new UpdateTopicWriter(adminClient));
+                        new CreateWriter(adminClient), new UpdateWriter(adminClient));
             }
         }
     }

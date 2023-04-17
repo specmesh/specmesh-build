@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
 
 class TopicChangeSetCalculatorsTest {
 
-    final TopicChangeSetCalculators.UpdateChangeSetCalculator calculator =
-            new TopicChangeSetCalculators.UpdateChangeSetCalculator();
+    final TopicChangeSetCalculators.UpdateCalculator calculator =
+            new TopicChangeSetCalculators.UpdateCalculator();
 
     @Test
     void shouldIgnorePartitionDeltaWhenSmaller() {
