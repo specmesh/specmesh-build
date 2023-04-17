@@ -132,8 +132,8 @@ public class TopicWriters {
         }
 
         /**
-         * See
-         * <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-339%3A+Create+a+new+IncrementalAlterConfigs+API">...</a>
+         * See <a
+         * href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-339%3A+Create+a+new+IncrementalAlterConfigs+API">...</a>
          * for more details update topic.config retention without a change ij value is a noop
          *
          * @param topic to update
