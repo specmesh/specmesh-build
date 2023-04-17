@@ -35,6 +35,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
@@ -68,7 +69,7 @@ public final class SchemaProvisioner {
                     "Required Schemas Failed to load:" + required);
         }
 
-        return writer(dryRun, client).write(calculator().calculate(existing, required));
+        return writer(dryRun, client).write(calculator(client).calculate(existing, required));
     }
 
     /**
@@ -91,8 +92,9 @@ public final class SchemaProvisioner {
      *
      * @return calculator
      */
-    private static SchemaChangeSetCalculators.ChangeSetCalculator calculator() {
-        return SchemaChangeSetCalculators.builder().build();
+    private static SchemaChangeSetCalculators.ChangeSetCalculator calculator(
+            final SchemaRegistryClient client) {
+        return SchemaChangeSetCalculators.builder().build(client);
     }
 
     /**
@@ -154,13 +156,15 @@ public final class SchemaProvisioner {
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     @Accessors(fluent = true)
+    @EqualsAndHashCode(onlyExplicitlyIncluded = true)
     @SuppressFBWarnings
     public static class Schema {
+        @EqualsAndHashCode.Include private String subject;
         private Status.STATE state;
         private String type;
-        private String subject;
+
         private String payload;
         private Exception exception;
-        private String message;
+        @Builder.Default private String messages = "";
     }
 }

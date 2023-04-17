@@ -54,14 +54,29 @@ public final class SchemaReaders {
         public Collection<Schema> read(final String prefix) {
 
             try {
-                final var schemas = client.getSchemas(prefix, false, true);
-                return schemas.stream()
+                final var subjects = client.getAllSubjectsByPrefix(prefix);
+                final var schemas =
+                        subjects.stream()
+                                .collect(
+                                        Collectors.toMap(
+                                                subject -> subject,
+                                                subject -> {
+                                                    try {
+                                                        return client.getSchemas(
+                                                                subject, false, true);
+                                                    } catch (IOException | RestClientException e) {
+                                                        throw new Provisioner.ProvisioningException(
+                                                                "Failed to load schemas", e);
+                                                    }
+                                                }));
+
+                return schemas.entrySet().stream()
                         .map(
-                                schema ->
+                                entry ->
                                         Schema.builder()
-                                                .subject(schema.name())
-                                                .type(schema.schemaType())
-                                                .payload(schema.canonicalString())
+                                                .subject(entry.getKey())
+                                                .type(entry.getValue().get(0).schemaType())
+                                                .payload(entry.getValue().get(0).canonicalString())
                                                 .state(Status.STATE.READ)
                                                 .build())
                         .collect(Collectors.toList());

@@ -28,20 +28,23 @@ import static org.apache.kafka.common.resource.ResourceType.TRANSACTIONAL_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.confluent.kafka.schemaregistry.SchemaProvider;
+import io.confluent.kafka.schemaregistry.ParsedSchema;
 import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
+import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
 import io.confluent.kafka.schemaregistry.json.JsonSchemaProvider;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
 import io.specmesh.kafka.provision.AclProvisioner;
 import io.specmesh.kafka.provision.SchemaProvisioner;
-import io.specmesh.kafka.provision.Status;
+import io.specmesh.kafka.provision.Status.STATE;
 import io.specmesh.kafka.provision.TopicProvisioner;
 import io.specmesh.kafka.provision.TopicProvisioner.Topic;
 import io.specmesh.test.TestSpecLoader;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -74,7 +77,6 @@ class ProvisionerUpdatingFunctionalTest {
             TestSpecLoader.loadFromClassPath("provisioner-update-functional-test-api.yaml");
 
     public static final String USER_SIGNED_UP = "simple.provision_demo._public.user_signed_up";
-    public static final String USER_INFO = "simple.provision_demo._public.user_info";
 
     private enum Domain {
         /** The domain associated with the spec. */
@@ -117,7 +119,7 @@ class ProvisionerUpdatingFunctionalTest {
 
     @Test
     @Order(2)
-    void shouldDryRunTopicsOnTopOfDeployedAPI() {
+    void shouldDoTopicUpdates() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
             // DRY RUN Test
@@ -130,7 +132,7 @@ class ProvisionerUpdatingFunctionalTest {
 
             final var dryFirstUpdate = dryRunChangeset.iterator().next();
 
-            assertThat(dryFirstUpdate.state(), is(Status.STATE.UPDATE));
+            assertThat(dryFirstUpdate.state(), is(STATE.UPDATE));
 
             // REAL Test
             final var changeset = TopicProvisioner.provision(false, API_UPDATE_SPEC, adminClient);
@@ -145,14 +147,59 @@ class ProvisionerUpdatingFunctionalTest {
         }
     }
 
+    @Test
+    @Order(3)
+    void shouldPublishUpdatedSchemas() throws RestClientException, IOException {
+
+        final var srClient = srClient();
+        final var dryRunChangeset =
+                SchemaProvisioner.provision(
+                        true, API_UPDATE_SPEC, "./build/resources/test", srClient);
+
+        // Verify - 1 Update is proposed
+        assertThat(
+                dryRunChangeset.stream().filter(topic -> topic.state() == STATE.UPDATE).count(),
+                is(1L));
+
+        // Verify - should have 2 SR entries (1 was updated, 1 was from original spec)
+        final var allSubjects = srClient.getAllSubjects();
+
+        assertThat(allSubjects, is(hasSize(2)));
+
+        final var updateChangeset =
+                SchemaProvisioner.provision(
+                        false, API_UPDATE_SPEC, "./build/resources/test", srClient);
+
+        final var parsedSchemas =
+                srClient.getSchemas(updateChangeset.iterator().next().subject(), false, true);
+        // should now contain the address field
+        assertThat(parsedSchemas.get(0).canonicalString(), is(containsString("address")));
+
+        // Verify - 1 Update has been executed
+        assertThat(updateChangeset, is(hasSize(1)));
+
+        final var schemas = srClient.getSchemas("simple", false, false);
+
+        final var schemaNames =
+                schemas.stream().map(ParsedSchema::name).collect(Collectors.toSet());
+
+        assertThat(
+                schemaNames,
+                is(
+                        containsInAnyOrder(
+                                "io.specmesh.kafka.schema.UserInfo",
+                                "simple.provision_demo._public.user_signed_up_value.UserSignedUp")));
+    }
+
     private static CachedSchemaRegistryClient srClient() {
-        final List<SchemaProvider> providers =
+        return new CachedSchemaRegistryClient(
+                KAFKA_ENV.schemeRegistryServer(),
+                5,
                 List.of(
                         new ProtobufSchemaProvider(),
                         new AvroSchemaProvider(),
-                        new JsonSchemaProvider());
-        return new CachedSchemaRegistryClient(
-                KAFKA_ENV.schemeRegistryServer(), 5, providers, Map.of());
+                        new JsonSchemaProvider()),
+                Map.of());
     }
 
     private static Set<AclBinding> aclsForOtherDomain(final Domain domain) {
