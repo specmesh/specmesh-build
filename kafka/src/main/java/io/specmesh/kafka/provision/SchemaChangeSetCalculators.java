@@ -30,7 +30,7 @@ public final class SchemaChangeSetCalculators {
     private SchemaChangeSetCalculators() {}
 
     /** Returns those schemas to create and ignores existing */
-    public static final class CreateChangeSetCalculator implements ChangeSetCalculator {
+    public static final class CreateCalculator implements ChangeSetCalculator {
 
         /**
          * Calculate set of schemas that dont already exist
@@ -96,7 +96,7 @@ public final class SchemaChangeSetCalculators {
          * @return required calculator
          */
         public ChangeSetCalculator build() {
-            return new CreateChangeSetCalculator();
+            return new CreateCalculator();
         }
     }
 }

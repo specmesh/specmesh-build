@@ -24,7 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.specmesh.kafka.provision.TopicProvisioner.Topic;
-import io.specmesh.kafka.provision.TopicWriters.UpdateTopicWriter;
+import io.specmesh.kafka.provision.TopicWriters.UpdateWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -48,7 +48,7 @@ class TopicWritersTest {
 
     @Test
     void shouldWriteUpdatesForRetentionChange() throws Exception {
-        final var topicWriter = new UpdateTopicWriter(client);
+        final var topicWriter = new UpdateWriter(client);
 
         // Mock hell - crappy admin api
         final var topicDescriptionFuture = mock(KafkaFuture.class);
@@ -82,7 +82,7 @@ class TopicWritersTest {
 
     @Test
     void shouldWriteUpdatesToPartitionsWhenLarger() throws Exception {
-        final var topicWriter = new UpdateTopicWriter(client);
+        final var topicWriter = new UpdateWriter(client);
 
         // Mock hell - crappy admin api
         final var topicDescriptionFuture = mock(KafkaFuture.class);
