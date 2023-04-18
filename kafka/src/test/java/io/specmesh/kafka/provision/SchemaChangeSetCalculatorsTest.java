@@ -55,15 +55,16 @@ class SchemaChangeSetCalculatorsTest {
         final var existing =
                 List.of(
                         Schema.builder()
-                                .type(".avsc")
+                                .type("AVRO")
                                 .subject("subject")
                                 .state(Status.STATE.READ)
+                                .payload(readFile(".avsc"))
                                 .build());
         final var required =
                 List.of(
                         Schema.builder()
                                 .subject("subject")
-                                .type(".avsc")
+                                .type("AVRO")
                                 .state(Status.STATE.READ)
                                 .payload(readFile("-v3-bad.avsc"))
                                 .build());

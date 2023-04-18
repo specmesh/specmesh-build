@@ -18,15 +18,13 @@ package io.specmesh.kafka.provision;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.kafka.provision.AclProvisioner.Acl;
+import io.specmesh.kafka.provision.Provisioner.ProvisioningException;
 import java.util.Collection;
-import java.util.concurrent.ExecutionException;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.Admin;
-import org.apache.kafka.common.acl.AccessControlEntryFilter;
-import org.apache.kafka.common.acl.AclBindingFilter;
-import org.apache.kafka.common.resource.PatternType;
-import org.apache.kafka.common.resource.ResourcePatternFilter;
-import org.apache.kafka.common.resource.ResourceType;
+import org.apache.kafka.common.acl.AclBinding;
 
 /** AclReaders for reading Acls */
 public class AclReaders {
@@ -46,39 +44,47 @@ public class AclReaders {
         }
 
         /**
-         * Read set of acls for prefix
+         * Read set of acls for specAclsBindingsNeeded
          *
-         * @param prefix to filter against
+         * @param specAclsBindingsNeeded to filter against
          * @return found acls with status set to READ
          */
         @Override
-        public Collection<Acl> read(final String prefix) {
+        public Collection<Acl> read(final Set<AclBinding> specAclsBindingsNeeded) {
 
-            final var resourcePatternFilter =
-                    new ResourcePatternFilter(ResourceType.TOPIC, prefix, PatternType.PREFIXED);
+            final var aclBindingFilters =
+                    specAclsBindingsNeeded.stream()
+                            .map(AclBinding::toFilter)
+                            .collect(Collectors.toList());
 
-            try {
-                final var aclBindingCollection =
-                        adminClient
-                                .describeAcls(
-                                        new AclBindingFilter(
-                                                resourcePatternFilter,
-                                                AccessControlEntryFilter.ANY))
-                                .values()
-                                .get();
+            final var existingAcls =
+                    aclBindingFilters.stream()
+                            .map(
+                                    bindingFilter -> {
+                                        try {
+                                            return adminClient
+                                                    .describeAcls(bindingFilter)
+                                                    .values()
+                                                    .get(
+                                                            Provisioner.REQUEST_TIMEOUT,
+                                                            TimeUnit.SECONDS);
+                                        } catch (Exception e) {
+                                            throw new ProvisioningException(
+                                                    "Failed to read ACLs", e);
+                                        }
+                                    })
+                            .flatMap(Collection::stream)
+                            .collect(Collectors.toList());
 
-                return aclBindingCollection.stream()
-                        .map(
-                                aclBinding ->
-                                        Acl.builder()
-                                                .name(aclBinding.toString())
-                                                .aclBinding(aclBinding)
-                                                .state(Status.STATE.READ)
-                                                .build())
-                        .collect(Collectors.toList());
-            } catch (InterruptedException | ExecutionException e) {
-                throw new Provisioner.ProvisioningException("Failed to read ACLs for:" + prefix, e);
-            }
+            return existingAcls.stream()
+                    .map(
+                            aclBinding ->
+                                    Acl.builder()
+                                            .name(aclBinding.toString())
+                                            .aclBinding(aclBinding)
+                                            .state(Status.STATE.READ)
+                                            .build())
+                    .collect(Collectors.toList());
         }
     }
 
@@ -90,7 +96,7 @@ public class AclReaders {
          * @param prefix to read
          * @return updated status of acls
          */
-        Collection<Acl> read(String prefix);
+        Collection<Acl> read(Set<AclBinding> prefix);
     }
 
     /** builder */

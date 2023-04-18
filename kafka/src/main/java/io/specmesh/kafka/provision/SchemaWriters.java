@@ -21,12 +21,8 @@ import static io.specmesh.kafka.provision.Status.STATE.FAILED;
 import static io.specmesh.kafka.provision.Status.STATE.UPDATED;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.confluent.kafka.schemaregistry.ParsedSchema;
-import io.confluent.kafka.schemaregistry.avro.AvroSchema;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
-import io.confluent.kafka.schemaregistry.json.JsonSchema;
-import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchema;
 import io.specmesh.kafka.provision.SchemaProvisioner.Schema;
 import io.specmesh.kafka.provision.Status.STATE;
 import java.io.IOException;
@@ -96,10 +92,9 @@ public final class SchemaWriters {
                     .filter(schema -> schema.state().equals(STATE.UPDATE))
                     .peek(
                             schema -> {
-                                final var parsedSchema = getSchema(schema.type(), schema.payload());
                                 try {
                                     final var schemaId =
-                                            client.register(schema.subject(), parsedSchema);
+                                            client.register(schema.subject(), schema.getSchema());
                                     schema.state(UPDATED);
                                     schema.messages("Updated with id: " + schemaId);
                                 } catch (IOException | RestClientException e) {
@@ -141,10 +136,9 @@ public final class SchemaWriters {
                     .filter(schema -> schema.state().equals(STATE.CREATE))
                     .peek(
                             schema -> {
-                                final var parsedSchema = getSchema(schema.type(), schema.payload());
                                 try {
                                     final var schemaId =
-                                            client.register(schema.subject(), parsedSchema);
+                                            client.register(schema.subject(), schema.getSchema());
                                     client.updateCompatibility(schema.subject(), DEFAULT_EVOLUTION);
                                     schema.messages(
                                             "Created with id: "
@@ -162,20 +156,6 @@ public final class SchemaWriters {
                             })
                     .collect(Collectors.toList());
         }
-    }
-
-    static ParsedSchema getSchema(final String schemaRefType, final String content) {
-
-        if (schemaRefType.endsWith(".avsc")) {
-            return new AvroSchema(content);
-        }
-        if (schemaRefType.endsWith(".yml")) {
-            return new JsonSchema(content);
-        }
-        if (schemaRefType.endsWith(".proto")) {
-            return new ProtobufSchema(content);
-        }
-        throw new Provisioner.ProvisioningException("Unsupported schema type");
     }
 
     /** Do nothing writer */

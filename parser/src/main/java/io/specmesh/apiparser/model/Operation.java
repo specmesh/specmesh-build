@@ -25,6 +25,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
@@ -43,9 +44,10 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @SuppressFBWarnings
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @SuppressWarnings("rawtypes")
 public class Operation {
-    @JsonProperty private String operationId;
+    @EqualsAndHashCode.Include @JsonProperty private String operationId;
 
     @JsonProperty private String summary;
 
@@ -53,7 +55,8 @@ public class Operation {
 
     @SuppressWarnings("rawtypes")
     @JsonProperty
-    private List<Tag> tags;
+    @Builder.Default
+    private List<Tag> tags = List.of();
 
     @JsonProperty private Bindings bindings;
 

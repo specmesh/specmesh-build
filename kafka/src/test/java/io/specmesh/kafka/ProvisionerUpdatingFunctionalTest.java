@@ -156,7 +156,7 @@ class ProvisionerUpdatingFunctionalTest {
                 SchemaProvisioner.provision(
                         true, API_UPDATE_SPEC, "./build/resources/test", srClient);
 
-        // Verify - 1 Update is proposed
+        // Verify - the Update is proposed
         assertThat(
                 dryRunChangeset.stream().filter(topic -> topic.state() == STATE.UPDATE).count(),
                 is(1L));
@@ -189,6 +189,25 @@ class ProvisionerUpdatingFunctionalTest {
                         containsInAnyOrder(
                                 "io.specmesh.kafka.schema.UserInfo",
                                 "simple.provision_demo._public.user_signed_up_value.UserSignedUp")));
+    }
+
+    @Test
+    @Order(4)
+    void shouldPublishUpdatedAcls() {
+        try (Admin adminClient = KAFKA_ENV.adminClient()) {
+            final var dryRunAcls = AclProvisioner.provision(true, API_UPDATE_SPEC, adminClient);
+            assertThat(dryRunAcls, is(hasSize(2)));
+            assertThat(
+                    dryRunAcls.stream().filter(acl -> acl.state().equals(STATE.CREATE)).count(),
+                    is(2L));
+
+            final var createdAcls = AclProvisioner.provision(false, API_UPDATE_SPEC, adminClient);
+
+            assertThat(createdAcls, is(hasSize(2)));
+            assertThat(
+                    createdAcls.stream().filter(acl -> acl.state().equals(STATE.CREATED)).count(),
+                    is(2L));
+        }
     }
 
     private static CachedSchemaRegistryClient srClient() {

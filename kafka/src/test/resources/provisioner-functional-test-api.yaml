@@ -41,9 +41,7 @@ channels:
         payload:
           $ref: "/schema/simple.provision_demo._public.user_signed_up.avsc"
 
-  # PRODUCER/OWNER build pipe will publish schema to SR
-  _public/user_info:
-    # publish bindings to instruct topic configuration per environment
+  _protected/user_info:
     bindings:
       kafka:
         envs:
@@ -56,6 +54,9 @@ channels:
           retention.ms: 9900000
 
     publish:
+      tags: [
+        name: "grant-access:.some.other.domain.acme-A"
+      ]
       summary: User info confirmation
       operationId: onUserCheckout
       message:

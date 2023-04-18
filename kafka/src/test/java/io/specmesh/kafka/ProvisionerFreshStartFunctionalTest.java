@@ -77,7 +77,7 @@ class ProvisionerFreshStartFunctionalTest {
     private static final KafkaApiSpec API_SPEC =
             TestSpecLoader.loadFromClassPath("provisioner-functional-test-api.yaml");
     public static final String USER_SIGNED_UP = "simple.provision_demo._public.user_signed_up";
-    public static final String USER_INFO = "simple.provision_demo._public.user_info";
+    public static final String USER_INFO = "simple.provision_demo._protected.user_info";
 
     private enum Domain {
         /** The domain associated with the spec. */
@@ -167,12 +167,12 @@ class ProvisionerFreshStartFunctionalTest {
                     changeset.stream()
                             .filter(topic -> topic.state() == Status.STATE.CREATE)
                             .count(),
-                    is(10L));
+                    is(12L));
 
             // Verify - should have 6 TOPIC, 2 GROUP, 2 TRANSACTIONAL and 1 CLUSTER Acls
             assertThat(
                     changeset.stream().filter(aacl -> aacl.name().contains("TOPIC")).count(),
-                    is(6L));
+                    is(8L));
 
             assertThat(
                     changeset.stream()
@@ -309,7 +309,7 @@ class ProvisionerFreshStartFunctionalTest {
                     changeset.stream()
                             .filter(topic -> topic.state() == Status.STATE.CREATED)
                             .count(),
-                    is(10L));
+                    is(12L));
 
             final var bindings = adminClient.describeAcls(AclBindingFilter.ANY).values().get();
 
@@ -324,7 +324,7 @@ class ProvisionerFreshStartFunctionalTest {
                     provisionDemoBindings.stream()
                             .filter(binding -> binding.toString().contains("TOPIC"))
                             .count(),
-                    is(6L));
+                    is(8L));
             assertThat(
                     provisionDemoBindings.stream()
                             .filter(binding -> binding.toString().contains("TRANSACTIONAL_ID"))
