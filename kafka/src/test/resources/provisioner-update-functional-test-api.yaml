@@ -39,3 +39,30 @@ channels:
         contentType: "application/octet-stream"
         payload:
           $ref: "/schema/simple.provision_demo._public.user_signed_up-v2.avsc"
+  _protected/user_info:
+    bindings:
+      kafka:
+        envs:
+          - staging
+          - prod
+        partitions: 3
+        replicas: 1
+        configs:
+          cleanup.policy: delete
+          retention.ms: 9900000
+
+    publish:
+      tags: [
+        name: "grant-access:.some.other.domain.acme-A",
+        name: "grant-access:.some.other.domain.acme-B"
+      ]
+      summary: User info confirmation
+      operationId: onUserCheckout
+      message:
+        bindings:
+          kafka:
+            schemaIdLocation: "payload"
+        schemaFormat: "application/json;version=1.9.0"
+        contentType: "application/json"
+        payload:
+          $ref: "/schema/simple.provision_demo._public.user_info.proto"

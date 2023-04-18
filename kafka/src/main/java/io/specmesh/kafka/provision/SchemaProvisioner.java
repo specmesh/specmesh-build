@@ -20,7 +20,11 @@ import static io.specmesh.kafka.provision.Status.STATE.FAILED;
 import static io.specmesh.kafka.provision.Status.STATE.READ;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.confluent.kafka.schemaregistry.ParsedSchema;
+import io.confluent.kafka.schemaregistry.avro.AvroSchema;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
+import io.confluent.kafka.schemaregistry.json.JsonSchema;
+import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchema;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.provision.SchemaReaders.SchemaReader;
 import java.io.IOException;
@@ -166,5 +170,19 @@ public final class SchemaProvisioner {
         private String payload;
         private Exception exception;
         @Builder.Default private String messages = "";
+
+        public ParsedSchema getSchema() {
+
+            if (type.endsWith(".avsc") || type.equals("AVRO")) {
+                return new AvroSchema(payload);
+            }
+            if (type.endsWith(".yml") || type.equals("JSON")) {
+                return new JsonSchema(payload);
+            }
+            if (type.endsWith(".proto") || type.equals("PROTOBUF")) {
+                return new ProtobufSchema(payload);
+            }
+            throw new Provisioner.ProvisioningException("Unsupported schema type");
+        }
     }
 }

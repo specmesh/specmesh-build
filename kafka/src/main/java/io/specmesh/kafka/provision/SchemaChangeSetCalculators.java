@@ -16,16 +16,14 @@
 
 package io.specmesh.kafka.provision;
 
-import io.confluent.kafka.schemaregistry.ParsedSchema;
-import io.confluent.kafka.schemaregistry.avro.AvroSchema;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
-import io.confluent.kafka.schemaregistry.json.JsonSchema;
-import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchema;
 import io.specmesh.kafka.provision.SchemaProvisioner.Schema;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -88,17 +86,16 @@ public final class SchemaChangeSetCalculators {
         @Override
         public Collection<Schema> calculate(
                 final Collection<Schema> existing, final Collection<Schema> required) {
+            final var existingList = new ArrayList<>(existing);
             return required.stream()
-                    .filter(existing::contains)
+                    .filter(needs -> existing.contains(needs) && hasChanged(needs, existingList))
                     .peek(
                             schema -> {
                                 schema.messages(schema.messages() + "\n Update");
                                 try {
-                                    final var parsedSchema =
-                                            getSchema(schema.type(), schema.payload());
                                     final var compatibilityMessages =
                                             client.testCompatibilityVerbose(
-                                                    schema.subject(), parsedSchema);
+                                                    schema.subject(), schema.getSchema());
                                     schema.messages(
                                             schema.messages()
                                                     + "\nCompatibility test output:"
@@ -117,18 +114,14 @@ public final class SchemaChangeSetCalculators {
                     .collect(Collectors.toList());
         }
 
-        static ParsedSchema getSchema(final String schemaRefType, final String content) {
-
-            if (schemaRefType.endsWith(".avsc")) {
-                return new AvroSchema(content);
+        private boolean hasChanged(final Schema needs, final List<Schema> existingList) {
+            final var foundAt = existingList.indexOf(needs);
+            if (foundAt != -1) {
+                final var existing = existingList.get(foundAt);
+                return !existing.getSchema().equals(needs.getSchema());
+            } else {
+                return false;
             }
-            if (schemaRefType.endsWith(".yml")) {
-                return new JsonSchema(content);
-            }
-            if (schemaRefType.endsWith(".proto")) {
-                return new ProtobufSchema(content);
-            }
-            throw new Provisioner.ProvisioningException("Unsupported schema type");
         }
     }
 

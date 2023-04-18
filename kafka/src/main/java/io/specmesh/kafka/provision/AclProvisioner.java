@@ -26,6 +26,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.apache.kafka.clients.admin.Admin;
@@ -47,9 +48,10 @@ public final class AclProvisioner {
     public static Collection<Acl> provision(
             final boolean dryRun, final KafkaApiSpec apiSpec, final Admin adminClient) {
 
-        final var existing = reader(adminClient).read(apiSpec.id());
-        final var required =
-                calculator().calculate(existing, bindingsToAcls(apiSpec.requiredAcls()));
+        final var requiredAcls = apiSpec.requiredAcls();
+        final var existing = reader(adminClient).read(requiredAcls);
+
+        final var required = calculator().calculate(existing, bindingsToAcls(requiredAcls));
 
         return writer(dryRun, adminClient).write(required);
     }
@@ -109,11 +111,12 @@ public final class AclProvisioner {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     @Accessors(fluent = true)
     @SuppressFBWarnings
+    @EqualsAndHashCode(onlyExplicitlyIncluded = true)
     public static class Acl {
-        private String name;
+        @EqualsAndHashCode.Include private String name;
         private Status.STATE state;
         private AclBinding aclBinding;
         private Exception exception;
-        private String messages;
+        @Builder.Default private String messages = "";
     }
 }
