@@ -103,8 +103,11 @@ public final class SchemaChangeSetCalculators {
                                             schema.messages()
                                                     + "\nCompatibility test output:"
                                                     + compatibilityMessages);
-
-                                    schema.state(Status.STATE.UPDATE);
+                                    if (!compatibilityMessages.isEmpty()) {
+                                        schema.state(Status.STATE.FAILED);
+                                    } else {
+                                        schema.state(Status.STATE.UPDATE);
+                                    }
 
                                 } catch (IOException | RestClientException ex) {
                                     schema.state(Status.STATE.FAILED);
