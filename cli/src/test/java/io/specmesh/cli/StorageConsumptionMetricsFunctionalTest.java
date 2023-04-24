@@ -71,7 +71,7 @@ class StorageConsumptionMetricsFunctionalTest {
             TestSpecLoader.loadFromClassPath("simple_schema_demo-api.yaml");
 
     @Test
-    void shouldPublishConsumerFromSpecAndReportMetrics() throws Exception {
+    void shouldGetStorageAndConsumptionMetrics() throws Exception {
 
         Provisioner.provision(
                 false,
