@@ -18,58 +18,36 @@ package io.specmesh.cli;
 
 import static picocli.CommandLine.Command;
 
-import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
-import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
-import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientConfig;
 import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.kafka.KafkaApiSpec;
+import io.specmesh.kafka.admin.SmAdminClient;
+import io.specmesh.kafka.admin.SmAdminClient.ConsumerGroup;
 import io.specmesh.kafka.provision.Provisioner;
-import io.specmesh.kafka.provision.Status;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.NewTopic;
 import picocli.CommandLine.Option;
 
-/** SpecMesh Kafka Provisioner */
+/** Spec consumers stats for those groups consuming topic data */
 @Command(
-        name = "provision",
-        description =
-                "Apply the provided specification to provision kafka resources and permissions on"
-                        + " the cluster")
-public class KafkaProvisionCommand implements Callable<Status> {
+        name = "consumption",
+        description = "Given a spec, break down the consumption volume against each of its topic")
+public class SpecConsumptionCommand implements Callable<Map<String, ConsumerGroup>> {
 
     @Option(
             names = {"-bs", "--bootstrap-server"},
             description = "Kafka bootstrap server url")
     private String brokerUrl = "";
-
-    @Option(
-            names = {"-sr", "--schemaRegistryUrl"},
-            description = "schemaRegistryUrl")
-    private String schemaRegistryUrl;
-
-    @Option(
-            names = {"-srKey", "--srApiKey"},
-            description = "srApiKey for schema registry")
-    private String srApiKey;
-
-    @Option(
-            names = {"-srSecret", "--srApiSecret"},
-            description = "srApiSecret for schema secret")
-    private String srApiSecret;
-
-    @Option(
-            names = {"-schemaPath", "--schemaPath"},
-            description = "schemaPath where the set of referenced schemas will be loaded")
-    private String schemaPath;
 
     @Option(
             names = {"-spec", "--spec"},
@@ -86,36 +64,30 @@ public class KafkaProvisionCommand implements Callable<Status> {
             description = "secret credential for the cluster connection")
     private String secret;
 
-    @Option(
-            names = {"-d", "--dry-run"},
-            description =
-                    "Compares the cluster against the spec, outputting proposed changes if"
-                        + " compatible.If the spec incompatible with the cluster (not sure how it"
-                        + " could be) then will fail with a descriptive error message.A return"
-                        + " value of 0=indicates no changes needed; 1=changes needed; -1=not"
-                        + " compatible, blah blah")
-    private boolean dryRun;
-
+    @SuppressWarnings("checkstyle:RegexpSingleline")
     @Override
-    public Status call() throws Exception {
-        return Provisioner.provision(
-                dryRun, specMeshSpec(), schemaPath, adminClient(), schemaRegistryClient());
+    public Map<String, ConsumerGroup> call() throws Exception {
+
+        final var client = SmAdminClient.create(adminClient());
+
+        final var apiSpec = specMeshSpec();
+        final var topics =
+                apiSpec.listDomainOwnedTopics().stream()
+                        .map(NewTopic::name)
+                        .collect(Collectors.toList());
+
+        final var results = new TreeMap<String, ConsumerGroup>();
+
+        topics.forEach(
+                topic -> {
+                    final var groups = client.groupsForTopicPrefix(topic);
+                    groups.forEach(group -> results.put(topic, group));
+                });
+        return results;
     }
 
     private KafkaApiSpec specMeshSpec() {
-        return loadFromClassPath(spec, KafkaProvisionCommand.class.getClassLoader());
-    }
-
-    private Optional<SchemaRegistryClient> schemaRegistryClient() {
-        if (schemaRegistryUrl != null) {
-            final Map<String, Object> properties = new HashMap<>();
-            properties.put(SchemaRegistryClientConfig.BASIC_AUTH_CREDENTIALS_SOURCE, "USER_INFO");
-            properties.put(
-                    SchemaRegistryClientConfig.USER_INFO_CONFIG, srApiKey + ":" + srApiSecret);
-            return Optional.of(new CachedSchemaRegistryClient(schemaRegistryUrl, 5, properties));
-        } else {
-            return Optional.empty();
-        }
+        return loadFromClassPath(spec, SpecConsumptionCommand.class.getClassLoader());
     }
 
     /**
