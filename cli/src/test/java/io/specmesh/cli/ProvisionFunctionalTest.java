@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import picocli.CommandLine;
 
-class CliFunctionalTest {
+class ProvisionFunctionalTest {
 
     private static final String OWNER_USER = "simple.schema_demo";
 
@@ -51,11 +51,11 @@ class CliFunctionalTest {
     @Test
     void shouldProvisionTopicsAndAclResourcesWithoutSchemas() throws Exception {
 
-        final KafkaProvisionCommand kafkaProvisionCommand = new KafkaProvisionCommand();
+        final ProvisionCommand provisionCommand = new ProvisionCommand();
 
         // Given:
         final CommandLine.ParseResult parseResult =
-                new CommandLine(kafkaProvisionCommand)
+                new CommandLine(provisionCommand)
                         .parseArgs(
                                 ("--bootstrap-server "
                                                 + KAFKA_ENV.kafkaBootstrapServers()
@@ -68,7 +68,7 @@ class CliFunctionalTest {
         assertThat(parseResult.matchedArgs().size(), is(4));
 
         // When:
-        final var status = kafkaProvisionCommand.call();
+        final var status = provisionCommand.call();
 
         // then: Verify status is correct
         final var topicProvisionStatus = status.topics();
@@ -81,7 +81,7 @@ class CliFunctionalTest {
                                 "simple.spec_demo._protected.purchased")));
 
         /*
-         * Lose sanity checks follow because we don't need to retest the tests that other tests test
+         * Loose sanity checks follow because we don't need to retest the tests that other tests test
          */
 
         // Then: check topic resources were created

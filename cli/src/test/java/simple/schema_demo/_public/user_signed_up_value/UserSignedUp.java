@@ -14,21 +14,17 @@
  * limitations under the License.
  */
 
-package io.specmesh.cli;
+package simple.schema_demo._public.user_signed_up_value;
 
-import picocli.CommandLine;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-/** SpecMesh CLI client */
-public final class Main {
-    private Main() {}
-
-    /**
-     * Main cli
-     *
-     * @param args - set of CLI args for processing
-     */
-    public static void main(final String[] args) {
-
-        new CommandLine(new ProvisionCommand()).execute(args);
-    }
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class UserSignedUp {
+    String fullName;
+    String email;
+    int age;
 }

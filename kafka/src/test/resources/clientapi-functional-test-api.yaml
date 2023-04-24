@@ -1,0 +1,69 @@
+asyncapi: '2.4.0'
+id: 'urn:simple:schema_demo'
+info:
+  title: Streetlights API
+  version: '1.0.0'
+  description: |
+    The Smartylighting Streetlights API allows you
+    to remotely manage the city lights.
+  license:
+    name: Apache 2.0
+    url: 'https://www.apache.org/licenses/LICENSE-2.0'
+servers:
+  mosquitto:
+    url: mqtt://test.mosquitto.org
+    protocol: mqtt
+channels:
+  # PRODUCER/OWNER build pipe will publish schema to SR
+  _public/user_signed_up:
+    # publish bindings to instruct topic configuration per environment
+    bindings:
+      kafka:
+        envs:
+          - staging
+          - prod
+        partitions: 10
+        replicas: 1
+        configs:
+          cleanup.policy: delete
+          retention.ms: 3600000
+
+
+    publish:
+      summary: Inform about signup
+      operationId: onUserSignedUp
+      message:
+        bindings:
+          kafka:
+            schemaIdLocation: "payload"
+        schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
+        contentType: "application/octet-stream"
+        payload:
+          $ref: "/schema/simple.schema_demo._public.user_signed_up.avsc"
+
+  _protected/user_info:
+    bindings:
+      kafka:
+        envs:
+          - staging
+          - prod
+        partitions: 3
+        replicas: 1
+        configs:
+          cleanup.policy: delete
+          retention.ms: 9900000
+
+    publish:
+      tags: [
+        name: "grant-access:.some.other.domain.acme-A"
+      ]
+      summary: User info confirmation
+      operationId: onUserCheckout
+      message:
+        bindings:
+          kafka:
+            schemaIdLocation: "payload"
+        schemaFormat: "application/json;version=1.9.0"
+        contentType: "application/json"
+        payload:
+          $ref: "/schema/simple.schema_demo._public.user_info.proto"

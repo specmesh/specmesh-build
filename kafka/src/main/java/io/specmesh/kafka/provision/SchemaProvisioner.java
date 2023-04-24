@@ -149,7 +149,7 @@ public final class SchemaProvisioner {
             schemaContent = Files.readString(schemaPath, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new Provisioner.ProvisioningException(
-                    "Failed to read schema from: " + schemaPath, e);
+                    "Failed to readSchemaContent from:" + schemaPath, e);
         }
         return schemaContent;
     }

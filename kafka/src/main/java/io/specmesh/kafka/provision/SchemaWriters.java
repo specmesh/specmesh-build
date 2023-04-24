@@ -96,7 +96,11 @@ public final class SchemaWriters {
                                     final var schemaId =
                                             client.register(schema.subject(), schema.getSchema());
                                     schema.state(UPDATED);
-                                    schema.messages("Updated with id: " + schemaId);
+                                    schema.messages(
+                                            "Subject:"
+                                                    + schema.subject()
+                                                    + " Updated with id: "
+                                                    + schemaId);
                                 } catch (IOException | RestClientException e) {
                                     schema.exception(
                                             new Provisioner.ProvisioningException(
@@ -141,7 +145,9 @@ public final class SchemaWriters {
                                             client.register(schema.subject(), schema.getSchema());
                                     client.updateCompatibility(schema.subject(), DEFAULT_EVOLUTION);
                                     schema.messages(
-                                            "Created with id: "
+                                            "Subject:"
+                                                    + schema.subject()
+                                                    + "Created with id: "
                                                     + schemaId
                                                     + ", evolution set to:"
                                                     + DEFAULT_EVOLUTION);
