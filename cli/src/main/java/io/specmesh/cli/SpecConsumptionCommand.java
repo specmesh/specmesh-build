@@ -81,8 +81,7 @@ public class SpecConsumptionCommand implements Callable<Map<String, ConsumerGrou
         topics.forEach(
                 topic -> {
                     final var groups = client.groupsForTopicPrefix(topic);
-                    groups.forEach(
-                            group -> results.put(topic, group));
+                    groups.forEach(group -> results.put(topic, group));
                 });
         return results;
     }

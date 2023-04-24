@@ -35,9 +35,7 @@ import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.TopicPartitionInfo;
 
-/**
- * Simple client used to query storage and consumption values
- */
+/** Simple client used to query storage and consumption values */
 public class SimpleAdminClient implements SmAdminClient {
 
     public static final long TIMEOUT = 300L;
@@ -47,9 +45,9 @@ public class SimpleAdminClient implements SmAdminClient {
         this.adminClient = adminClient;
     }
 
-
     /**
      * Get the groups for a topic prefix and their partition offsets
+     *
      * @param topicPrefix to match against
      * @return the list of groups
      */
@@ -90,6 +88,7 @@ public class SimpleAdminClient implements SmAdminClient {
 
     /**
      * Set of groups for a prefix
+     *
      * @param topicPrefix to match against
      * @param consumerGroups to filter from
      * @return matched descriptions
@@ -157,6 +156,7 @@ public class SimpleAdminClient implements SmAdminClient {
 
     /**
      * Check if a cgroup is consuming from a topic prefix
+     *
      * @param groupDescription - group desc
      * @param prefix to match againt
      * @return true when it is
@@ -210,6 +210,7 @@ public class SimpleAdminClient implements SmAdminClient {
 
     /**
      * List all brokerIds
+     *
      * @return the set of brokerIds
      */
     @Override

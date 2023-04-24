@@ -17,6 +17,8 @@
 package io.specmesh.kafka.admin;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.Collection;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,15 +28,11 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.apache.kafka.clients.admin.Admin;
 
-import java.util.Collection;
-import java.util.List;
-
-/**
- * SpecMesh simple admin client api
- */
+/** SpecMesh simple admin client api */
 public interface SmAdminClient {
     /**
      * Returns the set of consumer groups (and stats) for a topicPrefix)
+     *
      * @param topicPrefix to query against
      * @return matched groups
      */
@@ -42,6 +40,7 @@ public interface SmAdminClient {
 
     /**
      * Report the volume of data in bytes for a topic
+     *
      * @param topic to query against
      * @return topic bytes
      */
@@ -49,12 +48,14 @@ public interface SmAdminClient {
 
     /**
      * Get the set of broker ids
+     *
      * @return broker Ids list
      */
     List<Integer> brokerIds();
 
     /**
      * Get topic offset total
+     *
      * @param topic to query against
      * @return total offset count (number of records)
      */
@@ -64,9 +65,7 @@ public interface SmAdminClient {
         return new SimpleAdminClient(client);
     }
 
-    /**
-     * Report client level exceptions
-     */
+    /** Report client level exceptions */
     class ClientException extends RuntimeException {
 
         ClientException(final String msg, final Throwable cause) {
@@ -88,9 +87,9 @@ public interface SmAdminClient {
 
         public void calculateTotalOffset() {
             members.forEach(
-                            member ->
-                                    member.partitions.forEach(
-                                            partition -> offsetTotal += partition.offset()));
+                    member ->
+                            member.partitions.forEach(
+                                    partition -> offsetTotal += partition.offset()));
         }
     }
 
