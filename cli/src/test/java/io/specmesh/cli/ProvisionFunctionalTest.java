@@ -51,11 +51,11 @@ class ProvisionFunctionalTest {
     @Test
     void shouldProvisionTopicsAndAclResourcesWithoutSchemas() throws Exception {
 
-        final ProvisionCommand provisionCommand = new ProvisionCommand();
+        final Provision provision = new Provision();
 
         // Given:
         final CommandLine.ParseResult parseResult =
-                new CommandLine(provisionCommand)
+                new CommandLine(provision)
                         .parseArgs(
                                 ("--bootstrap-server "
                                                 + KAFKA_ENV.kafkaBootstrapServers()
@@ -67,8 +67,10 @@ class ProvisionFunctionalTest {
 
         assertThat(parseResult.matchedArgs().size(), is(4));
 
+        assertThat(provision.call(), is(0));
+
         // When:
-        final var status = provisionCommand.call();
+        final var status = provision.state();
 
         // then: Verify status is correct
         final var topicProvisionStatus = status.topics();

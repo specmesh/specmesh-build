@@ -18,10 +18,14 @@ package io.specmesh.cli;
 
 import static picocli.CommandLine.Command;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.admin.SmAdminClient;
-import io.specmesh.kafka.admin.SmAdminClient.ConsumerGroup;
 import io.specmesh.kafka.provision.Provisioner;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -36,13 +40,25 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
+import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
-/** Spec consumers stats for those groups consuming topic data */
+/** App storage requirements (bytes, offsets) for Spec topics */
 @Command(
-        name = "consumption",
-        description = "Given a spec, break down the consumption volume against each of its topic")
-public class SpecConsumptionCommand implements Callable<Map<String, ConsumerGroup>> {
+        name = "storageVolume",
+        description =
+                "Given a spec, break down the storage volume (including replication) against each"
+                        + " of its topic")
+public class Storage implements Callable<Integer> {
+
+    /**
+     * Main method
+     *
+     * @param args args
+     */
+    public static void main(final String[] args) {
+        System.exit(new CommandLine(new Storage()).execute(args));
+    }
 
     @Option(
             names = {"-bs", "--bootstrap-server"},
@@ -64,9 +80,10 @@ public class SpecConsumptionCommand implements Callable<Map<String, ConsumerGrou
             description = "secret credential for the cluster connection")
     private String secret;
 
-    @SuppressWarnings("checkstyle:RegexpSingleline")
+    private TreeMap<String, Map<String, Long>> state;
+
     @Override
-    public Map<String, ConsumerGroup> call() throws Exception {
+    public Integer call() throws Exception {
 
         final var client = SmAdminClient.create(adminClient());
 
@@ -76,18 +93,39 @@ public class SpecConsumptionCommand implements Callable<Map<String, ConsumerGrou
                         .map(NewTopic::name)
                         .collect(Collectors.toList());
 
-        final var results = new TreeMap<String, ConsumerGroup>();
+        final var results = new TreeMap<String, Map<String, Long>>();
 
         topics.forEach(
-                topic -> {
-                    final var groups = client.groupsForTopicPrefix(topic);
-                    groups.forEach(group -> results.put(topic, group));
-                });
-        return results;
+                topic ->
+                        results.put(
+                                topic,
+                                Map.of(
+                                        "storage",
+                                        client.topicVolumeUsingLogDirs(topic),
+                                        "offset-total",
+                                        client.topicVolumeOffsets(topic))));
+
+        final var mapper =
+                new ObjectMapper()
+                        .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+                        .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        System.out.println(mapper.writeValueAsString(results));
+        this.state = results;
+        return 0;
+    }
+
+    /**
+     * Return processed state
+     *
+     * @return processed state
+     */
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "meh")
+    public Map<String, Map<String, Long>> state() {
+        return state;
     }
 
     private KafkaApiSpec specMeshSpec() {
-        return loadFromClassPath(spec, SpecConsumptionCommand.class.getClassLoader());
+        return loadFromClassPath(spec, Storage.class.getClassLoader());
     }
 
     /**

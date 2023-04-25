@@ -55,7 +55,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import picocli.CommandLine;
 import simple.schema_demo._public.user_signed_up_value.UserSignedUp;
 
-class StorageConsumptionMetricsFunctionalTest {
+class StorageConsumptionFunctionalTest {
 
     private static final String OWNER_USER = "simple.schema_demo";
 
@@ -98,7 +98,7 @@ class StorageConsumptionMetricsFunctionalTest {
                 checkConsumptionStats();
             }
 
-            final var storageCommand = new SpecStorageCommand();
+            final var storageCommand = new Storage();
             final CommandLine.ParseResult parseResult =
                     new CommandLine(storageCommand)
                             .parseArgs(
@@ -110,7 +110,8 @@ class StorageConsumptionMetricsFunctionalTest {
                                             .split(" "));
 
             assertThat(parseResult.matchedArgs().size(), is(4));
-            final var storage = storageCommand.call();
+            assertThat(storageCommand.call(), is(0));
+            final var storage = storageCommand.state();
 
             assertThat(storage.size(), is(API_SPEC.listDomainOwnedTopics().size()));
 
@@ -123,7 +124,7 @@ class StorageConsumptionMetricsFunctionalTest {
     }
 
     private static void checkConsumptionStats() throws Exception {
-        final var consumptionCommand = new SpecConsumptionCommand();
+        final var consumptionCommand = new Consumption();
         // Given:
         final CommandLine.ParseResult parseResult =
                 new CommandLine(consumptionCommand)
@@ -137,7 +138,9 @@ class StorageConsumptionMetricsFunctionalTest {
 
         assertThat(parseResult.matchedArgs().size(), is(4));
 
-        final var consumptionMap = consumptionCommand.call();
+        assertThat(consumptionCommand.call(), is(0));
+
+        final var consumptionMap = consumptionCommand.state();
 
         assertThat(consumptionMap.size(), is(1));
         assertThat(

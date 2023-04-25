@@ -18,9 +18,15 @@ package io.specmesh.cli;
 
 import static picocli.CommandLine.Command;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.admin.SmAdminClient;
+import io.specmesh.kafka.admin.SmAdminClient.ConsumerGroup;
 import io.specmesh.kafka.provision.Provisioner;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -35,15 +41,25 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
+import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
-/** App storage requirements (bytes, offsets) for Spec topics */
+/** Spec consumers stats for those groups consuming topic data */
 @Command(
-        name = "storageVolume",
-        description =
-                "Given a spec, break down the storage volume (including replication) against each"
-                        + " of its topic")
-public class SpecStorageCommand implements Callable<Map<String, Map<String, Long>>> {
+        name = "consumption",
+        description = "Given a spec, break down the consumption volume against each of its topic")
+public class Consumption implements Callable<Integer> {
+
+    private Map<String, ConsumerGroup> state;
+
+    /**
+     * Main method
+     *
+     * @param args args
+     */
+    public static void main(final String[] args) {
+        System.exit(new CommandLine(new Provision()).execute(args));
+    }
 
     @Option(
             names = {"-bs", "--bootstrap-server"},
@@ -66,7 +82,7 @@ public class SpecStorageCommand implements Callable<Map<String, Map<String, Long
     private String secret;
 
     @Override
-    public Map<String, Map<String, Long>> call() throws Exception {
+    public Integer call() throws Exception {
 
         final var client = SmAdminClient.create(adminClient());
 
@@ -76,22 +92,35 @@ public class SpecStorageCommand implements Callable<Map<String, Map<String, Long
                         .map(NewTopic::name)
                         .collect(Collectors.toList());
 
-        final var results = new TreeMap<String, Map<String, Long>>();
+        final var results = new TreeMap<String, ConsumerGroup>();
 
         topics.forEach(
-                topic ->
-                        results.put(
-                                topic,
-                                Map.of(
-                                        "storage",
-                                        client.topicVolumeUsingLogDirs(topic),
-                                        "offset-total",
-                                        client.topicVolumeOffsets(topic))));
-        return results;
+                topic -> {
+                    final var groups = client.groupsForTopicPrefix(topic);
+                    groups.forEach(group -> results.put(topic, group));
+                });
+
+        final var mapper =
+                new ObjectMapper()
+                        .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+                        .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        System.out.println(mapper.writeValueAsString(results));
+        this.state = results;
+        return 0;
+    }
+
+    /**
+     * get processed state
+     *
+     * @return processed state
+     */
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "meh")
+    public Map<String, ConsumerGroup> state() {
+        return state;
     }
 
     private KafkaApiSpec specMeshSpec() {
-        return loadFromClassPath(spec, SpecStorageCommand.class.getClassLoader());
+        return loadFromClassPath(spec, Consumption.class.getClassLoader());
     }
 
     /**
