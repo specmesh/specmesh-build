@@ -18,6 +18,11 @@ package io.specmesh.cli;
 
 import static picocli.CommandLine.Command;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientConfig;
@@ -36,6 +41,7 @@ import java.util.concurrent.Callable;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
+import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
 /** SpecMesh Kafka Provisioner */
@@ -44,7 +50,18 @@ import picocli.CommandLine.Option;
         description =
                 "Apply the provided specification to provision kafka resources and permissions on"
                         + " the cluster")
-public class ProvisionCommand implements Callable<Status> {
+public class Provision implements Callable<Integer> {
+
+    private Status state;
+
+    /**
+     * Main method
+     *
+     * @param args args
+     */
+    public static void main(final String[] args) {
+        System.exit(new CommandLine(new Provision()).execute(args));
+    }
 
     @Option(
             names = {"-bs", "--bootstrap-server"},
@@ -97,13 +114,32 @@ public class ProvisionCommand implements Callable<Status> {
     private boolean dryRun;
 
     @Override
-    public Status call() throws Exception {
-        return Provisioner.provision(
-                dryRun, specMeshSpec(), schemaPath, adminClient(), schemaRegistryClient());
+    public Integer call() throws Exception {
+        final var status =
+                Provisioner.provision(
+                        dryRun, specMeshSpec(), schemaPath, adminClient(), schemaRegistryClient());
+
+        final var mapper =
+                new ObjectMapper()
+                        .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+                        .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        System.out.println(mapper.writeValueAsString(status));
+        this.state = status;
+        return 0;
+    }
+
+    /**
+     * get processed state
+     *
+     * @return processed state
+     */
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "omg")
+    public Status state() {
+        return state;
     }
 
     private KafkaApiSpec specMeshSpec() {
-        return loadFromClassPath(spec, ProvisionCommand.class.getClassLoader());
+        return loadFromClassPath(spec, Provision.class.getClassLoader());
     }
 
     private Optional<SchemaRegistryClient> schemaRegistryClient() {
