@@ -20,6 +20,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.kafka.provision.AclProvisioner.Acl;
 import io.specmesh.kafka.provision.Provisioner.ProvisioningException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -69,6 +70,12 @@ public class AclReaders {
                                                             Provisioner.REQUEST_TIMEOUT,
                                                             TimeUnit.SECONDS);
                                         } catch (Exception e) {
+                                            if (e.getCause()
+                                                    .toString()
+                                                    .contains(
+                                                            "org.apache.kafka.common.errors.SecurityDisabledException")) {
+                                                return List.<AclBinding>of();
+                                            }
                                             throw new ProvisioningException(
                                                     "Failed to read ACLs", e);
                                         }

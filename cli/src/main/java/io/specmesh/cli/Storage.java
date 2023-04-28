@@ -23,22 +23,12 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.admin.SmAdminClient;
-import io.specmesh.kafka.provision.Provisioner;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
-import org.apache.kafka.clients.admin.Admin;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
@@ -76,7 +66,7 @@ public class Storage implements Callable<Integer> {
     private String username;
 
     @Option(
-            names = {"-p", "--secret"},
+            names = {"-s", "--secret"},
             description = "secret credential for the cluster connection")
     private String secret;
 
@@ -85,7 +75,7 @@ public class Storage implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
 
-        final var client = SmAdminClient.create(adminClient());
+        final var client = SmAdminClient.create(Utils.adminClient(brokerUrl, username, secret));
 
         final var apiSpec = specMeshSpec();
         final var topics =
@@ -125,39 +115,6 @@ public class Storage implements Callable<Integer> {
     }
 
     private KafkaApiSpec specMeshSpec() {
-        return loadFromClassPath(spec, Storage.class.getClassLoader());
-    }
-
-    /**
-     * AdminClient access
-     *
-     * @return = adminClient
-     */
-    private Admin adminClient() {
-        final Map<String, Object> properties = new HashMap<>();
-        properties.put(AdminClientConfig.CLIENT_ID_CONFIG, UUID.randomUUID().toString());
-        properties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, brokerUrl);
-        properties.putAll(Provisioner.clientSaslAuthProperties(username, secret));
-
-        return AdminClient.create(properties);
-    }
-
-    /**
-     * loads the spec from the classpath
-     *
-     * @param spec to load
-     * @param classLoader to use
-     * @return the loaded spec
-     */
-    private static KafkaApiSpec loadFromClassPath(
-            final String spec, final ClassLoader classLoader) {
-        try (InputStream s = classLoader.getResourceAsStream(spec)) {
-            if (s == null) {
-                throw new FileNotFoundException("API Spec resource not found: " + spec);
-            }
-            return new KafkaApiSpec(new AsyncApiParser().loadResource(s));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load API spec: " + spec, e);
-        }
+        return Utils.loadFromClassPath(spec, Storage.class.getClassLoader());
     }
 }
