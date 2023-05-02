@@ -113,7 +113,7 @@ public class Provision implements Callable<Integer> {
                 new ObjectMapper()
                         .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
                         .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
-        System.out.println(mapper.writeValueAsString(status));
+        System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(status));
         this.state = status;
         return 0;
     }
