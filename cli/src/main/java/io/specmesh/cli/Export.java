@@ -31,7 +31,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
 /** Basic/incomplete export of the spec-api using a app-id prefix */
-@Command(name = "export", description = "Build an incomplete spec from a Cluster")
+@Command(name = "export", description = "Build an incomplete spec from a running Cluster")
 public class Export implements Callable<Integer> {
 
     private ApiSpec state;
