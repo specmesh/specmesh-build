@@ -19,6 +19,7 @@ package io.specmesh.cli;
 import static io.specmesh.kafka.Clients.producerProperties;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 
 import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
@@ -83,44 +84,77 @@ class StorageConsumptionFunctionalTest {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
             final var client = SmAdminClient.create(adminClient);
 
-            final String userSignedUpTopic = seedTopicData();
+            shouldDoConsumptionStats(client);
 
-            try (Consumer<Long, UserSignedUp> consumer =
-                    avroConsumer(userSignedUpTopic, OWNER_USER, "testGroup")) {
-                final var consumerRecords = consumer.poll(Duration.ofSeconds(10));
-                System.out.println("GOT:" + consumerRecords);
+            shouldDoStorageStats();
 
-                // VERIFY now check the positional info while the consumer is active
-                final var stats = client.groupsForTopicPrefix("simple");
-                System.out.println(stats);
-                assertThat(stats.get(0).offsetTotal(), is(10000L));
-
-                checkConsumptionStats();
-            }
-
-            final var storageCommand = new Storage();
-            final CommandLine.ParseResult parseResult =
-                    new CommandLine(storageCommand)
-                            .parseArgs(
-                                    ("--bootstrap-server "
-                                                    + KAFKA_ENV.kafkaBootstrapServers()
-                                                    + " --spec simple_schema_demo-api.yaml"
-                                                    + " --username admin"
-                                                    + " --secret admin-secret")
-                                            .split(" "));
-
-            assertThat(parseResult.matchedArgs().size(), is(4));
-            assertThat(storageCommand.call(), is(0));
-            final var storage = storageCommand.state();
-
-            assertThat(storage.size(), is(API_SPEC.listDomainOwnedTopics().size()));
-
-            final var volume =
-                    (Map<String, Long>) storage.get("simple.schema_demo._public.user_signed_up");
-
-            assertThat(volume.get("storage"), is(1120000L));
-            assertThat(volume.get("offset-total"), is(10000L));
+            shouldExportStuff();
         }
+    }
+
+    private static void shouldExportStuff() throws Exception {
+        final var command = new Export();
+        final CommandLine.ParseResult parseResult =
+                new CommandLine(command)
+                        .parseArgs(
+                                ("--bootstrap-server "
+                                                + KAFKA_ENV.kafkaBootstrapServers()
+                                                + " --agg-id simple:schema_demo"
+                                                + " --username admin"
+                                                + " --secret admin-secret")
+                                        .split(" "));
+
+        assertThat(parseResult.matchedArgs().size(), is(4));
+        assertThat(command.call(), is(0));
+        final var spec = command.state();
+        assertThat(spec.id(), is("simple.schema_demo"));
+        assertThat(
+                spec.channels().keySet(),
+                containsInAnyOrder(
+                        "simple.schema_demo._public.user_info",
+                        "simple.schema_demo._public.user_checkout",
+                        "simple.schema_demo._public.user_signed_up"));
+    }
+
+    private void shouldDoConsumptionStats(final SmAdminClient client) throws Exception {
+        final String userSignedUpTopic = seedTopicData();
+
+        try (Consumer<Long, UserSignedUp> consumer =
+                avroConsumer(userSignedUpTopic, OWNER_USER, "testGroup")) {
+            final var consumerRecords = consumer.poll(Duration.ofSeconds(10));
+
+            // VERIFY now check the positional info while the consumer is active
+            final var stats = client.groupsForTopicPrefix("simple");
+            System.out.println(stats);
+            assertThat(stats.get(0).offsetTotal(), is(10000L));
+
+            checkConsumptionStats();
+        }
+    }
+
+    private static void shouldDoStorageStats() throws Exception {
+        final var command = new Storage();
+        final CommandLine.ParseResult parseResult =
+                new CommandLine(command)
+                        .parseArgs(
+                                ("--bootstrap-server "
+                                                + KAFKA_ENV.kafkaBootstrapServers()
+                                                + " --spec simple_schema_demo-api.yaml"
+                                                + " --username admin"
+                                                + " --secret admin-secret")
+                                        .split(" "));
+
+        assertThat(parseResult.matchedArgs().size(), is(4));
+        assertThat(command.call(), is(0));
+        final var storage = command.state();
+
+        assertThat(storage.size(), is(API_SPEC.listDomainOwnedTopics().size()));
+
+        final var volume =
+                (Map<String, Long>) storage.get("simple.schema_demo._public.user_signed_up");
+
+        assertThat(volume.get("storage"), is(1120000L));
+        assertThat(volume.get("offset-total"), is(10000L));
     }
 
     private static void checkConsumptionStats() throws Exception {

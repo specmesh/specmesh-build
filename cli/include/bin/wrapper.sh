@@ -25,8 +25,17 @@ function storage() {
    -Dlog4j.configurationFile=/log/log4j2.xml \
    -cp "/opt/specmesh/service/lib/*" \
    io.specmesh.cli.Storage "$@"
+}
+function export() {
+  echo "Export..."
+  exec java \
+   -Xms64m -Xmx64m \
+   -Dlog4j.configurationFile=/log/log4j2.xml \
+   -cp "/opt/specmesh/service/lib/*" \
+   io.specmesh.cli.Export "$@"
 
 }
+
 
 function usage() {
   echo "Usage \n"
@@ -56,6 +65,10 @@ case $1 in
   storage)
       shift
       storage "$@"
+      ;;
+  export)
+      shift
+      export "$@"
       ;;
   *)
     usage
