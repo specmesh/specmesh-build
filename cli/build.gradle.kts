@@ -32,7 +32,7 @@ val log4jVersion : String by extra
 
 
 dependencies {
-    implementation("info.picocli:picocli:4.7.1")
+    implementation("info.picocli:picocli:4.7.3")
     runtimeOnly("org.apache.logging.log4j:log4j-core:$log4jVersion")
 
     implementation(project(":parser"))
