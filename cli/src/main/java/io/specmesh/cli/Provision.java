@@ -23,24 +23,10 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
-import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
-import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientConfig;
-import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.provision.Provisioner;
 import io.specmesh.kafka.provision.Status;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.Callable;
-import org.apache.kafka.clients.admin.Admin;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.AdminClientConfig;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
@@ -99,7 +85,7 @@ public class Provision implements Callable<Integer> {
     private String username;
 
     @Option(
-            names = {"-p", "--secret"},
+            names = {"-s", "--secret"},
             description = "secret credential for the cluster connection")
     private String secret;
 
@@ -117,13 +103,17 @@ public class Provision implements Callable<Integer> {
     public Integer call() throws Exception {
         final var status =
                 Provisioner.provision(
-                        dryRun, specMeshSpec(), schemaPath, adminClient(), schemaRegistryClient());
+                        dryRun,
+                        specMeshSpec(),
+                        schemaPath,
+                        Utils.adminClient(brokerUrl, username, secret),
+                        Utils.schemaRegistryClient(schemaRegistryUrl, srApiKey, srApiSecret));
 
         final var mapper =
                 new ObjectMapper()
                         .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
                         .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
-        System.out.println(mapper.writeValueAsString(status));
+        System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(status));
         this.state = status;
         return 0;
     }
@@ -139,54 +129,6 @@ public class Provision implements Callable<Integer> {
     }
 
     private KafkaApiSpec specMeshSpec() {
-        return loadFromClassPath(spec, Provision.class.getClassLoader());
-    }
-
-    private Optional<SchemaRegistryClient> schemaRegistryClient() {
-        if (schemaRegistryUrl != null) {
-            final Map<String, Object> properties = new HashMap<>();
-            if (srApiKey != null) {
-                properties.put(
-                        SchemaRegistryClientConfig.BASIC_AUTH_CREDENTIALS_SOURCE, "USER_INFO");
-                properties.put(
-                        SchemaRegistryClientConfig.USER_INFO_CONFIG, srApiKey + ":" + srApiSecret);
-            }
-            return Optional.of(new CachedSchemaRegistryClient(schemaRegistryUrl, 5, properties));
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    /**
-     * AdminClient access
-     *
-     * @return = adminClient
-     */
-    private Admin adminClient() {
-        final Map<String, Object> properties = new HashMap<>();
-        properties.put(AdminClientConfig.CLIENT_ID_CONFIG, UUID.randomUUID().toString());
-        properties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, brokerUrl);
-        properties.putAll(Provisioner.clientSaslAuthProperties(username, secret));
-
-        return AdminClient.create(properties);
-    }
-
-    /**
-     * loads the spec from the classpath
-     *
-     * @param spec to load
-     * @param classLoader to use
-     * @return the loaded spec
-     */
-    private static KafkaApiSpec loadFromClassPath(
-            final String spec, final ClassLoader classLoader) {
-        try (InputStream s = classLoader.getResourceAsStream(spec)) {
-            if (s == null) {
-                throw new FileNotFoundException("API Spec resource not found: " + spec);
-            }
-            return new KafkaApiSpec(new AsyncApiParser().loadResource(s));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load API spec: " + spec, e);
-        }
+        return Utils.loadFromClassPath(spec, Provision.class.getClassLoader());
     }
 }

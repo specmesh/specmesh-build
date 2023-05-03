@@ -22,6 +22,7 @@ plugins {
     id("com.diffplug.spotless") version "6.18.0"
     id("pl.allegro.tech.build.axion-release") version "1.15.0"
     id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
+    id("com.bmuschko.docker-remote-api") version "9.3.1" apply false
 }
 
 project.version = scmVersion.version
@@ -76,7 +77,7 @@ subprojects {
         set("junitPioneerVersion", "2.0.0")
         set("spotBugsVersion", "4.7.3")
         set("hamcrestVersion", "1.3")
-        set("log4jVersion", "2.18.0")
+        set("log4jVersion", "2.18.0")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
         set("classGraphVersion", "4.8.21")
         set("testcontainersVersion", "1.17.6")
         set("lombokVersion", "1.18.26")

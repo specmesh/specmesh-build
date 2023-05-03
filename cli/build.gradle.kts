@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
+
 plugins {
     application
+    id("com.bmuschko.docker-remote-api")
 }
 
 val kafkaVersion : String by extra
@@ -24,10 +28,12 @@ val jacksonVersion : String by extra
 val lombokVersion : String by extra
 val confluentVersion : String by extra
 val testcontainersVersion : String by extra
+val log4jVersion : String by extra
 
 
 dependencies {
     implementation("info.picocli:picocli:4.7.1")
+    runtimeOnly("org.apache.logging.log4j:log4j-core:$log4jVersion")
 
     implementation(project(":parser"))
     implementation(project(":kafka"))
@@ -42,4 +48,34 @@ dependencies {
     testAnnotationProcessor("org.projectlombok:lombok:$lombokVersion")
 
 
+}
+application {
+    mainModule.set("io.specmesh.cli")
+    mainClass.set("io.specmesh.cli.Main")
+}
+val buildAppImage = tasks.register<DockerBuildImage>("buildAppImage") {
+    dependsOn("prepareDocker")
+    buildArgs.put("APP_NAME", project.name)
+    buildArgs.put("APP_VERSION", "${project.version}")
+    images.add("ghcr.io/specmesh/${rootProject.name}-${project.name}:latest")
+    images.add("ghcr.io/specmesh/${rootProject.name}-${project.name}:${project.version}")
+}
+
+tasks.register<Copy>("prepareDocker") {
+    dependsOn("distTar")
+
+    from(
+        layout.projectDirectory.file("Dockerfile"),
+        layout.buildDirectory.file("distributions/${project.name}-${project.version}.tar"),
+        layout.projectDirectory.dir("include"),
+    )
+
+    into(buildAppImage.get().inputDir)
+}
+
+
+tasks.register<DockerPushImage>("pushAppImage") {
+    dependsOn("buildAppImage")
+    images.add("ghcr.io/specmesh/${rootProject.name}-${project.name}:latest")
+    images.add("ghcr.io/specmesh/${rootProject.name}-${project.name}:${project.version}")
 }

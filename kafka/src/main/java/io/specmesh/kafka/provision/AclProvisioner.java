@@ -116,7 +116,7 @@ public final class AclProvisioner {
         @EqualsAndHashCode.Include private String name;
         private Status.STATE state;
         private AclBinding aclBinding;
-        private Exception exception;
+        private String exception;
         @Builder.Default private String messages = "";
     }
 }

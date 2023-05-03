@@ -71,6 +71,7 @@ public final class SchemaReaders {
                                                 }));
 
                 return schemas.entrySet().stream()
+                        .filter(entry -> !entry.getValue().isEmpty())
                         .map(
                                 entry ->
                                         Schema.builder()

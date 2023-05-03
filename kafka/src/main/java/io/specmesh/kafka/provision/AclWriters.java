@@ -65,7 +65,8 @@ public class AclWriters {
                                                         acl.messages() + "\n Failed to delete ACLs")
                                                 .exception(
                                                         new ProvisioningException(
-                                                                "Failed to delete ACL", ex)));
+                                                                        "Failed to delete ACL", ex)
+                                                                .toString()));
                 return acls;
             }
 
@@ -90,8 +91,8 @@ public class AclWriters {
                         acl -> {
                             acl.state(STATE.FAILED);
                             acl.exception(
-                                    new ProvisioningException(
-                                            "Failed to provision set of Acls", ex));
+                                    new ProvisioningException("Failed to provision set of Acls", ex)
+                                            .toString());
                         });
             }
             return acls;
