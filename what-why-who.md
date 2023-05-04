@@ -1,7 +1,7 @@
 
 # The problem
 
-Kafka is not opinionated, which means you can:
+[Apache Kafka](https://kafka.apache.org/) is not opinionated, which means you can:
 
 - Create topics with any name, using any structure or capitalization (camel case, kebab case, lower/upper case). This lack of constraint often results in flat structures of topic names that have unclear ownership.
 - Experience confusing or non-existent governance; associating and managing ACLs is complicated by the fact that consumer IDs, topic names, and ACLs are all managed separately.
@@ -131,7 +131,6 @@ channels:
         payload:
           # client should lookup this schema remotely from the schema registry - it is owned by the publisher
           $ref: "london.hammersmith.transport._public.tube.passenger.avsc"
-
 ```
 
 **Noteworthy features from the above spec**
