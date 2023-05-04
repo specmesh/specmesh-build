@@ -3,7 +3,7 @@
 
 # SpecMesh build tools
 
-SpecMesh is an opinionated modelling layer over Apache Kafka resources that combines GitOps, AsyncAPI (modelling), a parser, testing and provisioning tools. By utilizing this methodology and toolset, it enables organizations to adopt Kafka at scale while incorporating simplification guardrails to prevent many typical mistakes. Resource provisioning is concealed beneath the AsyncAPI specification, providing a simplified view that allows both technical and non-technical users to design and build their Kafka applications as data products.
+SpecMesh is an opinionated modelling layer over Apache Kafka resources that combines GitOps, AsyncAPI (modelling), a parser, testing, provisioning tools as well as chargeback support. By utilizing this methodology and toolset, it enables organizations to adopt Kafka at scale while incorporating simplification guardrails to prevent many typical mistakes. Resource provisioning is concealed beneath the AsyncAPI specification, providing a simplified view that allows both technical and non-technical users to design and build their Kafka applications as data products.
 
 For more information see [What Why Who](what-why-who.md)
 
@@ -65,6 +65,8 @@ SpecMesh enables the following best practices
 1. Prevention of incorrectly named topics or other resources
 1. Bundling together sets of topics into a single, publishable API that [models well known concepts](https://www.asyncapi.com/docs/tutorials/getting-started/event-driven-architectures)
 1. Support for metadata modelling and attachment ([AsyncAPI tags](https://www.asyncapi.com/docs/reference/specification/v2.4.0#a-nametagsobjectatags-object))
+1. Chargeback capability that breaks down consumption and production metrics on a per app/aggregate-id basis
+1. Export AsyncAPI specs of apps using the app/aggregate-id (currently in draft form)
 
 # Want to get started? 
 Look at the [Get Going Guide](getgoingguides.md)

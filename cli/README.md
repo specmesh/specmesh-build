@@ -3,6 +3,352 @@
 Provision, export and capture production & consumption metrics for a data product (app.yml)
 
 
+## Provision
+
+This command will process the AsyncApi spec (aka. App, or data product) - and publish to the configured cluster (and schema registry). It can be run manually, and also as part of a GitOps workflow, and/or build promotion of the spec into different environments where cluster and SR endpoints are configured as environment variables.
+
+### Usage
+
+> % docker run --rm --network confluent -v "$(pwd)/resources:/app" ghcr.io/specmesh/specmesh-build-cli  provision -bs kafka:9092  -sr http://schema-registry:8081 -spec /app/simple_schema_demo-api.yaml -schemaPath /app
+> 
+this example demonstrates `provision`ing using a docker network where `kafka` is the container running a Kafka broker, and `schema-registry` the schema registry container.
+ 
+### Output
+
+```yaml
+<details>
+  <summary>Click to expand Python code</summary>
+{
+  "topics" : [ {
+    "name" : "simple.spec_demo._public.user_signed_up",
+    "state" : "CREATED",
+    "partitions" : 3,
+    "replication" : 1,
+    "config" : {
+      "cleanup.policy" : "delete"
+    },
+    "exception" : null,
+    "messages" : ""
+  }, {
+    "name" : "simple.spec_demo._private.user_checkout",
+    "state" : "CREATED",
+    "partitions" : 3,
+    "replication" : 1,
+    "config" : {
+      "cleanup.policy" : "delete"
+    },
+    "exception" : null,
+    "messages" : ""
+  }, {
+    "name" : "simple.spec_demo._protected.purchased",
+    "state" : "CREATED",
+    "partitions" : 3,
+    "replication" : 1,
+    "config" : { },
+    "exception" : null,
+    "messages" : ""
+  } ],
+  "schemas" : null,
+  "acls" : [ {
+    "name" : "(pattern=ResourcePattern(resourceType=TOPIC, name=simple.spec_demo._protected.purchased, patternType=LITERAL), entry=(principal=User:.some.other.domain.root, host=*, operation=READ, permissionType=ALLOW))",
+    "state" : "CREATED",
+    "aclBinding" : {
+      "pattern" : {
+        "resourceType" : "TOPIC",
+        "name" : "simple.spec_demo._protected.purchased",
+        "patternType" : "LITERAL",
+        "unknown" : false
+      },
+      "entry" : {
+        "data" : {
+          "principal" : "User:.some.other.domain.root",
+          "host" : "*",
+          "operation" : "READ",
+          "permissionType" : "ALLOW",
+          "clusterLinkIds" : [ ]
+        },
+        "unknown" : false
+      },
+      "unknown" : false
+    },
+    "exception" : null,
+    "messages" : ""
+  }, {
+    "name" : "(pattern=ResourcePattern(resourceType=TOPIC, name=simple.spec_demo._private, patternType=PREFIXED), entry=(principal=User:simple.spec_demo, host=*, operation=CREATE, permissionType=ALLOW))",
+    "state" : "CREATED",
+    "aclBinding" : {
+      "pattern" : {
+        "resourceType" : "TOPIC",
+        "name" : "simple.spec_demo._private",
+        "patternType" : "PREFIXED",
+        "unknown" : false
+      },
+      "entry" : {
+        "data" : {
+          "principal" : "User:simple.spec_demo",
+          "host" : "*",
+          "operation" : "CREATE",
+          "permissionType" : "ALLOW",
+          "clusterLinkIds" : [ ]
+        },
+        "unknown" : false
+      },
+      "unknown" : false
+    },
+    "exception" : null,
+    "messages" : ""
+  }, {
+    "name" : "(pattern=ResourcePattern(resourceType=GROUP, name=simple.spec_demo, patternType=PREFIXED), entry=(principal=User:simple.spec_demo, host=*, operation=READ, permissionType=ALLOW))",
+    "state" : "CREATED",
+    "aclBinding" : {
+      "pattern" : {
+        "resourceType" : "GROUP",
+        "name" : "simple.spec_demo",
+        "patternType" : "PREFIXED",
+        "unknown" : false
+      },
+      "entry" : {
+        "data" : {
+          "principal" : "User:simple.spec_demo",
+          "host" : "*",
+          "operation" : "READ",
+          "permissionType" : "ALLOW",
+          "clusterLinkIds" : [ ]
+        },
+        "unknown" : false
+      },
+      "unknown" : false
+    },
+    "exception" : null,
+    "messages" : ""
+  }, {
+    "name" : "(pattern=ResourcePattern(resourceType=TOPIC, name=simple.spec_demo._public, patternType=PREFIXED), entry=(principal=User:*, host=*, operation=READ, permissionType=ALLOW))",
+    "state" : "CREATED",
+    "aclBinding" : {
+      "pattern" : {
+        "resourceType" : "TOPIC",
+        "name" : "simple.spec_demo._public",
+        "patternType" : "PREFIXED",
+        "unknown" : false
+      },
+      "entry" : {
+        "data" : {
+          "principal" : "User:*",
+          "host" : "*",
+          "operation" : "READ",
+          "permissionType" : "ALLOW",
+          "clusterLinkIds" : [ ]
+        },
+        "unknown" : false
+      },
+      "unknown" : false
+    },
+    "exception" : null,
+    "messages" : ""
+  }, {
+    "name" : "(pattern=ResourcePattern(resourceType=TRANSACTIONAL_ID, name=simple.spec_demo, patternType=PREFIXED), entry=(principal=User:simple.spec_demo, host=*, operation=DESCRIBE, permissionType=ALLOW))",
+    "state" : "CREATED",
+    "aclBinding" : {
+      "pattern" : {
+        "resourceType" : "TRANSACTIONAL_ID",
+        "name" : "simple.spec_demo",
+        "patternType" : "PREFIXED",
+        "unknown" : false
+      },
+      "entry" : {
+        "data" : {
+          "principal" : "User:simple.spec_demo",
+          "host" : "*",
+          "operation" : "DESCRIBE",
+          "permissionType" : "ALLOW",
+          "clusterLinkIds" : [ ]
+        },
+        "unknown" : false
+      },
+      "unknown" : false
+    },
+    "exception" : null,
+    "messages" : ""
+  }, {
+    "name" : "(pattern=ResourcePattern(resourceType=TOPIC, name=simple.spec_demo, patternType=PREFIXED), entry=(principal=User:simple.spec_demo, host=*, operation=WRITE, permissionType=ALLOW))",
+    "state" : "CREATED",
+    "aclBinding" : {
+      "pattern" : {
+        "resourceType" : "TOPIC",
+        "name" : "simple.spec_demo",
+        "patternType" : "PREFIXED",
+        "unknown" : false
+      },
+      "entry" : {
+        "data" : {
+          "principal" : "User:simple.spec_demo",
+          "host" : "*",
+          "operation" : "WRITE",
+          "permissionType" : "ALLOW",
+          "clusterLinkIds" : [ ]
+        },
+        "unknown" : false
+      },
+      "unknown" : false
+    },
+    "exception" : null,
+    "messages" : ""
+  }, {
+    "name" : "(pattern=ResourcePattern(resourceType=TOPIC, name=simple.spec_demo._protected.purchased, patternType=LITERAL), entry=(principal=User:.some.other.domain.root, host=*, operation=DESCRIBE, permissionType=ALLOW))",
+    "state" : "CREATED",
+    "aclBinding" : {
+      "pattern" : {
+        "resourceType" : "TOPIC",
+        "name" : "simple.spec_demo._protected.purchased",
+        "patternType" : "LITERAL",
+        "unknown" : false
+      },
+      "entry" : {
+        "data" : {
+          "principal" : "User:.some.other.domain.root",
+          "host" : "*",
+          "operation" : "DESCRIBE",
+          "permissionType" : "ALLOW",
+          "clusterLinkIds" : [ ]
+        },
+        "unknown" : false
+      },
+      "unknown" : false
+    },
+    "exception" : null,
+    "messages" : ""
+  }, {
+    "name" : "(pattern=ResourcePattern(resourceType=TOPIC, name=simple.spec_demo, patternType=PREFIXED), entry=(principal=User:simple.spec_demo, host=*, operation=READ, permissionType=ALLOW))",
+    "state" : "CREATED",
+    "aclBinding" : {
+      "pattern" : {
+        "resourceType" : "TOPIC",
+        "name" : "simple.spec_demo",
+        "patternType" : "PREFIXED",
+        "unknown" : false
+      },
+      "entry" : {
+        "data" : {
+          "principal" : "User:simple.spec_demo",
+          "host" : "*",
+          "operation" : "READ",
+          "permissionType" : "ALLOW",
+          "clusterLinkIds" : [ ]
+        },
+        "unknown" : false
+      },
+      "unknown" : false
+    },
+    "exception" : null,
+    "messages" : ""
+  }, {
+    "name" : "(pattern=ResourcePattern(resourceType=TRANSACTIONAL_ID, name=simple.spec_demo, patternType=PREFIXED), entry=(principal=User:simple.spec_demo, host=*, operation=WRITE, permissionType=ALLOW))",
+    "state" : "CREATED",
+    "aclBinding" : {
+      "pattern" : {
+        "resourceType" : "TRANSACTIONAL_ID",
+        "name" : "simple.spec_demo",
+        "patternType" : "PREFIXED",
+        "unknown" : false
+      },
+      "entry" : {
+        "data" : {
+          "principal" : "User:simple.spec_demo",
+          "host" : "*",
+          "operation" : "WRITE",
+          "permissionType" : "ALLOW",
+          "clusterLinkIds" : [ ]
+        },
+        "unknown" : false
+      },
+      "unknown" : false
+    },
+    "exception" : null,
+    "messages" : ""
+  }, {
+    "name" : "(pattern=ResourcePattern(resourceType=CLUSTER, name=kafka-cluster, patternType=PREFIXED), entry=(principal=User:simple.spec_demo, host=*, operation=IDEMPOTENT_WRITE, permissionType=ALLOW))",
+    "state" : "CREATED",
+    "aclBinding" : {
+      "pattern" : {
+        "resourceType" : "CLUSTER",
+        "name" : "kafka-cluster",
+        "patternType" : "PREFIXED",
+        "unknown" : false
+      },
+      "entry" : {
+        "data" : {
+          "principal" : "User:simple.spec_demo",
+          "host" : "*",
+          "operation" : "IDEMPOTENT_WRITE",
+          "permissionType" : "ALLOW",
+          "clusterLinkIds" : [ ]
+        },
+        "unknown" : false
+      },
+      "unknown" : false
+    },
+    "exception" : null,
+    "messages" : ""
+  }, {
+    "name" : "(pattern=ResourcePattern(resourceType=TOPIC, name=simple.spec_demo, patternType=PREFIXED), entry=(principal=User:simple.spec_demo, host=*, operation=DESCRIBE, permissionType=ALLOW))",
+    "state" : "CREATED",
+    "aclBinding" : {
+      "pattern" : {
+        "resourceType" : "TOPIC",
+        "name" : "simple.spec_demo",
+        "patternType" : "PREFIXED",
+        "unknown" : false
+      },
+      "entry" : {
+        "data" : {
+          "principal" : "User:simple.spec_demo",
+          "host" : "*",
+          "operation" : "DESCRIBE",
+          "permissionType" : "ALLOW",
+          "clusterLinkIds" : [ ]
+        },
+        "unknown" : false
+      },
+      "unknown" : false
+    },
+    "exception" : null,
+    "messages" : ""
+  }, {
+    "name" : "(pattern=ResourcePattern(resourceType=TOPIC, name=simple.spec_demo._public, patternType=PREFIXED), entry=(principal=User:*, host=*, operation=DESCRIBE, permissionType=ALLOW))",
+    "state" : "CREATED",
+    "aclBinding" : {
+      "pattern" : {
+        "resourceType" : "TOPIC",
+        "name" : "simple.spec_demo._public",
+        "patternType" : "PREFIXED",
+        "unknown" : false
+      },
+      "entry" : {
+        "data" : {
+          "principal" : "User:*",
+          "host" : "*",
+          "operation" : "DESCRIBE",
+          "permissionType" : "ALLOW",
+          "clusterLinkIds" : [ ]
+        },
+        "unknown" : false
+      },
+      "unknown" : false
+    },
+    "exception" : null,
+    "messages" : ""
+  } ]
+}
+  <details>
+```
+
+## Storage (metrics)
+
+## Consumption (metrics)
+
+## Export
+
+
 ## Simple Start
 
 > % docker run --rm --network confluent -v "$(pwd)/resources:/app" ghcr.io/specmesh/specmesh-build-cli  provision -bs kafka:9092  -sr http://schema-registry:8081 -spec /app/simple_schema_demo-api.yaml -schemaPath /app
