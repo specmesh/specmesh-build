@@ -1,23 +1,59 @@
 # Kafka SpecMesh CLI
 
-Provision, export and capture production & consumption metrics for a data product (app.yml)
+Provision, export as well as capture production & consumption metrics for a SpecMesh app (aka data product - AsyncApi.yml)
 
 
-## Provision
+## Command: Provision
 
-This command will process the AsyncApi spec (aka. App, or data product) - and publish to the configured cluster (and schema registry). It can be run manually, and also as part of a GitOps workflow, and/or build promotion of the spec into different environments where cluster and SR endpoints are configured as environment variables.
+This command will process the AsyncApi spec (aka. App, or data product) and publish to the configured cluster and schema registry environment. It can be run manually, and also as part of a GitOps workflow, and/or build promotion of the spec into different environments where cluster and SR endpoints are configured as environment variables.
 
 ### Usage
 
 > % docker run --rm --network confluent -v "$(pwd)/resources:/app" ghcr.io/specmesh/specmesh-build-cli  provision -bs kafka:9092  -sr http://schema-registry:8081 -spec /app/simple_schema_demo-api.yaml -schemaPath /app
 > 
-this example demonstrates `provision`ing using a docker network where `kafka` is the container running a Kafka broker, and `schema-registry` the schema registry container.
+This demonstrates `provision`ing a spec into a docker environment, with a network `confluent`, and `kafka` is the container a Kafka broker container, and `schema-registry` the schema registry container. See the commands further down the page
  
 ### Output
 
 ```yaml
+{
+  "topics" : [ {
+    "name" : "simple.spec_demo._public.user_signed_up",
+    "state" : "CREATED",
+    "partitions" : 3,
+    "replication" : 1,
+    "config" : {
+      "cleanup.policy" : "delete"
+    },
+    "exception" : null,
+    "messages" : ""
+  }, {
+    "schemas" : null,
+    "acls" : [ {
+      "name" : "(pattern=ResourcePattern(resourceType=TOPIC, name=simple.spec_demo._public, patternType=PREFIXED), entry=(principal=User:*, host=*, operation=READ, permissionType=ALLOW))",
+      "state" : "CREATED",
+      "aclBinding" : {
+        "pattern" : {
+          "resourceType" : "TOPIC",
+          "name" : "simple.spec_demo._public",
+          "patternType" : "PREFIXED",
+          "unknown" : false
+        },
+        "entry" : {
+          "data" : {
+            "principal" : "User:*",
+            "host" : "*",
+            "operation" : "READ",
+            "permissionType" : "ALLOW",
+            "clusterLinkIds" : [ ]
+          }        
+ <SNIP>
+```
+
 <details>
-  <summary>Click to expand Python code</summary>
+  <summary>Long form - click to view the output</summary>
+
+```yaml
 {
   "topics" : [ {
     "name" : "simple.spec_demo._public.user_signed_up",
@@ -339,14 +375,15 @@ this example demonstrates `provision`ing using a docker network where `kafka` is
     "messages" : ""
   } ]
 }
-  <details>
+  
 ```
+</details>
 
-## Storage (metrics)
+## Command: Storage (metrics)
 
-## Consumption (metrics)
+## Command: Consumption (metrics)
 
-## Export
+## Command: Export - to an AsyncAPI spec
 
 
 ## Simple Start
