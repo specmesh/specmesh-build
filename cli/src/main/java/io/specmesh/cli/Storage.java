@@ -35,10 +35,10 @@ import picocli.CommandLine.Option;
 
 /** App storage requirements (bytes, offsets) for Spec topics */
 @Command(
-        name = "storageVolume",
+        name = "storage",
         description =
-                "Given a spec, break down the storage volume (including replication) against each"
-                        + " of its topic")
+                "Given a spec, break down the storage requirements (including replication) against"
+                        + " each of its topic in bytes")
 public class Storage implements Callable<Integer> {
 
     /**

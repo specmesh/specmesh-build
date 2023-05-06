@@ -38,7 +38,7 @@ function export() {
 
 
 function usage() {
-  echo "Usage \n"
+  echo "Usage "
   echo " Commands         [provision, consumption, storage, export]"
   echo " Common args      --bootstrap-server|-bs, --username,-u, --secret,-p"
   echo " Schema Reg args  --srUrl,-sr, --srApiKey,-srKey, --srApiSecret,-srSecret, --schemaPath,-schemaPath "
