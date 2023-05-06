@@ -1,6 +1,8 @@
 # SpecMesh CLI
 
-Provision, export and capture production & consumption metrics for a SpecMesh app (aka data product - AsyncApi.yml)
+Commands to provision, export and capture production & consumption chargeback metrics for a SpecMesh app (aka data product - AsyncApi.yml)
+
+This page also contains a simple docker guide for local testing.
 
 
 ## Command: Provision
@@ -415,7 +417,9 @@ This demonstrates `provision`ing a *spec* into a docker environment, with a netw
 ```
 </details>
 
-## Command: Storage (metrics)
+## Command: Storage (chargeback metrics)
+
+Reports app-id => topic-partition level metrics for storage bytes and offsets
 
 > docker run --rm --network confluent -v "$(pwd)/resources:/app" ghcr.io/specmesh/specmesh-build-cli storage -bs kafka:9092 -spec /app/simple_spec_demo-api.yaml
 
@@ -445,8 +449,9 @@ Topic data that matches the app-id (prefixed with `simple.spec_demo` within the 
  {"simple.spec_demo._private.user_checkout":{"storage":1590,"offset-total":6},"simple.spec_demo._protected.purchased":{"storage":0,"offset-total":0},"simple.spec_demo._public.user_signed_up":{"storage":9185,"offset-total":57}}
 ```
 
-## Command: Consumption (metrics)
+## Command: Consumption (chargeback metrics)
 
+Report active consumer groups (with offset) that is consuming data given an app-ids set of topics.
 
 >%  docker run --rm --network confluent -v "$(pwd)/resources:/app" ghcr.io/specmesh/specmesh-build-cli consumption -bs kafka:9092 -spec /app/simple_spec_demo-api.yaml
 
@@ -530,16 +535,13 @@ Full JSON
 {"id":"urn:simple:spec_demo","version":"2023-05-06","asyncapi":"2.5.0","channels":{"_private.user_checkout":{"description":null,"bindings":{"kafka":{"envs":null,"partitions":1,"replicas":1,"configs":{"compression.type":"producer","leader.replication.throttled.replicas":"","message.downconversion.enable":"true","min.insync.replicas":"1","segment.jitter.ms":"0","cleanup.policy":"delete","flush.ms":"9223372036854775807","follower.replication.throttled.replicas":"","segment.bytes":"1073741824","retention.ms":"604800000","flush.messages":"9223372036854775807","message.format.version":"3.0-IV1","max.compaction.lag.ms":"9223372036854775807","file.delete.delay.ms":"60000","max.message.bytes":"1048588","min.compaction.lag.ms":"0","message.timestamp.type":"CreateTime","preallocate":"false","min.cleanable.dirty.ratio":"0.5","index.interval.bytes":"4096","unclean.leader.election.enable":"false","retention.bytes":"-1","delete.retention.ms":"86400000","segment.ms":"604800000","message.timestamp.difference.max.ms":"9223372036854775807","segment.index.bytes":"10485760"},"groupId":null,"schemaIdLocation":null,"schemaLookupStrategy":null,"bindingVersion":"unknown"}},"publish":null,"subscribe":null},"_public.user_signed_up":{"description":null,"bindings":{"kafka":{"envs":null,"partitions":1,"replicas":1,"configs":{"compression.type":"producer","leader.replication.throttled.replicas":"","message.downconversion.enable":"true","min.insync.replicas":"1","segment.jitter.ms":"0","cleanup.policy":"delete","flush.ms":"9223372036854775807","follower.replication.throttled.replicas":"","segment.bytes":"1073741824","retention.ms":"604800000","flush.messages":"9223372036854775807","message.format.version":"3.0-IV1","max.compaction.lag.ms":"9223372036854775807","file.delete.delay.ms":"60000","max.message.bytes":"1048588","min.compaction.lag.ms":"0","message.timestamp.type":"CreateTime","preallocate":"false","min.cleanable.dirty.ratio":"0.5","index.interval.bytes":"4096","unclean.leader.election.enable":"false","retention.bytes":"-1","delete.retention.ms":"86400000","segment.ms":"604800000","message.timestamp.difference.max.ms":"9223372036854775807","segment.index.bytes":"10485760"},"groupId":null,"schemaIdLocation":null,"schemaLookupStrategy":null,"bindingVersion":"unknown"}},"publish":null,"subscribe":null}}}
 ```
 
+#
 
+***
 
-# Simple Start
+# Quickstart using docker on the local machine
 
-> % docker run --rm --network confluent -v "$(pwd)/resources:/app" ghcr.io/specmesh/specmesh-build-cli  provision -bs kafka:9092  -sr http://schema-registry:8081 -spec /app/simple_schema_demo-api.yaml -schemaPath /app
-
-
-
-
-## Run a local kafka environment to manually test against (no security)
+Run a local kafka environment to manually test against. Note, security is not configured.
 
 **Docker network**
 > docker network create confluent
