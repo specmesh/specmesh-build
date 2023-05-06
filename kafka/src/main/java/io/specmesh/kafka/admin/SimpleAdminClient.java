@@ -34,6 +34,7 @@ import org.apache.kafka.common.ConsumerGroupState;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.TopicPartitionInfo;
+import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 
 /** Simple client used to query storage and consumption values */
 public class SimpleAdminClient implements SmAdminClient {
@@ -261,7 +262,13 @@ public class SimpleAdminClient implements SmAdminClient {
             }
 
             return totalVolume;
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+        } catch (ExecutionException e) {
+            if (e.toString().contains(UnknownTopicOrPartitionException.class.getName())) {
+                return 0;
+            } else {
+                throw new ClientException("Failed to get topicVolumeOffsets for topic:" + topic, e);
+            }
+        } catch (InterruptedException | TimeoutException e) {
             throw new ClientException("Failed to get topicVolumeOffsets for topic:" + topic, e);
         }
     }

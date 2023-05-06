@@ -1,17 +1,53 @@
-# Kafka SpecMesh CLI
+# SpecMesh CLI
 
-Provision, export as well as capture production & consumption metrics for a SpecMesh app (aka data product - AsyncApi.yml)
+Provision, export and capture production & consumption metrics for a SpecMesh app (aka data product - AsyncApi.yml)
 
 
 ## Command: Provision
 
-This command will process the AsyncApi spec (aka. App, or data product) and publish to the configured cluster and schema registry environment. It can be run manually, and also as part of a GitOps workflow, and/or build promotion of the spec into different environments where cluster and SR endpoints are configured as environment variables.
+This command will provision Kafka resources using AsyncApi spec (aka. App, or data product) and publish to the configured cluster and schema registry environment. It can be run manually, and also as part of a GitOps workflow, and/or build promotion of the spec into different environments where cluster and SR endpoints are configured as environment variables.
 
 ### Usage
 
 > % docker run --rm --network confluent -v "$(pwd)/resources:/app" ghcr.io/specmesh/specmesh-build-cli  provision -bs kafka:9092  -sr http://schema-registry:8081 -spec /app/simple_schema_demo-api.yaml -schemaPath /app
 > 
-This demonstrates `provision`ing a spec into a docker environment, with a network `confluent`, and `kafka` is the container a Kafka broker container, and `schema-registry` the schema registry container. See the commands further down the page
+
+<details>
+  <summary>Long form</summary>
+
+```
+ provision [-d] [-bs=<brokerUrl>] [-s=<secret>]
+                 [-schemaPath=<schemaPath>] [-spec=<spec>]
+                 [-sr=<schemaRegistryUrl>] [-srKey=<srApiKey>]
+                 [-srSecret=<srApiSecret>] [-u=<username>]
+Apply the provided specification to provision kafka resources and permissions
+on the cluster
+      -bs, --bootstrap-server=<brokerUrl>
+                             Kafka bootstrap server url
+  -d, --dry-run              Compares the cluster against the spec, outputting
+                               proposed changes if compatible.If the spec
+                               incompatible with the cluster (not sure how it
+                               could be) then will fail with a descriptive
+                               error message.A return value of 0=indicates no
+                               changes needed; 1=changes needed; -1=not
+                               compatible, blah blah
+  -s, --secret=<secret>      secret credential for the cluster connection
+      -schemaPath, --schemaPath=<schemaPath>
+                             schemaPath where the set of referenced schemas
+                               will be loaded
+      -spec, --spec=<spec>   specmesh specification file
+      -sr, --srUrl=<schemaRegistryUrl>
+                             schemaRegistryUrl
+      -srKey, --srApiKey=<srApiKey>
+                             srApiKey for schema registry
+      -srSecret, --srApiSecret=<srApiSecret>
+                             srApiSecret for schema secret
+  -u, --username=<username>  username or api key for the cluster connection
+```
+</details>
+ 
+
+This demonstrates `provision`ing a *spec* into a docker environment, with a network `confluent`, and `kafka` is the container running a Kafka broker container, and `schema-registry` the schema registry container. 
  
 ### Output
 
@@ -47,11 +83,11 @@ This demonstrates `provision`ing a spec into a docker environment, with a networ
             "permissionType" : "ALLOW",
             "clusterLinkIds" : [ ]
           }        
- <SNIP>
+ <<SNIP>>
 ```
 
 <details>
-  <summary>Long form - click to view the output</summary>
+  <summary>Long form</summary>
 
 ```yaml
 {
@@ -381,12 +417,122 @@ This demonstrates `provision`ing a spec into a docker environment, with a networ
 
 ## Command: Storage (metrics)
 
+> docker run --rm --network confluent -v "$(pwd)/resources:/app" ghcr.io/specmesh/specmesh-build-cli storage -bs kafka:9092 -spec /app/simple_spec_demo-api.yaml
+
+
+<details>
+  <summary>Long form</summary>
+
+```
+Usage: storage [-bs=<brokerUrl>] [-s=<secret>] [-spec=<spec>]
+                     [-u=<username>]
+Given a spec, break down the storage volume (including replication) against
+each of its topic in bytes
+      -bs, --bootstrap-server=<brokerUrl>
+                             Kafka bootstrap server url
+  -s, --secret=<secret>      secret credential for the cluster connection
+      -spec, --spec=<spec>   specmesh specification file
+  -u, --username=<username>  username or api key for the cluster connection
+```
+</details>
+
+
+### Output
+
+Topic data that matches the app-id (prefixed with `simple.spec_demo` within the api.yaml)
+
+```json
+ {"simple.spec_demo._private.user_checkout":{"storage":1590,"offset-total":6},"simple.spec_demo._protected.purchased":{"storage":0,"offset-total":0},"simple.spec_demo._public.user_signed_up":{"storage":9185,"offset-total":57}}
+```
+
 ## Command: Consumption (metrics)
 
-## Command: Export - to an AsyncAPI spec
+
+>%  docker run --rm --network confluent -v "$(pwd)/resources:/app" ghcr.io/specmesh/specmesh-build-cli consumption -bs kafka:9092 -spec /app/simple_spec_demo-api.yaml
 
 
-## Simple Start
+<details>
+  <summary>Long form</summary>
+
+```
+Usage: consumption [-bs=<brokerUrl>] [-s=<secret>] [-spec=<spec>]
+                   [-u=<username>]
+Given a spec, break down the consumption volume against each of its topic
+      -bs, --bootstrap-server=<brokerUrl>
+                             Kafka bootstrap server url
+  -s, --secret=<secret>      secret credential for the cluster connection
+      -spec, --spec=<spec>   specmesh specification file
+  -u, --username=<username>  username or api key for the cluster connection
+
+``` 
+</details>
+
+### Output
+
+A consumer group `some.other.app` with id `console-consumer...` is actively consuming data
+
+```json
+{"simple.spec_demo._public.user_signed_up":{"id":"some.other.app","members":[{"id":"console-consumer-7f9d23c7-a627-41cd-ade9-3919164bc363","clientId":"console-consumer","host":"/172.30.0.3","partitions":[{"id":0,"topic":"simple.spec_demo._public.user_signed_up","offset":57,"timestamp":-1}]}],"offsetTotal":57}}
+```
+
+ 
+
+
+## Command: Export to a spec
+
+>  docker run --rm --network confluent -v "$(pwd)/resources:/app" ghcr.io/specmesh/specmesh-build-cli export -bs kafka:9092 -aggid simple:spec_demo
+
+<details>
+  <summary>Long form</summary>
+
+```
+Usage: export [-aggid=<aggid>] [-bs=<brokerUrl>] [-s=<secret>] [-u=<username>]
+Build an incomplete spec from a running Cluster
+      -aggid, --agg-id=<aggid>
+                          specmesh - agg-id/prefix - aggregate identified
+                            (app-id) to export against
+      -bs, --bootstrap-server=<brokerUrl>
+                          Kafka bootstrap server url
+  -s, --secret=<secret>   secret credential for the cluster connection
+  -u, --username=<username>
+                          username or api key for the cluster connection
+```
+</details>
+
+### Output
+
+```json
+{
+  "id": "urn:simple:spec_demo",
+  "version": "2023-05-06",
+  "asyncapi": "2.5.0",
+  "channels": {
+    "_public.user_signed_up": {
+      "bindings": {
+        "kafka": {
+          "partitions": 1,
+          "replicas": 1,
+          "configs": {
+            "compression.type": "producer",
+            "leader.replication.throttled.replicas": "",
+            "message.downconversion.enable": "true",
+            "min.insync.replicas": "1",
+            "segment.jitter.ms": "0",
+            "cleanup.policy": "delete",
+            "flush.ms": "9223372036854775807",
+            "follower.replication.throttled.replicas": "",
+            "segment.bytes": "1073741824",
+            "retention.ms": "604800000",
+   <<SNIP>> 
+```
+Full JSON
+```json
+{"id":"urn:simple:spec_demo","version":"2023-05-06","asyncapi":"2.5.0","channels":{"_private.user_checkout":{"description":null,"bindings":{"kafka":{"envs":null,"partitions":1,"replicas":1,"configs":{"compression.type":"producer","leader.replication.throttled.replicas":"","message.downconversion.enable":"true","min.insync.replicas":"1","segment.jitter.ms":"0","cleanup.policy":"delete","flush.ms":"9223372036854775807","follower.replication.throttled.replicas":"","segment.bytes":"1073741824","retention.ms":"604800000","flush.messages":"9223372036854775807","message.format.version":"3.0-IV1","max.compaction.lag.ms":"9223372036854775807","file.delete.delay.ms":"60000","max.message.bytes":"1048588","min.compaction.lag.ms":"0","message.timestamp.type":"CreateTime","preallocate":"false","min.cleanable.dirty.ratio":"0.5","index.interval.bytes":"4096","unclean.leader.election.enable":"false","retention.bytes":"-1","delete.retention.ms":"86400000","segment.ms":"604800000","message.timestamp.difference.max.ms":"9223372036854775807","segment.index.bytes":"10485760"},"groupId":null,"schemaIdLocation":null,"schemaLookupStrategy":null,"bindingVersion":"unknown"}},"publish":null,"subscribe":null},"_public.user_signed_up":{"description":null,"bindings":{"kafka":{"envs":null,"partitions":1,"replicas":1,"configs":{"compression.type":"producer","leader.replication.throttled.replicas":"","message.downconversion.enable":"true","min.insync.replicas":"1","segment.jitter.ms":"0","cleanup.policy":"delete","flush.ms":"9223372036854775807","follower.replication.throttled.replicas":"","segment.bytes":"1073741824","retention.ms":"604800000","flush.messages":"9223372036854775807","message.format.version":"3.0-IV1","max.compaction.lag.ms":"9223372036854775807","file.delete.delay.ms":"60000","max.message.bytes":"1048588","min.compaction.lag.ms":"0","message.timestamp.type":"CreateTime","preallocate":"false","min.cleanable.dirty.ratio":"0.5","index.interval.bytes":"4096","unclean.leader.election.enable":"false","retention.bytes":"-1","delete.retention.ms":"86400000","segment.ms":"604800000","message.timestamp.difference.max.ms":"9223372036854775807","segment.index.bytes":"10485760"},"groupId":null,"schemaIdLocation":null,"schemaLookupStrategy":null,"bindingVersion":"unknown"}},"publish":null,"subscribe":null}}}
+```
+
+
+
+# Simple Start
 
 > % docker run --rm --network confluent -v "$(pwd)/resources:/app" ghcr.io/specmesh/specmesh-build-cli  provision -bs kafka:9092  -sr http://schema-registry:8081 -spec /app/simple_schema_demo-api.yaml -schemaPath /app
 
@@ -423,13 +569,13 @@ List topics
 > docker exec -it kafka /bin/bash -c "/usr/bin/kafka-topics --list --bootstrap-server kafka:9092"
 
 
-
 *Notice that the --bootstrap-server parameter now points to kafka:9092 instead of localhost:9092, as the Kafka container is now referred to by its container name within the confluent network.* 
 
 Produce messages
 > docker exec -it kafka /bin/bash -c "/usr/bin/kafka-console-producer --broker-list kafka:9092 --topic test"
-> 
+
 OR (own container rather than the 'kafka' container)
+
 >  % docker run --name test-listing --network confluent -it  confluentinc/cp-kafka:latest  /bin/bash -c "/usr/bin/kafka-topics --list --bootstrap-server kafka:9092"
 
 Consume messages
