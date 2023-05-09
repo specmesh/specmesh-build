@@ -5,9 +5,16 @@
 
 SpecMesh is an opinionated modelling layer over Apache Kafka resources that combines GitOps, AsyncAPI (modelling), a parser, testing, provisioning tools as well as chargeback support. By utilizing this methodology and toolset, it enables organizations to adopt Kafka at scale while incorporating simplification guardrails to prevent many typical mistakes. Resource provisioning is concealed beneath the AsyncAPI specification, providing a simplified view that allows both technical and non-technical users to design and build their Kafka applications as data products.
 
-For more information see [What Why Who](what-why-who.md)
+Links:
+- [Source](https://github.com/specmesh/specmesh-build)
+- [What Why Who](what-why-who.md)
+- [Get Going Guide](getgoingguides.md) 
+- [CLI](cli/README.md)
+- [SpecMesh.io](https://specmesh.github.io/site/)
 
-And one place to look at everything, here is a simple SpecMesh API spec.
+**In 30 seconds.**
+
+Here is a simple SpecMesh API spec. When provision is executed, `Topics` will be provisioned for each app.id + channel - i.e. acme.lifestyle.onboarding._public.user_signed_up. In this case, the domain owner (app-id) is the only principle with ACL permissions to write to it, however, all principles can consume from the `_public` topic. ACLs are implied through the `_private`, `_protected`, `_public` convention. The structural requirement enforces clear topic and acl ownership (including schemas), but also means the ecosytem resources can not be mined to extract `storage` and `consumption` metrics for billing purposes.
 ```yaml
 asyncapi: '2.5.0'
 id: 'urn:acme:lifestyle:onboarding'
@@ -68,8 +75,6 @@ SpecMesh enables the following best practices
 1. Chargeback capability that breaks down consumption and production metrics on a per app/aggregate-id basis
 1. Export AsyncAPI specs of apps using the app/aggregate-id (currently in draft form)
 
-# Want to get started? 
-Look at the [Get Going Guide](getgoingguides.md)
 
 # Adoption
 SpecMesh is designed for users (or applications) that are eager to build new Apache Kafka apps using this approach (resource structuring/modelling). Existing apps that do not conform to the required structure captured in the AsyncAPI spec cannot be adapted at this time; however, we have plans to support such apps in the future.
