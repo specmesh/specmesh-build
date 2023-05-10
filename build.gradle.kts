@@ -77,7 +77,7 @@ subprojects {
         set("junitPioneerVersion", "2.0.1")
         set("spotBugsVersion", "4.7.3")
         set("hamcrestVersion", "1.3")
-        set("log4jVersion", "2.18.0")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
+        set("log4jVersion", "2.20.0")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
         set("classGraphVersion", "4.8.21")
         set("testcontainersVersion", "1.18.0")
         set("lombokVersion", "1.18.26")
@@ -102,7 +102,7 @@ subprojects {
         testImplementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
         testImplementation("com.google.guava:guava-testlib:$guavaVersion")
         testImplementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
-        testImplementation("org.apache.logging.log4j:log4j-slf4j18-impl:$log4jVersion")
+        testImplementation("org.apache.logging.log4j:log4j-slf4j2-impl:$log4jVersion")
         testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
     }
 
