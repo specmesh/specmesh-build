@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package io.specmesh.cli;
+package io.specmesh.kafka;
 
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientConfig;
 import io.specmesh.apiparser.AsyncApiParser;
-import io.specmesh.kafka.KafkaApiSpec;
-import io.specmesh.kafka.provision.Provisioner;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -31,6 +29,7 @@ import java.util.UUID;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.common.security.plain.PlainLoginModule;
 
 public final class Utils {
 
@@ -82,7 +81,7 @@ public final class Utils {
             properties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, brokerUrl);
 
             if (username != null) {
-                properties.putAll(Provisioner.clientSaslAuthProperties(username, secret));
+                properties.putAll(clientSaslAuthProperties(username, secret));
             }
 
             return AdminClient.create(properties);
@@ -90,6 +89,34 @@ public final class Utils {
             throw new UtilityException(
                     "cannot load:" + brokerUrl + " with username:" + username, ex);
         }
+    }
+
+    /**
+     * setup sasl_plain auth creds
+     *
+     * @param principle user name
+     * @param secret secret
+     * @return client creds map
+     */
+    public static Map<String, Object> clientSaslAuthProperties(
+            final String principle, final String secret) {
+        return Map.of(
+                "sasl.mechanism",
+                "PLAIN",
+                AdminClientConfig.SECURITY_PROTOCOL_CONFIG,
+                "SASL_PLAINTEXT",
+                "sasl.jaas.config",
+                buildJaasConfig(principle, secret));
+    }
+
+    private static String buildJaasConfig(final String userName, final String password) {
+        return PlainLoginModule.class.getCanonicalName()
+                + " required "
+                + "username=\""
+                + userName
+                + "\" password=\""
+                + password
+                + "\";";
     }
 
     public static Optional<SchemaRegistryClient> schemaRegistryClient(

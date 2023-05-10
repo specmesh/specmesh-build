@@ -18,7 +18,6 @@ package io.specmesh.kafka;
 
 import static java.util.Objects.requireNonNull;
 
-import io.specmesh.kafka.provision.Provisioner;
 import io.specmesh.kafka.schema.SchemaRegistryContainer;
 import java.time.Duration;
 import java.util.Collection;
@@ -162,8 +161,7 @@ public final class DockerKafkaEnvironment
         adminUser.ifPresent(
                 creds ->
                         properties.putAll(
-                                Provisioner.clientSaslAuthProperties(
-                                        creds.userName, creds.password)));
+                                Utils.clientSaslAuthProperties(creds.userName, creds.password)));
         return AdminClient.create(properties);
     }
 
@@ -453,7 +451,7 @@ public final class DockerKafkaEnvironment
 
         private String buildJaasConfig(final Credentials adminUser) {
             final String basicJaas =
-                    Provisioner.clientSaslAuthProperties(adminUser.userName, adminUser.password)
+                    Utils.clientSaslAuthProperties(adminUser.userName, adminUser.password)
                             .get(SaslConfigs.SASL_JAAS_CONFIG)
                             .toString();
             return basicJaas.substring(0, basicJaas.length() - 1)

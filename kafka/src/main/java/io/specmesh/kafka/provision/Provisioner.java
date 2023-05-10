@@ -18,11 +18,8 @@ package io.specmesh.kafka.provision;
 
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.specmesh.kafka.KafkaApiSpec;
-import java.util.Map;
 import java.util.Optional;
 import org.apache.kafka.clients.admin.Admin;
-import org.apache.kafka.clients.admin.AdminClientConfig;
-import org.apache.kafka.common.security.plain.PlainLoginModule;
 
 /** Provisions Kafka and SR resources */
 public final class Provisioner {
@@ -58,34 +55,6 @@ public final class Provisioner {
                                         dryRun, apiSpec, schemaResources, registryClient)));
         status.acls(AclProvisioner.provision(dryRun, apiSpec, adminClient));
         return status.build();
-    }
-
-    /**
-     * setup sasl_plain auth creds
-     *
-     * @param principle user name
-     * @param secret secret
-     * @return client creds map
-     */
-    public static Map<String, Object> clientSaslAuthProperties(
-            final String principle, final String secret) {
-        return Map.of(
-                "sasl.mechanism",
-                "PLAIN",
-                AdminClientConfig.SECURITY_PROTOCOL_CONFIG,
-                "SASL_PLAINTEXT",
-                "sasl.jaas.config",
-                buildJaasConfig(principle, secret));
-    }
-
-    private static String buildJaasConfig(final String userName, final String password) {
-        return PlainLoginModule.class.getCanonicalName()
-                + " required "
-                + "username=\""
-                + userName
-                + "\" password=\""
-                + password
-                + "\";";
     }
 
     public static class ProvisioningException extends RuntimeException {

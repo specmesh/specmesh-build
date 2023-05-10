@@ -32,6 +32,7 @@ import io.specmesh.kafka.Clients;
 import io.specmesh.kafka.DockerKafkaEnvironment;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.KafkaEnvironment;
+import io.specmesh.kafka.Utils;
 import io.specmesh.kafka.admin.SmAdminClient;
 import io.specmesh.kafka.provision.Provisioner;
 import io.specmesh.test.TestSpecLoader;
@@ -227,7 +228,7 @@ class StorageConsumptionFunctionalTest {
                         true,
                         additionalProps);
 
-        props.putAll(Provisioner.clientSaslAuthProperties(userName, userName + "-secret"));
+        props.putAll(Utils.clientSaslAuthProperties(userName, userName + "-secret"));
         props.put(CommonClientConfigs.GROUP_ID_CONFIG, userName);
 
         final KafkaConsumer<Long, V> consumer = Clients.consumer(Long.class, valueClass, props);
@@ -256,7 +257,7 @@ class StorageConsumptionFunctionalTest {
                         false,
                         additionalProps);
 
-        props.putAll(Provisioner.clientSaslAuthProperties(userName, userName + "-secret"));
+        props.putAll(Utils.clientSaslAuthProperties(userName, userName + "-secret"));
 
         return Clients.producer(Long.class, valueClass, props);
     }

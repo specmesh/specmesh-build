@@ -24,7 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.kafka.Exporter;
-import io.specmesh.kafka.admin.SmAdminClient;
+import io.specmesh.kafka.Utils;
 import java.util.concurrent.Callable;
 import org.apache.kafka.clients.admin.Admin;
 import picocli.CommandLine;
@@ -70,8 +70,6 @@ public class Export implements Callable<Integer> {
     public Integer call() throws Exception {
 
         try (Admin adminClient = Utils.adminClient(brokerUrl, username, secret)) {
-            final var client = SmAdminClient.create(adminClient);
-
             final var apiSpec = Exporter.export(aggid, adminClient);
             final var mapper =
                     new ObjectMapper()

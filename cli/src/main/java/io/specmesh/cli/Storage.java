@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.kafka.KafkaApiSpec;
+import io.specmesh.kafka.Utils;
 import io.specmesh.kafka.admin.SmAdminClient;
 import java.util.Map;
 import java.util.TreeMap;
