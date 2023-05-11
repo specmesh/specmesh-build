@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.specmesh.kafka.Clients;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.admin.SmAdminClient;
 import java.util.Map;
@@ -75,7 +76,7 @@ public class Storage implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
 
-        final var client = SmAdminClient.create(Utils.adminClient(brokerUrl, username, secret));
+        final var client = SmAdminClient.create(Clients.adminClient(brokerUrl, username, secret));
 
         final var apiSpec = specMeshSpec();
         final var topics =
@@ -115,6 +116,6 @@ public class Storage implements Callable<Integer> {
     }
 
     private KafkaApiSpec specMeshSpec() {
-        return Utils.loadFromClassPath(spec, Storage.class.getClassLoader());
+        return KafkaApiSpec.loadFromClassPath(spec, Storage.class.getClassLoader());
     }
 }

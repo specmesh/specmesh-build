@@ -19,6 +19,7 @@ package io.specmesh.apiparser.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.specmesh.apiparser.AsyncApiParser.APIParserException;
 import java.util.List;
 import java.util.Map;
 import lombok.AccessLevel;
@@ -70,7 +71,8 @@ public class Operation {
      */
     public SchemaInfo schemaInfo() {
         if (message.bindings() == null) {
-            throw new IllegalStateException("Bindings not found for operation: " + operationId);
+            throw new APIParserException(
+                    "Bindings not found for (publish|subscribe) operation: " + operationId);
         }
         return new SchemaInfo(
                 message().schemaRef(),
@@ -78,5 +80,15 @@ public class Operation {
                 message.bindings().kafka().schemaIdLocation(),
                 message().contentType(),
                 message.bindings().kafka().schemaLookupStrategy());
+    }
+
+    public void validate() {
+        if (operationId == null) {
+            throw new APIParserException("(publish|subscribe) operation.id  is null");
+        }
+    }
+
+    public boolean isSchemaRequired() {
+        return this.message().schemaRef() != null && this.message().schemaRef().length() > 0;
     }
 }

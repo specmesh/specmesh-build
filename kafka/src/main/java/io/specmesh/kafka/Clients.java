@@ -16,20 +16,147 @@
 
 package io.specmesh.kafka;
 
+import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
+import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
+import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientConfig;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroSerializerConfig;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.security.plain.PlainLoginModule;
 import org.apache.kafka.streams.StreamsConfig;
 
 /** Factory for Kafka clients */
 public final class Clients {
+
+    public static final String SASL_MECHANISM = "sasl.mechanism";
+    public static final String SASL_JAAS_CONFIG = "sasl.jaas.config";
+    public static final String CONFIG_PROPERTIES = "config.properties";
+    public static final String NONE = "none";
+    public static final String PLAIN = "PLAIN";
+    public static final String SASL_PLAINTEXT = "SASL_PLAINTEXT";
+
     private Clients() {}
+
+    /**
+     * AdminClient access
+     *
+     * @param brokerUrl broker address
+     * @param username - user
+     * @param secret - secrets
+     * @return = adminClient
+     */
+    public static Admin adminClient(
+            final String brokerUrl, final String username, final String secret) {
+
+        try {
+            final Map<String, Object> properties = new HashMap<>();
+            properties.put(AdminClientConfig.CLIENT_ID_CONFIG, UUID.randomUUID().toString());
+            properties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, brokerUrl);
+
+            if (username != null) {
+                properties.putAll(clientSaslAuthProperties(username, secret));
+            }
+
+            if (!System.getProperty(CONFIG_PROPERTIES, NONE).equals(NONE)) {
+                return AdminClient.create(
+                        loadPropertiesFile(properties, System.getProperty(CONFIG_PROPERTIES)));
+            } else {
+                return AdminClient.create(properties);
+            }
+        } catch (Exception ex) {
+            throw new ClientsException(
+                    "cannot load:" + brokerUrl + " with username:" + username, ex);
+        }
+    }
+
+    private static Map<String, Object> loadPropertiesFile(
+            final Map<String, Object> defaultProperties, final String propertyFilename) {
+        try (InputStream input = new FileInputStream(propertyFilename)) {
+
+            final var prop = new Properties();
+            prop.putAll(defaultProperties);
+            prop.load(input);
+            return prop.entrySet().stream()
+                    .collect(
+                            Collectors.toMap(
+                                    entry -> entry.getKey().toString(), Map.Entry::getValue));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load properties file:" + propertyFilename, e);
+        }
+    }
+
+    /**
+     * setup sasl_plain auth creds
+     *
+     * @param principle user name
+     * @param secret secret
+     * @return client creds map
+     */
+    public static Map<String, Object> clientSaslAuthProperties(
+            final String principle, final String secret) {
+        if (isPrincipleSpecified(principle)) {
+            return Map.of(
+                    SASL_MECHANISM,
+                    System.getProperty(SASL_MECHANISM, PLAIN),
+                    AdminClientConfig.SECURITY_PROTOCOL_CONFIG,
+                    System.getProperty(AdminClientConfig.SECURITY_PROTOCOL_CONFIG, SASL_PLAINTEXT),
+                    SASL_JAAS_CONFIG,
+                    System.getProperty(SASL_JAAS_CONFIG, buildJaasConfig(principle, secret)));
+        } else {
+            return Map.of();
+        }
+    }
+
+    /**
+     * auth credentials are provided
+     *
+     * @param principle user-id
+     * @return true if principle was set
+     */
+    private static boolean isPrincipleSpecified(final String principle) {
+        return principle != null && principle.length() > 0;
+    }
+
+    private static String buildJaasConfig(final String userName, final String password) {
+        return PlainLoginModule.class.getCanonicalName()
+                + " required "
+                + "username=\""
+                + userName
+                + "\" password=\""
+                + password
+                + "\";";
+    }
+
+    public static Optional<SchemaRegistryClient> schemaRegistryClient(
+            final String schemaRegistryUrl, final String srApiKey, final String srApiSecret) {
+        if (schemaRegistryUrl != null) {
+            final Map<String, Object> properties = new HashMap<>();
+            if (srApiKey != null) {
+                properties.put(
+                        SchemaRegistryClientConfig.BASIC_AUTH_CREDENTIALS_SOURCE, "USER_INFO");
+                properties.put(
+                        SchemaRegistryClientConfig.USER_INFO_CONFIG, srApiKey + ":" + srApiSecret);
+            }
+            return Optional.of(new CachedSchemaRegistryClient(schemaRegistryUrl, 5, properties));
+        } else {
+            return Optional.empty();
+        }
+    }
 
     /**
      * Create a Kafka producer
@@ -234,6 +361,12 @@ public final class Clients {
             final Map<String, Object> props, final Map<String, Object>... additionalProperties) {
         for (final Map<String, Object> additional : additionalProperties) {
             props.putAll(additional);
+        }
+    }
+
+    private static class ClientsException extends RuntimeException {
+        ClientsException(final String message, final Exception cause) {
+            super(message, cause);
         }
     }
 }

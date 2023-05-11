@@ -18,11 +18,8 @@ package io.specmesh.cli;
 
 import static picocli.CommandLine.Command;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.specmesh.kafka.Clients;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.provision.Provisioner;
 import io.specmesh.kafka.provision.Status;
@@ -55,22 +52,22 @@ public class Provision implements Callable<Integer> {
     private String brokerUrl = "";
 
     @Option(
-            names = {"-sr", "--srUrl"},
+            names = {"-sr", "--schema-registry"},
             description = "schemaRegistryUrl")
     private String schemaRegistryUrl;
 
     @Option(
-            names = {"-srKey", "--srApiKey"},
+            names = {"-srKey", "--sr-api-key"},
             description = "srApiKey for schema registry")
     private String srApiKey;
 
     @Option(
-            names = {"-srSecret", "--srApiSecret"},
+            names = {"-srSecret", "--sr-api-secret"},
             description = "srApiSecret for schema secret")
     private String srApiSecret;
 
     @Option(
-            names = {"-schemaPath", "--schemaPath"},
+            names = {"-schemaPath", "--schema-path"},
             description = "schemaPath where the set of referenced schemas will be loaded")
     private String schemaPath;
 
@@ -106,14 +103,10 @@ public class Provision implements Callable<Integer> {
                         dryRun,
                         specMeshSpec(),
                         schemaPath,
-                        Utils.adminClient(brokerUrl, username, secret),
-                        Utils.schemaRegistryClient(schemaRegistryUrl, srApiKey, srApiSecret));
+                        Clients.adminClient(brokerUrl, username, secret),
+                        Clients.schemaRegistryClient(schemaRegistryUrl, srApiKey, srApiSecret));
 
-        final var mapper =
-                new ObjectMapper()
-                        .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
-                        .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
-        System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(status));
+        System.out.println(status.toString());
         this.state = status;
         return 0;
     }
@@ -129,6 +122,6 @@ public class Provision implements Callable<Integer> {
     }
 
     private KafkaApiSpec specMeshSpec() {
-        return Utils.loadFromClassPath(spec, Provision.class.getClassLoader());
+        return KafkaApiSpec.loadFromClassPath(spec, Provision.class.getClassLoader());
     }
 }

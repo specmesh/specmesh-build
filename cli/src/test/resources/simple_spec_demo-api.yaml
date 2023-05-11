@@ -70,6 +70,7 @@ channels:
         partitions: 3
 
     publish:
+      operationId: onUserPurchased
       summary: Humans purchasing food - note - restricting access to other domain principles
       tags: [
         name: "grant-access:.some.other.domain.root"
@@ -99,6 +100,7 @@ channels:
   # SUBSCRIBER WILL REQUEST SCHEMA from SR and CodeGen required classes. Header will be used for Id
   /london/hammersmith/transport/_public/tube:
     subscribe:
+      operationId: onTubePassengers
       summary: Humans arriving in the borough
       bindings:
         kafka:

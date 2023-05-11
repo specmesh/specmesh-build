@@ -141,7 +141,7 @@ class SimpleAdminClientTest {
                         true,
                         additionalProps);
 
-        props.putAll(Provisioner.clientSaslAuthProperties(userName, userName + "-secret"));
+        props.putAll(Clients.clientSaslAuthProperties(userName, userName + "-secret"));
         props.put(CommonClientConfigs.GROUP_ID_CONFIG, userName);
 
         final KafkaConsumer<Long, V> consumer = Clients.consumer(Long.class, valueClass, props);
@@ -178,7 +178,7 @@ class SimpleAdminClientTest {
                         false,
                         additionalProps);
 
-        props.putAll(Provisioner.clientSaslAuthProperties(userName, userName + "-secret"));
+        props.putAll(Clients.clientSaslAuthProperties(userName, userName + "-secret"));
 
         return Clients.producer(Long.class, valueClass, props);
     }

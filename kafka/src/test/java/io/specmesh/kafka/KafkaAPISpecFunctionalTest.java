@@ -35,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.kafka.provision.AclProvisioner;
-import io.specmesh.kafka.provision.Provisioner;
 import io.specmesh.kafka.provision.TopicProvisioner;
 import io.specmesh.test.TestSpecLoader;
 import java.time.Duration;
@@ -263,7 +262,7 @@ class KafkaAPISpecFunctionalTest {
     }
 
     private static Map<String, Object> saslAuthProperties(final String domain) {
-        return Provisioner.clientSaslAuthProperties(domain, domain + "-secret");
+        return Clients.clientSaslAuthProperties(domain, domain + "-secret");
     }
 
     private static boolean canProduce(final Domain producerDomain) {
