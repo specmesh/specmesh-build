@@ -249,7 +249,7 @@ class ClientsFunctionalDemoTest {
                         false,
                         additionalProps);
 
-        props.putAll(Utils.clientSaslAuthProperties(userName, userName + "-secret"));
+        props.putAll(Clients.clientSaslAuthProperties(userName, userName + "-secret"));
         props.put(CommonClientConfigs.GROUP_ID_CONFIG, userName);
 
         final KafkaConsumer<Long, V> consumer = Clients.consumer(Long.class, valueClass, props);
@@ -290,7 +290,7 @@ class ClientsFunctionalDemoTest {
                         false,
                         additionalProps);
 
-        props.putAll(Utils.clientSaslAuthProperties(userName, userName + "-secret"));
+        props.putAll(Clients.clientSaslAuthProperties(userName, userName + "-secret"));
 
         return Clients.producer(Long.class, valueClass, props);
     }
@@ -329,7 +329,7 @@ class ClientsFunctionalDemoTest {
                         Serdes.LongSerde.class,
                         KafkaProtobufSerde.class,
                         false,
-                        Utils.clientSaslAuthProperties(OWNER_USER, OWNER_USER + "-secret"),
+                        Clients.clientSaslAuthProperties(OWNER_USER, OWNER_USER + "-secret"),
                         Map.of(
                                 KafkaProtobufDeserializerConfig.SPECIFIC_PROTOBUF_VALUE_TYPE,
                                 UserInfo.class));

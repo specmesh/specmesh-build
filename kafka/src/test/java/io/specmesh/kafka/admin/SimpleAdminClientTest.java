@@ -30,7 +30,6 @@ import io.specmesh.kafka.Clients;
 import io.specmesh.kafka.DockerKafkaEnvironment;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.KafkaEnvironment;
-import io.specmesh.kafka.Utils;
 import io.specmesh.kafka.provision.Provisioner;
 import io.specmesh.test.TestSpecLoader;
 import java.time.Duration;
@@ -142,7 +141,7 @@ class SimpleAdminClientTest {
                         true,
                         additionalProps);
 
-        props.putAll(Utils.clientSaslAuthProperties(userName, userName + "-secret"));
+        props.putAll(Clients.clientSaslAuthProperties(userName, userName + "-secret"));
         props.put(CommonClientConfigs.GROUP_ID_CONFIG, userName);
 
         final KafkaConsumer<Long, V> consumer = Clients.consumer(Long.class, valueClass, props);
@@ -179,7 +178,7 @@ class SimpleAdminClientTest {
                         false,
                         additionalProps);
 
-        props.putAll(Utils.clientSaslAuthProperties(userName, userName + "-secret"));
+        props.putAll(Clients.clientSaslAuthProperties(userName, userName + "-secret"));
 
         return Clients.producer(Long.class, valueClass, props);
     }

@@ -23,8 +23,8 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.specmesh.kafka.Clients;
 import io.specmesh.kafka.KafkaApiSpec;
-import io.specmesh.kafka.Utils;
 import io.specmesh.kafka.provision.Provisioner;
 import io.specmesh.kafka.provision.Status;
 import java.util.concurrent.Callable;
@@ -107,8 +107,8 @@ public class Provision implements Callable<Integer> {
                         dryRun,
                         specMeshSpec(),
                         schemaPath,
-                        Utils.adminClient(brokerUrl, username, secret),
-                        Utils.schemaRegistryClient(schemaRegistryUrl, srApiKey, srApiSecret));
+                        Clients.adminClient(brokerUrl, username, secret),
+                        Clients.schemaRegistryClient(schemaRegistryUrl, srApiKey, srApiSecret));
 
         final var mapper =
                 new ObjectMapper()
@@ -130,6 +130,6 @@ public class Provision implements Callable<Integer> {
     }
 
     private KafkaApiSpec specMeshSpec() {
-        return Utils.loadFromClassPath(spec, Provision.class.getClassLoader());
+        return KafkaApiSpec.loadFromClassPath(spec, Provision.class.getClassLoader());
     }
 }

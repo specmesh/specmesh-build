@@ -262,7 +262,7 @@ class KafkaAPISpecFunctionalTest {
     }
 
     private static Map<String, Object> saslAuthProperties(final String domain) {
-        return Utils.clientSaslAuthProperties(domain, domain + "-secret");
+        return Clients.clientSaslAuthProperties(domain, domain + "-secret");
     }
 
     private static boolean canProduce(final Domain producerDomain) {

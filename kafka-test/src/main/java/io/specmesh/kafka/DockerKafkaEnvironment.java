@@ -161,7 +161,7 @@ public final class DockerKafkaEnvironment
         adminUser.ifPresent(
                 creds ->
                         properties.putAll(
-                                Utils.clientSaslAuthProperties(creds.userName, creds.password)));
+                                Clients.clientSaslAuthProperties(creds.userName, creds.password)));
         return AdminClient.create(properties);
     }
 
@@ -451,7 +451,7 @@ public final class DockerKafkaEnvironment
 
         private String buildJaasConfig(final Credentials adminUser) {
             final String basicJaas =
-                    Utils.clientSaslAuthProperties(adminUser.userName, adminUser.password)
+                    Clients.clientSaslAuthProperties(adminUser.userName, adminUser.password)
                             .get(SaslConfigs.SASL_JAAS_CONFIG)
                             .toString();
             return basicJaas.substring(0, basicJaas.length() - 1)

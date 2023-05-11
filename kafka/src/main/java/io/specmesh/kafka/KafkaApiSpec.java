@@ -28,8 +28,11 @@ import static org.apache.kafka.common.resource.ResourceType.GROUP;
 import static org.apache.kafka.common.resource.ResourceType.TOPIC;
 import static org.apache.kafka.common.resource.ResourceType.TRANSACTIONAL_ID;
 
+import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.apiparser.model.SchemaInfo;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -265,5 +268,40 @@ public class KafkaApiSpec {
                 .map(op -> new AccessControlEntry(principal, "*", op, AclPermissionType.ALLOW))
                 .map(ace -> new AclBinding(resourcePattern, ace))
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * loads the spec from the classpath
+     *
+     * @param spec to load
+     * @param classLoader to use
+     * @return the loaded spec
+     */
+    public static KafkaApiSpec loadFromClassPath(final String spec, final ClassLoader classLoader) {
+        try (InputStream clis = classLoader.getResourceAsStream(spec)) {
+            return new KafkaApiSpec(new AsyncApiParser().loadResource(clis));
+        } catch (Exception e) {
+            return loadFromFileSystem(spec);
+        }
+    }
+
+    /**
+     * Fallback to FS when classpath is borked
+     *
+     * @param spec to load
+     * @return loaded spec
+     */
+    private static KafkaApiSpec loadFromFileSystem(final String spec) {
+        try (InputStream fis = new FileInputStream(spec)) {
+            return new KafkaApiSpec(new AsyncApiParser().loadResource(fis));
+        } catch (Exception ex) {
+            throw new APIException("Failed to load spec:" + spec, ex);
+        }
+    }
+
+    private static class APIException extends RuntimeException {
+        APIException(final String message, final Exception cause) {
+            super(message, cause);
+        }
     }
 }
