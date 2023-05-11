@@ -27,6 +27,7 @@ import io.confluent.kafka.schemaregistry.json.JsonSchema;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchema;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.provision.SchemaReaders.SchemaReader;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -111,6 +112,13 @@ public final class SchemaProvisioner {
     private static List<Schema> requiredSchemas(
             final KafkaApiSpec apiSpec, final String baseResourcePath) {
         return apiSpec.listDomainOwnedTopics().stream()
+                .filter(
+                        topic ->
+                                apiSpec.apiSpec()
+                                        .channels()
+                                        .get(topic.name())
+                                        .publish()
+                                        .isSchemaRequired())
                 .map(
                         (topic -> {
                             final var schema = Schema.builder();
@@ -144,14 +152,16 @@ public final class SchemaProvisioner {
     }
 
     static String readSchemaContent(final Path schemaPath) {
-        final String schemaContent;
         try {
-            schemaContent = Files.readString(schemaPath, StandardCharsets.UTF_8);
+            return Files.readString(schemaPath, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new Provisioner.ProvisioningException(
-                    "Failed to readSchemaContent from:" + schemaPath, e);
+                    "Failed to readSchemaContent from:"
+                            + schemaPath
+                            + " cwd: "
+                            + new File(".").getAbsolutePath(),
+                    e);
         }
-        return schemaContent;
     }
 
     /** Schema provisioning status */

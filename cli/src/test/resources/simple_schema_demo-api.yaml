@@ -95,6 +95,7 @@ channels:
   # SUBSCRIBER WILL REQUEST SCHEMA from SR and CodeGen required classes. Header will be used for Id
   /london/hammersmith/transport/_public/tube:
     subscribe:
+      operationId: onSubbing
       summary: Humans arriving in the borough
       bindings:
         kafka:

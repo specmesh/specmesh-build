@@ -46,6 +46,8 @@ public final class Provisioner {
             final Admin adminClient,
             final Optional<SchemaRegistryClient> schemaRegistryClient) {
 
+        apiSpec.apiSpec().validate();
+
         final var status =
                 Status.builder().topics(TopicProvisioner.provision(dryRun, apiSpec, adminClient));
         schemaRegistryClient.ifPresent(

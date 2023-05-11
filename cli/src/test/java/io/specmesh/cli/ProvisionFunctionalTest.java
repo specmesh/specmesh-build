@@ -59,13 +59,15 @@ class ProvisionFunctionalTest {
                         .parseArgs(
                                 ("--bootstrap-server "
                                                 + KAFKA_ENV.kafkaBootstrapServers()
-                                                + " "
-                                                + "--spec simple_spec_demo-api.yaml "
-                                                + "--username admin "
-                                                + "--secret admin-secret ")
+                                                + " --spec simple_spec_demo-api.yaml"
+                                                + " --username admin"
+                                                + " --secret admin-secret"
+                                                + " --schema-registry "
+                                                + KAFKA_ENV.schemeRegistryServer()
+                                                + " --schema-path ./resources")
                                         .split(" "));
 
-        assertThat(parseResult.matchedArgs().size(), is(4));
+        assertThat(parseResult.matchedArgs().size(), is(6));
 
         assertThat(provision.call(), is(0));
 

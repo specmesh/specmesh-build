@@ -149,7 +149,7 @@ public class KafkaApiSpec {
         myTopics.stream()
                 .filter(topic -> topic.name().equals(topicName))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Not a domain topic:" + topicName));
+                .orElseThrow(() -> new APIException("Not a domain topic:" + topicName));
 
         return apiSpec.channels().get(topicName).publish().schemaInfo();
     }
@@ -299,9 +299,17 @@ public class KafkaApiSpec {
         }
     }
 
+    public ApiSpec apiSpec() {
+        return apiSpec;
+    }
+
     private static class APIException extends RuntimeException {
         APIException(final String message, final Exception cause) {
             super(message, cause);
+        }
+
+        APIException(final String message) {
+            super(message);
         }
     }
 }

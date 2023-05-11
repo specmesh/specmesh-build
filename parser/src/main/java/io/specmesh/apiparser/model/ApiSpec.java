@@ -19,6 +19,7 @@ package io.specmesh.apiparser.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.specmesh.apiparser.AsyncApiParser;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -80,5 +81,19 @@ public class ApiSpec {
         } else {
             return id + DELIMITER + channelName.replace('/', DELIMITER);
         }
+    }
+
+    public void validate() {
+        this.validate(this.id);
+        this.channels()
+                .forEach(
+                        (key, value) -> {
+                            try {
+                                value.validate();
+                            } catch (Exception ex) {
+                                throw new AsyncApiParser.APIParserException(
+                                        "Validate failed for:" + key, ex);
+                            }
+                        });
     }
 }

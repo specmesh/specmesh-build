@@ -35,4 +35,8 @@ import lombok.experimental.Accessors;
 public class Bindings {
 
     @JsonProperty KafkaBinding kafka;
+
+    public void validate() {
+        kafka.validate();
+    }
 }

@@ -38,4 +38,14 @@ public class AsyncApiParser {
         }
         return new ObjectMapper(new YAMLFactory()).readValue(inputStream, ApiSpec.class);
     }
+
+    public static class APIParserException extends RuntimeException {
+        public APIParserException(final String message, final Exception cause) {
+            super(message, cause);
+        }
+
+        public APIParserException(final String message) {
+            super(message);
+        }
+    }
 }

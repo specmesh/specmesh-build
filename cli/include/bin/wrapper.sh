@@ -41,7 +41,7 @@ function usage() {
   echo "Usage "
   echo " Commands         [provision, consumption, storage, export]"
   echo " Common args      --bootstrap-server|-bs, --username,-u, --secret,-p"
-  echo " Schema Reg args  --srUrl,-sr, --srApiKey,-srKey, --srApiSecret,-srSecret, --schemaPath,-schemaPath "
+  echo " Schema Reg args  --schema-registry, -sr, --sr-api-key,-srKey, --sr-api-secret,-srSecret, --schema-path,-schemaPath "
   echo " Other args       --spec,-spec, --appId,-appId "
   echo " Example:"
   echo "   docker run ghcr.io/specmesh/specmesh-build-cli provision -bs localhost:9092 -u admin -s admin-secret -sr https://localhost:1234 -srKey someKey -srSecret secret -schemaPath ./path "

@@ -93,4 +93,6 @@ public class KafkaBinding {
     public int replicas() {
         return replicas == 0 ? 1 : replicas;
     }
+
+    public void validate() {}
 }
