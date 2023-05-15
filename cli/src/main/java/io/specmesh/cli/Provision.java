@@ -23,6 +23,7 @@ import io.specmesh.kafka.Clients;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.provision.Provisioner;
 import io.specmesh.kafka.provision.Status;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
@@ -87,7 +88,7 @@ public class Provision implements Callable<Integer> {
     private String secret;
 
     @Option(
-            names = {"-d", "--dry-run"},
+            names = {"-dry", "--dry-run"},
             description =
                     "Compares the cluster against the spec, outputting proposed changes if"
                         + " compatible.If the spec incompatible with the cluster (not sure how it"
@@ -95,6 +96,17 @@ public class Provision implements Callable<Integer> {
                         + " value of 0=indicates no changes needed; 1=changes needed; -1=not"
                         + " compatible, blah blah")
     private boolean dryRun;
+
+    @Option(
+            names = "-D",
+            mapFallbackValue = "",
+            description =
+                    "Specify Java runtime system properties for Apache Kafka. Note: bulk properties"
+                            + " can be set via '-Dconfig.properties=somefile.properties"
+                            + " ") // allow -Dkey
+    void setProperty(final Map<String, String> props) {
+        props.forEach((k, v) -> System.setProperty(k, v));
+    }
 
     @Override
     public Integer call() throws Exception {

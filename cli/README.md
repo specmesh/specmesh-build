@@ -45,6 +45,7 @@ on the cluster
       -srSecret, --srApiSecret=<srApiSecret>
                              srApiSecret for schema secret
   -u, --username=<username>  username or api key for the cluster connection
+  
 ```
 </details>
  
