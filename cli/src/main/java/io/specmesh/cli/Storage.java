@@ -71,6 +71,17 @@ public class Storage implements Callable<Integer> {
             description = "secret credential for the cluster connection")
     private String secret;
 
+    @Option(
+            names = "-D",
+            mapFallbackValue = "",
+            description =
+                    "Specify Java runtime system properties for Apache Kafka. Note: bulk properties"
+                            + " can be set via '-Dconfig.properties=somefile.properties"
+                            + " ") // allow -Dkey
+    void setProperty(final Map<String, String> props) {
+        props.forEach((k, v) -> System.setProperty(k, v));
+    }
+
     private TreeMap<String, Map<String, Long>> state;
 
     @Override

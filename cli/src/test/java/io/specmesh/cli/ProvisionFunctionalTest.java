@@ -64,12 +64,18 @@ class ProvisionFunctionalTest {
                                                 + " --secret admin-secret"
                                                 + " --schema-registry "
                                                 + KAFKA_ENV.schemeRegistryServer()
-                                                + " --schema-path ./resources")
+                                                + " --schema-path ./resources"
+                                                + " -Dsome.property=testOne"
+                                                + " -Dsome.other.property=testTwo")
                                         .split(" "));
 
-        assertThat(parseResult.matchedArgs().size(), is(6));
+        assertThat(parseResult.matchedArgs().size(), is(8));
 
         assertThat(provision.call(), is(0));
+
+        // check system properties
+        assertThat(System.getProperty("some.property"), is("testOne"));
+        assertThat(System.getProperty("some.other.property"), is("testTwo"));
 
         // When:
         final var status = provision.state();

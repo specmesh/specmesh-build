@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.kafka.Clients;
 import io.specmesh.kafka.Exporter;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import org.apache.kafka.clients.admin.Admin;
 import picocli.CommandLine;
@@ -65,6 +66,17 @@ public class Export implements Callable<Integer> {
             names = {"-s", "--secret"},
             description = "secret credential for the cluster connection")
     private String secret;
+
+    @Option(
+            names = "-D",
+            mapFallbackValue = "",
+            description =
+                    "Specify Java runtime system properties for Apache Kafka. Note: bulk properties"
+                            + " can be set via '-Dconfig.properties=somefile.properties"
+                            + " ") // allow -Dkey
+    void setProperty(final Map<String, String> props) {
+        props.forEach((k, v) -> System.setProperty(k, v));
+    }
 
     @Override
     public Integer call() throws Exception {
