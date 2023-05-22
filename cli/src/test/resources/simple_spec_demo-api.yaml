@@ -23,7 +23,6 @@ channels:
           - prod
         partitions: 3
         replicas: 1
-        retention: 1
         configs:
           cleanup.policy: delete
 
@@ -47,7 +46,6 @@ channels:
           - prod
         partitions: 3
         replicas: 1
-        retention: 1
         configs:
           cleanup.policy: delete
 
