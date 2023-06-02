@@ -19,7 +19,7 @@ plugins {
     `maven-publish`
     signing
     id("com.github.spotbugs") version "5.0.14"
-    id("com.diffplug.spotless") version "6.18.0"
+    id("com.diffplug.spotless") version "6.19.0"
     id("pl.allegro.tech.build.axion-release") version "1.15.0"
     id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
     id("com.bmuschko.docker-remote-api") version "9.3.1" apply false
