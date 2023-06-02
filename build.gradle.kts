@@ -67,7 +67,7 @@ subprojects {
         set("kafkaVersion", "7.3.3-ce")
         set("openTracingVersion", "0.33.0")
         set("observabilityVersion", "1.1.8")
-        set("guavaVersion", "31.1-jre")
+        set("guavaVersion", "32.0.0-jre")
         set("confluentVersion", "7.4.0")
         set("jacksonVersion", "2.15.2")
         set("protobufVersion", "3.23.2")
