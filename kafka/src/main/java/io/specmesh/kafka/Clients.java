@@ -103,20 +103,20 @@ public final class Clients {
     /**
      * setup sasl_plain auth creds
      *
-     * @param principle user name
+     * @param principal user name
      * @param secret secret
      * @return client creds map
      */
     public static Map<String, Object> clientSaslAuthProperties(
-            final String principle, final String secret) {
-        if (isPrincipleSpecified(principle)) {
+            final String principal, final String secret) {
+        if (isPrincipalSpecified(principal)) {
             return Map.of(
                     SASL_MECHANISM,
                     System.getProperty(SASL_MECHANISM, PLAIN),
                     AdminClientConfig.SECURITY_PROTOCOL_CONFIG,
                     System.getProperty(AdminClientConfig.SECURITY_PROTOCOL_CONFIG, SASL_PLAINTEXT),
                     SASL_JAAS_CONFIG,
-                    System.getProperty(SASL_JAAS_CONFIG, buildJaasConfig(principle, secret)));
+                    System.getProperty(SASL_JAAS_CONFIG, buildJaasConfig(principal, secret)));
         } else {
             return Map.of();
         }
@@ -125,11 +125,11 @@ public final class Clients {
     /**
      * auth credentials are provided
      *
-     * @param principle user-id
-     * @return true if principle was set
+     * @param principal user-id
+     * @return true if principal was set
      */
-    private static boolean isPrincipleSpecified(final String principle) {
-        return principle != null && principle.length() > 0;
+    private static boolean isPrincipalSpecified(final String principal) {
+        return principal != null && principal.length() > 0;
     }
 
     private static String buildJaasConfig(final String userName, final String password) {

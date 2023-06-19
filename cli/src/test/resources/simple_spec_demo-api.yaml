@@ -23,7 +23,6 @@ channels:
           - prod
         partitions: 3
         replicas: 1
-        retention: 1
         configs:
           cleanup.policy: delete
 
@@ -47,7 +46,6 @@ channels:
           - prod
         partitions: 3
         replicas: 1
-        retention: 1
         configs:
           cleanup.policy: delete
 
@@ -71,7 +69,7 @@ channels:
 
     publish:
       operationId: onUserPurchased
-      summary: Humans purchasing food - note - restricting access to other domain principles
+      summary: Humans purchasing food - note - restricting access to other domain principals
       tags: [
         name: "grant-access:.some.other.domain.root"
       ]

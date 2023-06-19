@@ -26,7 +26,6 @@ channels:
           - prod
         partitions: 10
         replicas: 1
-        retention: 1
         configs:
           cleanup.policy: delete
     publish:

@@ -95,7 +95,7 @@ public class KafkaApiSpec {
     }
 
     /**
-     * Create an ACL for the domain-id principle that allows writing to any topic prefixed with the
+     * Create an ACL for the domain-id principal that allows writing to any topic prefixed with the
      * Id Prevent non ACL'd ones from writing to it (somehow)
      *
      * @return Acl bindings for owned topics
@@ -152,18 +152,6 @@ public class KafkaApiSpec {
                 .orElseThrow(() -> new APIException("Not a domain topic:" + topicName));
 
         return apiSpec.channels().get(topicName).publish().schemaInfo();
-    }
-
-    /**
-     * Format the principal
-     *
-     * @param domainIdAsUsername the domain id
-     * @return the principal
-     * @deprecated use {@link #formatPrincipal}
-     */
-    @Deprecated
-    public static String formatPrinciple(final String domainIdAsUsername) {
-        return formatPrincipal(domainIdAsUsername);
     }
 
     /**

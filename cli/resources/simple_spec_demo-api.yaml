@@ -23,7 +23,6 @@ channels:
           - prod
         partitions: 3
         replicas: 1
-        retention: 1
         configs:
           cleanup.policy: delete
 
@@ -47,9 +46,9 @@ channels:
           - prod
         partitions: 3
         replicas: 1
-        retention: 1
         configs:
           cleanup.policy: delete
+          retention.ms: 999000
 
     publish:
       summary: User purchase confirmation
@@ -70,7 +69,7 @@ channels:
         partitions: 3
 
     publish:
-      summary: Humans purchasing food - note - restricting access to other domain principles
+      summary: Humans purchasing food - note - restricting access to other domain principal
       tags: [
         name: "grant-access:.some.other.domain.root"
       ]
