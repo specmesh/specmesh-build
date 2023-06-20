@@ -35,13 +35,13 @@ dependencies {
     api("io.confluent:kafka-protobuf-serializer:$confluentVersion")
     api("io.confluent:kafka-streams-protobuf-serde:$confluentVersion")
     api("io.confluent:kafka-streams-avro-serde:$confluentVersion")
-    api("com.google.protobuf:protobuf-java:3.22.3")
+    api("com.google.protobuf:protobuf-java:3.23.2")
 
     implementation(project(":parser"))
 
     implementation("org.apache.kafka:kafka-streams:$kafkaVersion")
     implementation("org.apache.kafka:kafka-clients:$kafkaVersion")
-    implementation("commons-io:commons-io:2.11.0")
+    implementation("commons-io:commons-io:2.12.0")
     implementation("com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
 

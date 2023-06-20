@@ -69,7 +69,7 @@ channels:
 
     publish:
       operationId: onUserPurchased
-      summary: Humans purchasing food - note - restricting access to other domain principles
+      summary: Humans purchasing food - note - restricting access to other domain principals
       tags: [
         name: "grant-access:.some.other.domain.root"
       ]

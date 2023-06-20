@@ -73,7 +73,7 @@ import org.junitpioneer.jupiter.cartesian.CartesianTest;
 
 @SuppressFBWarnings(
         value = "IC_INIT_CIRCULARITY",
-        justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positive")
+        justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positivity")
 class KafkaAPISpecFunctionalTest {
 
     private static final KafkaApiSpec API_SPEC =

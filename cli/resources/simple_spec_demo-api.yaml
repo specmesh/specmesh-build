@@ -69,7 +69,7 @@ channels:
         partitions: 3
 
     publish:
-      summary: Humans purchasing food - note - restricting access to other domain principles
+      summary: Humans purchasing food - note - restricting access to other domain principal
       tags: [
         name: "grant-access:.some.other.domain.root"
       ]

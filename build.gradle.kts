@@ -19,8 +19,8 @@ plugins {
     `maven-publish`
     signing
     id("com.github.spotbugs") version "5.0.14"
-    id("com.diffplug.spotless") version "6.18.0"
-    id("pl.allegro.tech.build.axion-release") version "1.15.0"
+    id("com.diffplug.spotless") version "6.19.0"
+    id("pl.allegro.tech.build.axion-release") version "1.15.3"
     id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
     id("com.bmuschko.docker-remote-api") version "9.3.1" apply false
 }
@@ -64,13 +64,13 @@ subprojects {
     }
 
     extra.apply {
-        set("kafkaVersion", "7.3.3-ce")
+        set("kafkaVersion", "7.4.0-ce")
         set("openTracingVersion", "0.33.0")
         set("observabilityVersion", "1.1.8")
-        set("guavaVersion", "31.1-jre")
-        set("confluentVersion", "7.3.3")
-        set("jacksonVersion", "2.15.0")
-        set("protobufVersion", "3.22.3")
+        set("guavaVersion", "32.0.0-jre")
+        set("confluentVersion", "7.4.0")
+        set("jacksonVersion", "2.15.2")
+        set("protobufVersion", "3.23.2")
         set("medeiaValidatorVersion", "1.1.0")
         set("junitVersion", "5.9.3")
         set("mockitoVersion", "5.3.1")
@@ -79,8 +79,8 @@ subprojects {
         set("hamcrestVersion", "1.3")
         set("log4jVersion", "2.20.0")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
         set("classGraphVersion", "4.8.21")
-        set("testcontainersVersion", "1.18.0")
-        set("lombokVersion", "1.18.26")
+        set("testcontainersVersion", "1.18.3")
+        set("lombokVersion", "1.18.28")
     }
 
     val junitVersion: String by extra

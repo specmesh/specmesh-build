@@ -17,7 +17,8 @@ Guides:
 
 **In 30 seconds.**
 
-Here is a simple SpecMesh API spec. When provision is executed, `Topics` will be provisioned for each app.id + channel - i.e. acme.lifestyle.onboarding._public.user_signed_up. In this case, the domain owner (app-id) is the only principle with ACL permissions to write to it, however, all principles can consume from the `_public` topic. ACLs are implied through the `_private`, `_protected`, `_public` convention. The structural requirement enforces clear topic and acl ownership (including schemas), but also means the ecosytem resources can not be mined to extract `storage` and `consumption` metrics for billing purposes.
+1. Write a spec for your BoundedContext (set of Kafka topics). They will all be prefixed with `acme.lifesyste.onboarding`. Set the access control, granting _private, _protected, _public access to this app (i.e. principal = acme.lifestyle.onboarding) and others. Grant restricted access on the `protected` topic to the `acme.finance.accounting` principal (it will have its own spec)
+
 ```yaml
 asyncapi: '2.5.0'
 id: 'urn:acme:lifestyle:onboarding'
@@ -51,9 +52,9 @@ channels:
 
   _protected/purchased:
     publish:
-      summary: Humans purchasing food - note - restricting access to other domain principles
+      summary: Humans purchasing food - note - restricting access to other domain principals
       tags: [
-        name: "grant-access:.some.other.domain.root"
+        name: "grant-access:.acme.finance.accounting"
       ]
       message:
         name: Food Item
@@ -61,6 +62,43 @@ channels:
           name: "human",
           name: "purchase"
         ]
+```
+
+2. Provision this spec using the CLI. 
+
+> % docker run --rm --network confluent -v "$(pwd)/resources:/app" ghcr.io/specmesh/specmesh-build-cli  provision -bs kafka:9092  -sr http://schema-registry:8081 -spec /app/simple_schema_demo-api.yaml -schemaPath /app
+>
+2.1. Topics created:
+- acme.lifestyle.onboarding._public.user_signed_up
+- acme.lifestyle.onboarding._private.user_checkout
+
+2.2. Schema published:
+- /schema/simple.schema_demo._public.user_signed_up.avsc
+
+2.3. ACLs created:
+- "name" : "(pattern=ResourcePattern(resourceType=TOPIC, name=simple.spec_demo._public, patternType=PREFIXED), entry=(principal=User:*, host=*, operation=READ, permissionType=ALLOW))",
+- more
+
+.
+
+
+3. Check Storage metrics (chargeback)
+
+> docker run --rm --network confluent -v "$(pwd)/resources:/app" ghcr.io/specmesh/specmesh-build-cli storage -bs kafka:9092 -spec /app/simple_spec_demo-api.yaml
+>
+
+```json
+ {"acme.lifestyle.onboarding._public.user_signed_up":{"storage":1590,"offset-total":6},"acme.lifestyle._protected.purchased":{"storage":0,"offset-total":0},"acme.lifestyle._private.user_checkout":{"storage":9185,"offset-total":57}}
+```
+.
+
+4. Check Consumption metrics (chargeback)
+
+>%  docker run --rm --network confluent -v "$(pwd)/resources:/app" ghcr.io/specmesh/specmesh-build-cli consumption -bs kafka:9092 -spec /app/simple_spec_demo-api.yaml
+
+
+```json
+{"simple.spec_demo._public.user_signed_up":{"id":"some.other.app","members":[{"id":"console-consumer-7f9d23c7-a627-41cd-ade9-3919164bc363","clientId":"console-consumer","host":"/172.30.0.3","partitions":[{"id":0,"topic":"simple.spec_demo._public.user_signed_up","offset":57,"timestamp":-1}]}],"offsetTotal":57}}
 ```
 
 
