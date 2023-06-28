@@ -52,6 +52,9 @@ jobs:
         run: |
           ./gradlew cV
           ./gradlew publish closeAndReleaseStagingRepository
+      - name: Push Docker images
+        if: startsWith(github.ref, 'refs/tags/')
+        run: ./gradlew pushAppImage
 
   create-gh-release:
     if: startsWith(github.ref, 'refs/tags/') && !endsWith(github.ref, '-alpha')
