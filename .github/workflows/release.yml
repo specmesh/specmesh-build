@@ -1,4 +1,9 @@
 # A Workflow for triggering a new release.
+#
+# Releasing is a two stage process.
+# 1. Running this workflow will check the build is green and then push a release tag to the repo, e.g. v1.2.3
+# 2. Pushing the release tag (e.g. v1.2.3) will trigger the main CI build.yml. 
+#    This main build has conditional steps that only run, or only don't run, when building a release build, i.e. a build triggered when a release tag is pushed.
 
 name: Release
 
