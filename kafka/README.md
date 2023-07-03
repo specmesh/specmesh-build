@@ -1,6 +1,10 @@
 # Kafka SpecMesh extension
 
-Extends SpecMesh with the concept of public, protected and public topics.
+Extends SpecMesh with the concept of public, protected and public topics. 
+
+> Note: can be configured with preferred values instead of provided `public`. 
+> 
+> Use system properties `specmesh.public` --> `zzpublic` 
 
 ## Topic structure
 
