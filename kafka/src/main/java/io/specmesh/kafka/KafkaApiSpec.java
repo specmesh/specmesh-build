@@ -53,6 +53,13 @@ import org.apache.kafka.common.resource.ResourceType;
 public class KafkaApiSpec {
 
     private static final String GRANT_ACCESS_TAG = "grant-access:";
+    public static final String DELIMITER = ".";
+    public static final String SPECMESH_PUBLIC = "specmesh.public";
+    public static final String PUBLIC = System.getProperty(SPECMESH_PUBLIC, "_public");
+    public static final String SPECMESH_PROTECTED = "specmesh.protected";
+    public static final String PROTECTED = System.getProperty(SPECMESH_PROTECTED, "_protected");
+    public static final String SPECMESH_PRIVATE = "specmesh.private";
+    public static final String PRIVATE = System.getProperty(SPECMESH_PRIVATE, "_private");
 
     private final ApiSpec apiSpec;
 
@@ -199,12 +206,12 @@ public class KafkaApiSpec {
     }
 
     private Set<AclBinding> publicTopicAcls() {
-        return prefixedAcls(TOPIC, id() + "._public", "User:*", DESCRIBE, READ);
+        return prefixedAcls(TOPIC, id() + DELIMITER + PUBLIC, "User:*", DESCRIBE, READ);
     }
 
     private List<AclBinding> protectedTopicAcls() {
         return apiSpec.channels().entrySet().stream()
-                .filter(e -> e.getKey().startsWith(id() + "._protected."))
+                .filter(e -> e.getKey().startsWith(id() + DELIMITER + PROTECTED + DELIMITER))
                 .filter(e -> e.getValue().publish().tags().toString().contains(GRANT_ACCESS_TAG))
                 .flatMap(
                         e ->
@@ -224,7 +231,7 @@ public class KafkaApiSpec {
     }
 
     private Set<AclBinding> privateTopicAcls() {
-        return prefixedAcls(TOPIC, id() + "._private", principal(), CREATE);
+        return prefixedAcls(TOPIC, id() + DELIMITER + PRIVATE, principal(), CREATE);
     }
 
     private static Set<AclBinding> literalAcls(
