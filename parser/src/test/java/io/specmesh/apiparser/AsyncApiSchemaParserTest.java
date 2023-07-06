@@ -38,10 +38,10 @@ public class AsyncApiSchemaParserTest {
         assertThat(
                 "Should have assembled 'id + channelname'",
                 channelsMap.keySet(),
-                hasItem("simple.schema-demo.public.user.signed"));
+                hasItem(".simple.schema-demo._public.user.signed"));
 
         final Operation publish =
-                channelsMap.get("simple.schema-demo.public.user.signed").publish();
+                channelsMap.get(".simple.schema-demo._public.user.signed").publish();
         assertThat(publish.message().schemaRef(), is("simple_schema_demo_user-signedup.avsc"));
 
         assertThat(
@@ -59,10 +59,10 @@ public class AsyncApiSchemaParserTest {
         assertThat(
                 "Should have assembled 'id + channelname'",
                 channelsMap.keySet(),
-                hasItem("london.hammersmith.transport.public.tube"));
+                hasItem(".london.hammersmith.transport._public.tube"));
 
         final Operation subscribe =
-                channelsMap.get("london.hammersmith.transport.public.tube").subscribe();
+                channelsMap.get(".london.hammersmith.transport._public.tube").subscribe();
         assertThat(
                 subscribe.message().schemaRef(),
                 is("london_hammersmith_transport_public_passenger.avsc"));

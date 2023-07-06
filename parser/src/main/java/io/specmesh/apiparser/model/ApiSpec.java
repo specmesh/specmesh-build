@@ -78,6 +78,8 @@ public class ApiSpec {
     private String getCanonical(final String id, final String channelName) {
         if (channelName.startsWith("/")) {
             return channelName.substring(1).replace('/', DELIMITER);
+        } else if (channelName.startsWith(".")) {
+            return channelName;
         } else {
             return id + DELIMITER + channelName.replace('/', DELIMITER);
         }
