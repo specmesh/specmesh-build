@@ -1,4 +1,9 @@
 # A Workflow for triggering a new release.
+#
+# Releasing is a two stage process.
+# 1. Running this workflow will check the build is green and then push a release tag to the repo, e.g. v1.2.3
+# 2. Pushing the release tag (e.g. v1.2.3) will trigger the main CI build.yml. 
+#    This main build has conditional steps that only run, or only don't run, when building a release build, i.e. a build triggered when a release tag is pushed.
 
 name: Release
 
@@ -16,7 +21,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           token: ${{ secrets.TRIGGER_GITHUB_TOKEN }}
       - name: Fetch version history

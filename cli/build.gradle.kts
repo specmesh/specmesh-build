@@ -77,6 +77,8 @@ tasks.register<Copy>("prepareDocker") {
 
 tasks.register<DockerPushImage>("pushAppImage") {
     dependsOn("buildAppImage")
+//    if (!snapshot) {
     images.add("ghcr.io/specmesh/${rootProject.name}-${project.name}:latest")
+//    }
     images.add("ghcr.io/specmesh/${rootProject.name}-${project.name}:${project.version}")
 }
