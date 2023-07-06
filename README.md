@@ -3,6 +3,9 @@
 
 # SpecMesh build tools
 
+Enterprise Apache Kafka using AsyncAPI specs to build Data Mesh with GitOps
+
+
 SpecMesh is an opinionated modelling layer over Apache Kafka resources that combines GitOps, AsyncAPI (modelling), a parser, testing, provisioning tools as well as chargeback support. By utilizing this methodology and toolset, it enables organizations to adopt Kafka at scale while incorporating simplification guardrails to prevent many typical mistakes. Resource provisioning is concealed beneath the AsyncAPI specification, providing a simplified view that allows both technical and non-technical users to design and build their Kafka applications as data products.
 
 Links:
