@@ -36,7 +36,7 @@ public class AsyncApiParserTest {
 
     @Test
     public void shouldReturnRootIdWithDelimiter() {
-        assertThat(API_SPEC.id(), is("simple.streetlights"));
+        assertThat(API_SPEC.id(), is(".simple.streetlights"));
     }
 
     @Test
@@ -46,11 +46,11 @@ public class AsyncApiParserTest {
         assertThat(
                 "Should have assembled id + channelname",
                 channelsMap.keySet(),
-                hasItem("simple.streetlights.public.light.measured"));
+                hasItem(".simple.streetlights._public.light.measured"));
         assertThat(
                 "Should use absolute path",
                 channelsMap.keySet(),
-                hasItem("london.hammersmith.transport.public.tube"));
+                hasItem(".london.hammersmith.transport._public.tube"));
     }
 
     @Test
@@ -60,17 +60,17 @@ public class AsyncApiParserTest {
         assertThat(
                 "Should have assembled id + channelname",
                 channelsMap.keySet(),
-                hasItem("simple.streetlights.public.light.measured"));
+                hasItem(".simple.streetlights._public.light.measured"));
 
         final Bindings producerBindings =
-                channelsMap.get("simple.streetlights.public.light.measured").bindings();
+                channelsMap.get(".simple.streetlights._public.light.measured").bindings();
         assertThat(producerBindings.kafka().partitions(), is(3));
         assertThat(producerBindings.kafka().replicas(), is(1));
 
         assertThat(
                 "Should use absolute path",
                 channelsMap.keySet(),
-                hasItem("london.hammersmith.transport.public.tube"));
+                hasItem(".london.hammersmith.transport._public.tube"));
     }
 
     @Test
@@ -80,10 +80,10 @@ public class AsyncApiParserTest {
         assertThat(
                 "Should have assembled 'id + channelname'",
                 channelsMap.keySet(),
-                hasItem("simple.streetlights.public.light.measured"));
+                hasItem(".simple.streetlights._public.light.measured"));
 
         final Bindings producerBindings =
-                channelsMap.get("simple.streetlights.public.light.measured").bindings();
+                channelsMap.get(".simple.streetlights._public.light.measured").bindings();
         assertThat(producerBindings.kafka().configs().entrySet(), hasSize(1));
         assertThat(
                 producerBindings.kafka().configs().keySet(),
@@ -102,10 +102,10 @@ public class AsyncApiParserTest {
         assertThat(
                 "Should have assembled 'id + channelname'",
                 channelsMap.keySet(),
-                hasItem("simple.streetlights.public.light.measured"));
+                hasItem(".simple.streetlights._public.light.measured"));
 
         final Bindings producerBindings =
-                channelsMap.get("simple.streetlights.public.light.measured").bindings();
+                channelsMap.get(".simple.streetlights._public.light.measured").bindings();
         assertThat(producerBindings.kafka().configs().entrySet(), hasSize(1));
         assertThat(
                 producerBindings.kafka().configs().keySet(),

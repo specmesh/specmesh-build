@@ -1,5 +1,5 @@
 asyncapi: '2.5.0'
-id: 'urn:simple:spec_demo'
+id: 'urn:simple.spec_demo'
 info:
   title: Simple Spec for CLI demo
   version: '1.0.0'
@@ -15,7 +15,7 @@ servers:
     description: Test broker
 
 channels:
-  _public/user_signed_up:
+  _public.user_signed_up:
     bindings:
       kafka:
         envs:
@@ -38,7 +38,7 @@ channels:
         payload:
           $ref: "/schema/simple.schema_demo._public.user_signed_up.avsc"
 
-  _private/user_checkout:
+  _private.user_checkout:
     bindings:
       kafka:
         envs:
@@ -63,7 +63,7 @@ channels:
           $ref: "/schema/simple.schema_demo._public.user_checkout.yml"
 
 
-  _protected/purchased:
+  _protected.purchased:
     bindings:
       kafka:
         partitions: 3
@@ -96,7 +96,7 @@ channels:
               description: Id of the human purchasing the food
 
   # SUBSCRIBER WILL REQUEST SCHEMA from SR and CodeGen required classes. Header will be used for Id
-  /london/hammersmith/transport/_public/tube:
+  .london.hammersmith.transport._public.tube:
     subscribe:
       summary: Humans arriving in the borough
       bindings:

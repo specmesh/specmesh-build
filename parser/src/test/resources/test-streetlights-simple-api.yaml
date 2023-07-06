@@ -1,5 +1,5 @@
 asyncapi: '2.4.0'
-id: 'urn:simple:streetlights'
+id: 'urn:.simple.streetlights'
 info:
   title: Streetlights API
   version: '1.0.0'
@@ -14,7 +14,7 @@ servers:
     url: mqtt://test.mosquitto.org
     protocol: mqtt
 channels:
-  public/light/measured:
+  _public.light.measured:
     # publish bindings to instruct topic configuration per environment
     bindings:
       kafka:
@@ -51,7 +51,7 @@ channels:
               type: string
               format: date-time
               description: Date and time when the message was sent.
-  /london/hammersmith/transport/public/tube:
+  .london.hammersmith.transport._public.tube:
     subscribe:
       summary: Humans arriving in the borough
       bindings:

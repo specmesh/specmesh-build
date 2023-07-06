@@ -1,5 +1,5 @@
 asyncapi: '2.4.0'
-id: 'urn:simple:streetlights'
+id: 'urn:.simple.streetlights'
 info:
   title: Streetlights API
   version: '1.0.0'
@@ -14,7 +14,7 @@ servers:
     url: mqtt://test.mosquitto.org
     protocol: mqtt
 channels:
-  public/light/measured:
+  _public.light.measured:
     publish:
       summary: Inform about environmental lighting conditions for a particular streetlight.
       operationId: onLightMeasured
@@ -35,7 +35,7 @@ channels:
               type: string
               format: date-time
               description: Date and time when the message was sent.
-  /london/hammersmith/transport/public/tube:
+  .london.hammersmith.transport.public.tube:
     subscribe:
       summary: Humans arriving in the borough
       message:
