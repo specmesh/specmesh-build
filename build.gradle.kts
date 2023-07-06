@@ -73,7 +73,7 @@ subprojects {
         set("protobufVersion", "3.23.3")
         set("medeiaValidatorVersion", "1.1.0")
         set("junitVersion", "5.9.3")
-        set("mockitoVersion", "5.3.1")
+        set("mockitoVersion", "5.4.0")
         set("junitPioneerVersion", "2.0.1")
         set("spotBugsVersion", "4.7.3")
         set("hamcrestVersion", "1.3")
