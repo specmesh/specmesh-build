@@ -82,9 +82,9 @@ class ProvisionerUpdatingFunctionalTest {
         /** The domain associated with the spec. */
         SELF(API_SPEC.id()),
         /** An unrelated domain. */
-        UNRELATED(".london.hammersmith.transport"),
+        UNRELATED("london.hammersmith.transport"),
         /** A domain granted access to the protected topic. */
-        LIMITED(".some.other.domain.root");
+        LIMITED("some.other.domain.root");
 
         final String domainId;
 

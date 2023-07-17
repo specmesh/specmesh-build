@@ -16,6 +16,10 @@
 
 package io.specmesh.kafka;
 
+import static io.specmesh.apiparser.model.ApiSpec.DELIMITER;
+import static io.specmesh.apiparser.model.ApiSpec.PRIVATE;
+import static io.specmesh.apiparser.model.ApiSpec.PROTECTED;
+import static io.specmesh.apiparser.model.ApiSpec.PUBLIC;
 import static java.util.Objects.requireNonNull;
 import static org.apache.kafka.common.acl.AclOperation.CREATE;
 import static org.apache.kafka.common.acl.AclOperation.DESCRIBE;
@@ -53,13 +57,6 @@ import org.apache.kafka.common.resource.ResourceType;
 public class KafkaApiSpec {
 
     private static final String GRANT_ACCESS_TAG = "grant-access:";
-    public static final String DELIMITER = ".";
-    public static final String SPECMESH_PUBLIC = "specmesh.public";
-    public static final String PUBLIC = System.getProperty(SPECMESH_PUBLIC, "_public");
-    public static final String SPECMESH_PROTECTED = "specmesh.protected";
-    public static final String PROTECTED = System.getProperty(SPECMESH_PROTECTED, "_protected");
-    public static final String SPECMESH_PRIVATE = "specmesh.private";
-    public static final String PRIVATE = System.getProperty(SPECMESH_PRIVATE, "_private");
 
     private final ApiSpec apiSpec;
 

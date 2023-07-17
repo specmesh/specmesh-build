@@ -71,7 +71,7 @@ channels:
       operationId: onUserPurchased
       summary: Humans purchasing food - note - restricting access to other domain principals
       tags: [
-        name: "grant-access:.some.other.domain.root"
+        name: "grant-access:some.other.domain.root"
       ]
       message:
         name: Food Item

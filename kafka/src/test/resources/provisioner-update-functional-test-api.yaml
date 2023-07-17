@@ -53,8 +53,8 @@ channels:
 
     publish:
       tags: [
-        name: "grant-access:.some.other.domain.acme-A",
-        name: "grant-access:.some.other.domain.acme-B"
+        name: "grant-access:some.other.domain.acme-A",
+        name: "grant-access:some.other.domain.acme-B"
       ]
       summary: User info confirmation
       operationId: onUserCheckout

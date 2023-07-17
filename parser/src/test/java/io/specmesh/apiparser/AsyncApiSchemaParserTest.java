@@ -59,10 +59,10 @@ public class AsyncApiSchemaParserTest {
         assertThat(
                 "Should have assembled 'id + channelname'",
                 channelsMap.keySet(),
-                hasItem(".london.hammersmith.transport._public.tube"));
+                hasItem("london.hammersmith.transport._public.tube"));
 
         final Operation subscribe =
-                channelsMap.get(".london.hammersmith.transport._public.tube").subscribe();
+                channelsMap.get("london.hammersmith.transport._public.tube").subscribe();
         assertThat(
                 subscribe.message().schemaRef(),
                 is("london_hammersmith_transport_public_passenger.avsc"));

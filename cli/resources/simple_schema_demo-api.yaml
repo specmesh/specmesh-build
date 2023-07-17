@@ -92,7 +92,7 @@ channels:
         payload:
           $ref: "/schema/simple.schema_demo._public.user_info.proto"
   # SUBSCRIBER WILL REQUEST SCHEMA from SR and CodeGen required classes. Header will be used for Id
-  .london.hammersmith.transport._public/tube:
+  london.hammersmith.transport._public.tube:
     subscribe:
       summary: Humans arriving in the borough
       bindings:

@@ -35,7 +35,7 @@ channels:
               type: string
               format: date-time
               description: Date and time when the message was sent.
-  .london.hammersmith.transport.public.tube:
+  london.hammersmith.transport.public.tube:
     subscribe:
       summary: Humans arriving in the borough
       message:

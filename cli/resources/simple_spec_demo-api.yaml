@@ -71,7 +71,7 @@ channels:
     publish:
       summary: Humans purchasing food - note - restricting access to other domain principal
       tags: [
-        name: "grant-access:.some.other.domain.root"
+        name: "grant-access:some.other.domain.root"
       ]
       message:
         name: Food Item
@@ -96,7 +96,7 @@ channels:
               description: Id of the human purchasing the food
 
   # SUBSCRIBER WILL REQUEST SCHEMA from SR and CodeGen required classes. Header will be used for Id
-  .london.hammersmith.transport._public.tube:
+  london.hammersmith.transport._public.tube:
     subscribe:
       summary: Humans arriving in the borough
       bindings:

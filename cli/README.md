@@ -125,7 +125,7 @@ This demonstrates `provision`ing a *spec* into a docker environment, with a netw
   } ],
   "schemas" : null,
   "acls" : [ {
-    "name" : "(pattern=ResourcePattern(resourceType=TOPIC, name=simple.spec_demo._protected.purchased, patternType=LITERAL), entry=(principal=User:.some.other.domain.root, host=*, operation=READ, permissionType=ALLOW))",
+    "name" : "(pattern=ResourcePattern(resourceType=TOPIC, name=simple.spec_demo._protected.purchased, patternType=LITERAL), entry=(principal=User:some.other.domain.root, host=*, operation=READ, permissionType=ALLOW))",
     "state" : "CREATED",
     "aclBinding" : {
       "pattern" : {
@@ -136,7 +136,7 @@ This demonstrates `provision`ing a *spec* into a docker environment, with a netw
       },
       "entry" : {
         "data" : {
-          "principal" : "User:.some.other.domain.root",
+          "principal" : "User:some.other.domain.root",
           "host" : "*",
           "operation" : "READ",
           "permissionType" : "ALLOW",
@@ -269,7 +269,7 @@ This demonstrates `provision`ing a *spec* into a docker environment, with a netw
     "exception" : null,
     "messages" : ""
   }, {
-    "name" : "(pattern=ResourcePattern(resourceType=TOPIC, name=simple.spec_demo._protected.purchased, patternType=LITERAL), entry=(principal=User:.some.other.domain.root, host=*, operation=DESCRIBE, permissionType=ALLOW))",
+    "name" : "(pattern=ResourcePattern(resourceType=TOPIC, name=simple.spec_demo._protected.purchased, patternType=LITERAL), entry=(principal=User:some.other.domain.root, host=*, operation=DESCRIBE, permissionType=ALLOW))",
     "state" : "CREATED",
     "aclBinding" : {
       "pattern" : {
@@ -280,7 +280,7 @@ This demonstrates `provision`ing a *spec* into a docker environment, with a netw
       },
       "entry" : {
         "data" : {
-          "principal" : "User:.some.other.domain.root",
+          "principal" : "User:some.other.domain.root",
           "host" : "*",
           "operation" : "DESCRIBE",
           "permissionType" : "ALLOW",
@@ -509,7 +509,7 @@ Build an incomplete spec from a running Cluster
 
 ```json
 {
-  "id": "urn:simple:spec_demo",
+  "id": "urn:simple.spec_demo",
   "version": "2023-05-06",
   "asyncapi": "2.5.0",
   "channels": {
