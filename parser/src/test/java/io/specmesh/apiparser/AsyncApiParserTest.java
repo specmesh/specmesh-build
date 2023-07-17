@@ -50,7 +50,7 @@ public class AsyncApiParserTest {
         assertThat(
                 "Should use absolute path",
                 channelsMap.keySet(),
-                hasItem(".london.hammersmith.transport._public.tube"));
+                hasItem("london.hammersmith.transport._public.tube"));
     }
 
     @Test
@@ -70,7 +70,7 @@ public class AsyncApiParserTest {
         assertThat(
                 "Should use absolute path",
                 channelsMap.keySet(),
-                hasItem(".london.hammersmith.transport._public.tube"));
+                hasItem("london.hammersmith.transport._public.tube"));
     }
 
     @Test

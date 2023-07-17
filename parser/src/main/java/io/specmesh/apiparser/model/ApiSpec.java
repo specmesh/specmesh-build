@@ -39,7 +39,16 @@ import lombok.experimental.Accessors;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @SuppressFBWarnings
 public class ApiSpec {
-    private static final char DELIMITER = System.getProperty("DELIMITER", ".").charAt(0);
+    public static final char DELIMITER = System.getProperty("DELIMITER", ".").charAt(0);
+    public static final String SPECMESH_PUBLIC = "specmesh.public";
+
+    public static final String PUBLIC = System.getProperty(SPECMESH_PUBLIC, "_public");
+
+    public static final String SPECMESH_PROTECTED = "specmesh.protected";
+    public static final String PROTECTED = System.getProperty(SPECMESH_PROTECTED, "_protected");
+    public static final String SPECMESH_PRIVATE = "specmesh.private";
+    public static final String PRIVATE = System.getProperty(SPECMESH_PRIVATE, "_private");
+
     @JsonProperty private String id;
 
     @JsonProperty private String version;
@@ -78,8 +87,13 @@ public class ApiSpec {
     private String getCanonical(final String id, final String channelName) {
         if (channelName.startsWith("/")) {
             return channelName.substring(1).replace('/', DELIMITER);
-        } else if (channelName.startsWith(".")) {
+        } else if (!(channelName.startsWith(PRIVATE)
+                || channelName.startsWith(PROTECTED)
+                || channelName.startsWith(PUBLIC))) {
             return channelName;
+        } else if (channelName.startsWith(id)) {
+            return channelName;
+
         } else {
             return id + DELIMITER + channelName.replace('/', DELIMITER);
         }

@@ -64,7 +64,7 @@ channels:
     publish:
       summary: Humans purchasing food
       tags: [
-        name: "grant-access:.some.other.domain.root"
+        name: "grant-access:some.other.domain.root"
       ]
       message:
         name: Food Item
@@ -118,7 +118,7 @@ channels:
               description: Id of the human purchasing the food
 
 
-  .london.hammersmith.transport._public.tube:
+  london.hammersmith.transport._public.tube:
     subscribe:
       summary: Humans arriving in the borough
       message:

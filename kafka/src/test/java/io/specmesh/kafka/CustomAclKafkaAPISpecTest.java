@@ -19,6 +19,7 @@ package io.specmesh.kafka;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItems;
 
+import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.test.TestSpecLoader;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,9 +34,9 @@ public class CustomAclKafkaAPISpecTest {
     @BeforeEach
     public void setUp() {
         // store original property value
-        System.setProperty(KafkaApiSpec.SPECMESH_PROTECTED, "zzprotected");
-        System.setProperty(KafkaApiSpec.SPECMESH_PUBLIC, "zzpublic");
-        System.setProperty(KafkaApiSpec.SPECMESH_PRIVATE, "zzprivate");
+        System.setProperty(ApiSpec.SPECMESH_PROTECTED, "zzprotected");
+        System.setProperty(ApiSpec.SPECMESH_PUBLIC, "zzpublic");
+        System.setProperty(ApiSpec.SPECMESH_PRIVATE, "zzprivate");
         kafkaApiSpec = TestSpecLoader.loadFromClassPath("customacl-bigdatalondon-api.yaml");
     }
 
@@ -53,13 +54,13 @@ public class CustomAclKafkaAPISpecTest {
         READ_PROTECTED_TOPICS(
                 "(pattern=ResourcePattern(resourceType=TOPIC,"
                     + " name=london.hammersmith.olympia.bigdatalondon.zzprotected.retail.subway.food.purchase,"
-                    + " patternType=LITERAL), entry=(principal=User:.some.other.domain.root,"
-                    + " host=*, operation=READ, permissionType=ALLOW))"),
+                    + " patternType=LITERAL), entry=(principal=User:some.other.domain.root, host=*,"
+                    + " operation=READ, permissionType=ALLOW))"),
         DESCRIBE_PROTECTED_TOPICS(
                 "(pattern=ResourcePattern(resourceType=TOPIC,"
                     + " name=london.hammersmith.olympia.bigdatalondon.zzprotected.retail.subway.food.purchase,"
-                    + " patternType=LITERAL), entry=(principal=User:.some.other.domain.root,"
-                    + " host=*, operation=DESCRIBE, permissionType=ALLOW))"),
+                    + " patternType=LITERAL), entry=(principal=User:some.other.domain.root, host=*,"
+                    + " operation=DESCRIBE, permissionType=ALLOW))"),
 
         CREATE_OWN_PRIVATE_TOPICS(
                 "(pattern=ResourcePattern(resourceType=TOPIC,"
