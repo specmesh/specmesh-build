@@ -54,7 +54,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
         justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positive")
 class ExporterFunctionalTest {
 
-    private static final String aggregateId = "london:hammersmith:olympia:bigdatalondon";
+    private static final String aggregateId = ".london.hammersmith.olympia.bigdatalondon";
 
     private static final KafkaApiSpec API_SPEC =
             TestSpecLoader.loadFromClassPath("apispec-functional-test-app.yaml");
@@ -63,9 +63,9 @@ class ExporterFunctionalTest {
         /** The domain associated with the spec. */
         SELF(API_SPEC.id()),
         /** An unrelated domain. */
-        UNRELATED(".london.hammersmith.transport"),
+        UNRELATED("london.hammersmith.transport"),
         /** A domain granted access to the protected topic. */
-        LIMITED(".some.other.domain.root");
+        LIMITED("some.other.domain.root");
 
         final String domainId;
 
@@ -109,9 +109,9 @@ class ExporterFunctionalTest {
             assertThat(
                     exported.channels().keySet(),
                     containsInAnyOrder(
-                            "london.hammersmith.olympia.bigdatalondon._protected.retail.subway.food.purchase",
-                            "london.hammersmith.olympia.bigdatalondon._public.attendee",
-                            "london.hammersmith.olympia.bigdatalondon._private.retail.subway.customers"));
+                            ".london.hammersmith.olympia.bigdatalondon._protected.retail.subway.food.purchase",
+                            ".london.hammersmith.olympia.bigdatalondon._public.attendee",
+                            ".london.hammersmith.olympia.bigdatalondon._private.retail.subway.customers"));
         }
     }
 

@@ -1,5 +1,5 @@
 asyncapi: '2.4.0'
-id: 'urn:simple:provision_demo'
+id: 'urn:simple.provision_demo'
 info:
   title: Streetlights API
   version: '1.0.0'
@@ -15,7 +15,7 @@ servers:
     protocol: mqtt
 channels:
   # PRODUCER/OWNER build pipe will publish schema to SR
-  _public/user_signed_up:
+  _public.user_signed_up:
     # publish bindings to instruct topic configuration per environment
     bindings:
       kafka:
@@ -39,7 +39,7 @@ channels:
         contentType: "application/octet-stream"
         payload:
           $ref: "/schema/simple.provision_demo._public.user_signed_up-v2.avsc"
-  _protected/user_info:
+  _protected.user_info:
     bindings:
       kafka:
         envs:
@@ -53,8 +53,8 @@ channels:
 
     publish:
       tags: [
-        name: "grant-access:.some.other.domain.acme-A",
-        name: "grant-access:.some.other.domain.acme-B"
+        name: "grant-access:some.other.domain.acme-A",
+        name: "grant-access:some.other.domain.acme-B"
       ]
       summary: User info confirmation
       operationId: onUserCheckout

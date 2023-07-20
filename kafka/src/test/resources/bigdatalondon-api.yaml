@@ -1,5 +1,5 @@
 asyncapi: '2.5.0'
-id: 'urn:london:hammersmith:olympia:bigdatalondon'
+id: 'urn:london.hammersmith.olympia.bigdatalondon'
 
 info:
   title: BigDataLondon API
@@ -17,7 +17,7 @@ servers:
     description: Test broker
 
 channels:
-  _public/attendee:
+  _public.attendee:
     # publish bindings to instruct topic configuration per environment
     bindings:
       kafka:
@@ -56,7 +56,7 @@ channels:
               type: integer
               minimum: 0
               description: Age of the human
-  _protected/retail/subway/food/purchase:
+  _protected.retail.subway.food.purchase:
     bindings:
       kafka:
         partitions: 3
@@ -64,7 +64,7 @@ channels:
     publish:
       summary: Humans purchasing food
       tags: [
-        name: "grant-access:.some.other.domain.root"
+        name: "grant-access:some.other.domain.root"
       ]
       message:
         name: Food Item
@@ -88,7 +88,7 @@ channels:
               minimum: 0
               description: Id of the human purchasing the food
 
-  _private/retail/subway/customers:
+  _private.retail.subway.customers:
     bindings:
       kafka:
         partitions: 3
@@ -118,7 +118,7 @@ channels:
               description: Id of the human purchasing the food
 
 
-  /london/hammersmith/transport/_public/tube:
+  london.hammersmith.transport._public.tube:
     subscribe:
       summary: Humans arriving in the borough
       message:

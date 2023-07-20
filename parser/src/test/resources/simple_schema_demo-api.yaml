@@ -1,5 +1,5 @@
 asyncapi: '2.4.0'
-id: 'urn:simple:schema-demo'
+id: 'urn:.simple.schema-demo'
 info:
   title: Streetlights API
   version: '1.0.0'
@@ -15,7 +15,7 @@ servers:
     protocol: mqtt
 channels:
   # PRODUCER WILL PUBLISH SCHEMA to SR
-  public/user/signed:
+  _public.user.signed:
     # publish bindings to instruct topic configuration per environment
     bindings:
       kafka:
@@ -40,7 +40,7 @@ channels:
           $ref: "simple_schema_demo_user-signedup.avsc"
 
 # SUBSCRIBER WILL REQUEST SCHEMA from SR and CodeGen required classes. Header will be used for Id
-  /london/hammersmith/transport/public/tube:
+  london.hammersmith.transport._public.tube:
     subscribe:
       summary: Humans arriving in the borough
       bindings:

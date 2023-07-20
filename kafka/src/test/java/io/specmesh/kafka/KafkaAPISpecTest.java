@@ -51,13 +51,13 @@ public class KafkaAPISpecTest {
         READ_PROTECTED_TOPICS(
                 "(pattern=ResourcePattern(resourceType=TOPIC,"
                     + " name=london.hammersmith.olympia.bigdatalondon._protected.retail.subway.food.purchase,"
-                    + " patternType=LITERAL), entry=(principal=User:.some.other.domain.root,"
-                    + " host=*, operation=READ, permissionType=ALLOW))"),
+                    + " patternType=LITERAL), entry=(principal=User:some.other.domain.root, host=*,"
+                    + " operation=READ, permissionType=ALLOW))"),
         DESCRIBE_PROTECTED_TOPICS(
                 "(pattern=ResourcePattern(resourceType=TOPIC,"
                     + " name=london.hammersmith.olympia.bigdatalondon._protected.retail.subway.food.purchase,"
-                    + " patternType=LITERAL), entry=(principal=User:.some.other.domain.root,"
-                    + " host=*, operation=DESCRIBE, permissionType=ALLOW))"),
+                    + " patternType=LITERAL), entry=(principal=User:some.other.domain.root, host=*,"
+                    + " operation=DESCRIBE, permissionType=ALLOW))"),
         DESCRIBE_OWN_TOPICS(
                 "(pattern=ResourcePattern(resourceType=TOPIC,"
                         + " name=london.hammersmith.olympia.bigdatalondon,"

@@ -24,7 +24,7 @@ Guides:
 
 ```yaml
 asyncapi: '2.5.0'
-id: 'urn:acme:lifestyle:onboarding'
+id: 'urn:acme.lifestyle.onboarding'
 info:
   title: ACME Lifestyle Onboarding
   version: '1.0.0'
@@ -32,7 +32,7 @@ info:
     The ACME lifestyle onboarding app that allows stuff - see this url for more detail.. etc
 
 channels:
-  _public/user_signed_up:
+  _public.user_signed_up:
     bindings:
       kafka:
         partitions: 3
@@ -46,18 +46,18 @@ channels:
         payload:
           $ref: "/schema/simple.schema_demo._public.user_signed_up.avsc"
 
-  _private/user_checkout:
+  _private.user_checkout:
     publish:
       message:
         payload:
           $ref: "/schema/simple.schema_demo._public.user_checkout.yml"
 
 
-  _protected/purchased:
+  _protected.purchased:
     publish:
       summary: Humans purchasing food - note - restricting access to other domain principals
       tags: [
-        name: "grant-access:.acme.finance.accounting"
+        name: "grant-access:acme.finance.accounting"
       ]
       message:
         name: Food Item
