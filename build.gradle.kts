@@ -22,7 +22,7 @@ plugins {
     id("com.diffplug.spotless") version "6.20.0"
     id("pl.allegro.tech.build.axion-release") version "1.15.3"
     id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
-    id("com.bmuschko.docker-remote-api") version "9.3.1" apply false
+    id("com.bmuschko.docker-remote-api") version "9.3.2" apply false
 }
 
 project.version = scmVersion.version
