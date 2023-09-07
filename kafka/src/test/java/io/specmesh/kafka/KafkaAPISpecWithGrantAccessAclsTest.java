@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.is;
 import io.specmesh.apiparser.model.SchemaInfo;
 import io.specmesh.test.TestSpecLoader;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -32,30 +33,30 @@ import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.acl.AclBinding;
 import org.junit.jupiter.api.Test;
 
-public class KafkaAPISpecTest {
+public class KafkaAPISpecWithGrantAccessAclsTest {
 
     private static final KafkaApiSpec API_SPEC =
-            TestSpecLoader.loadFromClassPath("bigdatalondon-api.yaml");
+            TestSpecLoader.loadFromClassPath("bigdatalondon-api-with-grant-access-acls.yaml");
 
-    enum ExpectedAcl {
+    private enum ExpectedAcl {
         READ_PUBLIC_TOPICS(
                 "(pattern=ResourcePattern(resourceType=TOPIC,"
-                        + " name=london.hammersmith.olympia.bigdatalondon._public,"
-                        + " patternType=PREFIXED), entry=(principal=User:*, host=*,"
+                        + " name=london.hammersmith.olympia.bigdatalondon.attendee,"
+                        + " patternType=LITERAL), entry=(principal=User:*, host=*,"
                         + " operation=READ, permissionType=ALLOW))"),
         DESCRIBE_PUBLIC_TOPICS(
                 "(pattern=ResourcePattern(resourceType=TOPIC,"
-                        + " name=london.hammersmith.olympia.bigdatalondon._public,"
-                        + " patternType=PREFIXED), entry=(principal=User:*, host=*,"
+                        + " name=london.hammersmith.olympia.bigdatalondon.attendee,"
+                        + " patternType=LITERAL), entry=(principal=User:*, host=*,"
                         + " operation=DESCRIBE, permissionType=ALLOW))"),
         READ_PROTECTED_TOPICS(
                 "(pattern=ResourcePattern(resourceType=TOPIC,"
-                    + " name=london.hammersmith.olympia.bigdatalondon._protected.retail.subway.food.purchase,"
+                    + " name=london.hammersmith.olympia.bigdatalondon.retail.subway.food.purchase,"
                     + " patternType=LITERAL), entry=(principal=User:some.other.domain.root, host=*,"
                     + " operation=READ, permissionType=ALLOW))"),
         DESCRIBE_PROTECTED_TOPICS(
                 "(pattern=ResourcePattern(resourceType=TOPIC,"
-                    + " name=london.hammersmith.olympia.bigdatalondon._protected.retail.subway.food.purchase,"
+                    + " name=london.hammersmith.olympia.bigdatalondon.retail.subway.food.purchase,"
                     + " patternType=LITERAL), entry=(principal=User:some.other.domain.root, host=*,"
                     + " operation=DESCRIBE, permissionType=ALLOW))"),
         DESCRIBE_OWN_TOPICS(
@@ -181,11 +182,19 @@ public class KafkaAPISpecTest {
 
     @Test
     void shouldNotHaveAnyAdditionalAcls() {
-        final Set<AclBinding> acls = API_SPEC.requiredAcls();
+        final Set<String> testAcls =
+                new HashSet<>(
+                        Arrays.stream(ExpectedAcl.values())
+                                .map(e -> e.text)
+                                .collect(Collectors.toSet()));
 
-        assertThat(
-                acls.stream().map(Object::toString).collect(Collectors.toSet()),
-                containsInAnyOrder(Arrays.stream(ExpectedAcl.values()).map(e -> e.text).toArray()));
+        // need to support `_public` access prefixes
+        testAcls.add(KafkaAPISpecTest.ExpectedAcl.READ_PUBLIC_TOPICS.text);
+        testAcls.add(KafkaAPISpecTest.ExpectedAcl.DESCRIBE_PUBLIC_TOPICS.text);
+
+        final Set<String> specAcls =
+                API_SPEC.requiredAcls().stream().map(Object::toString).collect(Collectors.toSet());
+        assertThat(specAcls, containsInAnyOrder(testAcls.toArray()));
     }
 
     @Test

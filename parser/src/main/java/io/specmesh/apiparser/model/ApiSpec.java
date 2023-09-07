@@ -72,30 +72,31 @@ public class ApiSpec {
     }
 
     /**
-     * @return channels
+     * @return channels with names formatted using canonical path
      */
     public Map<String, Channel> channels() {
         return channels.entrySet().stream()
                 .collect(
                         Collectors.toMap(
-                                e -> getCanonical(id(), e.getKey()),
+                                e -> getCanonical(id(), e.getKey(), e.getValue().publish() != null),
                                 Map.Entry::getValue,
                                 (k, v) -> k,
                                 LinkedHashMap::new));
     }
 
-    private String getCanonical(final String id, final String channelName) {
+    private String getCanonical(final String id, final String channelName, final boolean publish) {
+        // legacy and deprecated
         if (channelName.startsWith("/")) {
             return channelName.substring(1).replace('/', DELIMITER);
-        } else if (!(channelName.startsWith(PRIVATE)
-                || channelName.startsWith(PROTECTED)
-                || channelName.startsWith(PUBLIC))) {
+        }
+        // should not occur unless subdomains are being used
+        if (channelName.startsWith(id)) {
             return channelName;
-        } else if (channelName.startsWith(id)) {
-            return channelName;
-
-        } else {
+        }
+        if (publish) {
             return id + DELIMITER + channelName.replace('/', DELIMITER);
+        } else {
+            return channelName;
         }
     }
 

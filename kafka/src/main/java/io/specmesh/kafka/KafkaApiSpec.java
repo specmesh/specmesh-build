@@ -100,7 +100,8 @@ public class KafkaApiSpec {
 
     /**
      * Create an ACL for the domain-id principal that allows writing to any topic prefixed with the
-     * Id Prevent non ACL'd ones from writing to it (somehow)
+     * `id` and prevent non ACL'd ones from writing to it (deny access when no acl found property
+     * must be set)
      *
      * @return Acl bindings for owned topics
      * @deprecated use {@link #requiredAcls()}
@@ -139,6 +140,7 @@ public class KafkaApiSpec {
         final Set<AclBinding> acls = new HashSet<>();
         acls.addAll(ownGroupAcls());
         acls.addAll(listACLsForDomainOwnedTopics());
+        acls.addAll(grantAccessControlUsingGrantTagOnly());
         return acls;
     }
 
@@ -165,7 +167,7 @@ public class KafkaApiSpec {
      * @return the principal
      */
     public static String formatPrincipal(final String domainIdAsUsername) {
-        return "User:" + domainIdAsUsername;
+        return domainIdAsUsername.equals(PUBLIC) ? "User:*" : "User:" + domainIdAsUsername;
     }
 
     private void validateTopicConfig() {
@@ -225,6 +227,55 @@ public class KafkaApiSpec {
                                                                 READ))
                                         .flatMap(Collection::stream))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Uses the alternative grant approach - rather than relying on _public, _protected, _private in
+     * the path it returns ACLs based upon the `grant-access` notation whereby access is
+     * protected/public using the following: - protected/retricted --> grant-acess:domain.something
+     * - public --> grant-access:_public
+     *
+     * @return ACLs according to the grant-access tags
+     */
+    @SuppressWarnings("checkstyle:BooleanExpressionComplexity")
+    private List<AclBinding> grantAccessControlUsingGrantTagOnly() {
+        return apiSpec.channels().entrySet().stream()
+                .filter(
+                        e ->
+                                e.getValue().publish() != null
+                                        && !isUsingPathPerms(e.getKey())
+                                        && e.getValue()
+                                                .publish()
+                                                .tags()
+                                                .toString()
+                                                .contains(GRANT_ACCESS_TAG))
+                .flatMap(
+                        e ->
+                                e.getValue().publish().tags().stream()
+                                        .filter(tag -> tag.name().startsWith(GRANT_ACCESS_TAG))
+                                        .map(tag -> tag.name().substring(GRANT_ACCESS_TAG.length()))
+                                        .map(
+                                                user ->
+                                                        literalAcls(
+                                                                TOPIC,
+                                                                e.getKey(),
+                                                                formatPrincipal(user),
+                                                                DESCRIBE,
+                                                                READ))
+                                        .flatMap(Collection::stream))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * the path is using public,private explicit based control
+     *
+     * @param key
+     * @return true if it is
+     */
+    private boolean isUsingPathPerms(final String key) {
+        return key.startsWith(id() + DELIMITER + PRIVATE + DELIMITER)
+                || key.startsWith(id() + DELIMITER + PROTECTED + DELIMITER)
+                || key.startsWith(id() + DELIMITER + PUBLIC + DELIMITER);
     }
 
     private Set<AclBinding> privateTopicAcls() {

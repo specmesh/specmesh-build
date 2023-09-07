@@ -20,6 +20,7 @@ import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.apiparser.model.Bindings;
 import io.specmesh.apiparser.model.Channel;
 import io.specmesh.apiparser.model.KafkaBinding;
+import io.specmesh.apiparser.model.Operation;
 import io.specmesh.kafka.provision.TopicProvisioner.Topic;
 import io.specmesh.kafka.provision.TopicReaders;
 import io.specmesh.kafka.provision.TopicReaders.TopicsReaderBuilder;
@@ -85,6 +86,7 @@ public final class Exporter {
     private static Channel channel(final Topic topic) {
         return Channel.builder()
                 .bindings(Bindings.builder().kafka(kafkaBindings(topic)).build())
+                .publish(Operation.builder().build())
                 .build();
     }
 
