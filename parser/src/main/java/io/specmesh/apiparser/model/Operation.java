@@ -89,6 +89,8 @@ public class Operation {
     }
 
     public boolean isSchemaRequired() {
-        return this.message().schemaRef() != null && this.message().schemaRef().length() > 0;
+        return this.message() != null
+                && this.message().schemaRef() != null
+                && this.message().schemaRef().length() > 0;
     }
 }

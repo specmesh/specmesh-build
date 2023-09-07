@@ -105,9 +105,33 @@ channels:
 {"simple.spec_demo._public.user_signed_up":{"id":"some.other.app","members":[{"id":"console-consumer-7f9d23c7-a627-41cd-ade9-3919164bc363","clientId":"console-consumer","host":"/172.30.0.3","partitions":[{"id":0,"topic":"simple.spec_demo._public.user_signed_up","offset":57,"timestamp":-1}]}],"offsetTotal":57}}
 ```
 
+## ACLs / Permissions
 
+Notice how `_private`, `_public` or `_protected` is prefixed to the channel. This keyword can be altered in the following ways:
+- it can be changed by passing the System.property as follows: `-Dspecmesh.public=everyone' -Dspecmesh.protected=some -Dspecmesh.private=mine`
+- instead of 'inlining' the permission on the channel name, for example `_public.myTopic` - the permission can be controlled via channel.operation.tags see below for an example.
 
-
+```yaml
+channels:
+  #  protected
+  retail.subway.food.purchase:
+    bindings:
+      kafka:
+    publish:
+      tags: [
+        name: "grant-access:some.other.domain.root"
+      ]
+```
+```yaml
+channels:
+  #  public
+  attendee:
+    bindings:
+    publish:
+      tags: [
+        name: "grant-access:_public"
+      ]
+```
 # Developer Notes
 
 1. Install the intellij checkstyle plugin and load the config from config/checkstyle.xml
