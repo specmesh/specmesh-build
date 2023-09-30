@@ -69,9 +69,9 @@ public final class TopicProvisioner {
     /**
      * Gets a writer
      *
-     * @param dryRun             - to ignore writing to the cluster
+     * @param dryRun - to ignore writing to the cluster
      * @param cleanupUnspecified - remove set of unspec'd resources
-     * @param adminClient        - cluster connection
+     * @param adminClient - cluster connection
      * @return configured writer
      */
     private static TopicMutators.TopicMutator mutate(

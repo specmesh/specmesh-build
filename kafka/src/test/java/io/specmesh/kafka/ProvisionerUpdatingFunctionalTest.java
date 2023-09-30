@@ -240,8 +240,7 @@ class ProvisionerUpdatingFunctionalTest {
 
     @Test
     @Order(6)
-    void shouldCleanupNonSpecTopicsIRL()
-            throws ExecutionException, InterruptedException {
+    void shouldCleanupNonSpecTopicsIRL() throws ExecutionException, InterruptedException {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
             assertThat(topicCount(adminClient), is(3L));
