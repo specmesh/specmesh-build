@@ -79,6 +79,7 @@ class SimpleAdminClientTest {
             final var client = SmAdminClient.create(adminClient);
             Provisioner.provision(
                     false,
+                    false,
                     API_SPEC,
                     "./build/resources/test",
                     adminClient,

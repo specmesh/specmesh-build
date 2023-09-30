@@ -39,17 +39,21 @@ public final class TopicProvisioner {
      * Provision topics in the Kafka cluster.
      *
      * @param dryRun test or execute
+     * @param cleanUnspecified remove unwanted resources
      * @param apiSpec the api spec.
      * @param adminClient admin client for the Kafka cluster.
      * @return number of topics created
      * @throws Provisioner.ProvisioningException on provision failure
      */
     public static Collection<Topic> provision(
-            final boolean dryRun, final KafkaApiSpec apiSpec, final Admin adminClient) {
+            final boolean dryRun,
+            final boolean cleanUnspecified,
+            final KafkaApiSpec apiSpec,
+            final Admin adminClient) {
         final var domain = domainTopicsFromApiSpec(apiSpec);
         final var existing = reader(apiSpec, adminClient).readall();
-        final var changeSet = comparator().calculate(existing, domain);
-        return writer(dryRun, adminClient).write(changeSet);
+        final var changeSet = comparator(cleanUnspecified).calculate(existing, domain);
+        return mutate(dryRun, cleanUnspecified, adminClient).mutate(changeSet);
     }
 
     /**
@@ -57,19 +61,25 @@ public final class TopicProvisioner {
      *
      * @return comparator
      */
-    private static TopicChangeSetCalculators.ChangeSetCalculator comparator() {
-        return TopicChangeSetCalculators.ChangeSetBuilder.builder().build();
+    private static TopicChangeSetCalculators.ChangeSetCalculator comparator(
+            final boolean cleanUnspecified) {
+        return TopicChangeSetCalculators.ChangeSetBuilder.builder().build(cleanUnspecified);
     }
 
     /**
      * Gets a writer
      *
-     * @param dryRun to ignore writing to the cluster
-     * @param adminClient - cluster connection
+     * @param dryRun             - to ignore writing to the cluster
+     * @param cleanupUnspecified - remove set of unspec'd resources
+     * @param adminClient        - cluster connection
      * @return configured writer
      */
-    private static TopicWriters.TopicWriter writer(final boolean dryRun, final Admin adminClient) {
-        final var topicWriterBuilder = TopicWriters.TopicWriterBuilder.builder().noopWriter(dryRun);
+    private static TopicMutators.TopicMutator mutate(
+            final boolean dryRun, final boolean cleanupUnspecified, final Admin adminClient) {
+        final var topicWriterBuilder =
+                TopicMutators.TopicMutatorBuilder.builder()
+                        .noopMutator(dryRun)
+                        .cleanUnspecified(cleanupUnspecified, dryRun);
         return topicWriterBuilder.adminClient(adminClient).build();
     }
 

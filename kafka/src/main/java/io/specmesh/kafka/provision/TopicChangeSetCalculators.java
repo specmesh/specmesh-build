@@ -150,6 +150,22 @@ public class TopicChangeSetCalculators {
                     .collect(Collectors.toList());
         }
     }
+    /** Returns those topics to create and ignores existing topics */
+    public static final class UnspecifiedCalculator implements ChangeSetCalculator {
+
+        /**
+         * Calculate changes of topics that are unspecified
+         *
+         * @param existingTopics - existing
+         * @param requiredTopics - set of topics that should exist
+         * @return list of new topics with 'CREATE' flag
+         */
+        public Collection<Topic> calculate(
+                final Collection<Topic> existingTopics, final Collection<Topic> requiredTopics) {
+            existingTopics.removeAll(requiredTopics);
+            return existingTopics;
+        }
+    }
     /** Main API */
     interface ChangeSetCalculator {
         /**
@@ -182,10 +198,15 @@ public class TopicChangeSetCalculators {
         /**
          * build it
          *
+         * @param cleanUnspecified - to remove unspecified resources
          * @return required calculator
          */
-        public ChangeSetCalculator build() {
-            return new CollectiveCalculator(new CreateCalculator(), new UpdateCalculator());
+        public ChangeSetCalculator build(final boolean cleanUnspecified) {
+            if (cleanUnspecified) {
+                return new UnspecifiedCalculator();
+            } else {
+                return new CollectiveCalculator(new CreateCalculator(), new UpdateCalculator());
+            }
         }
     }
 }

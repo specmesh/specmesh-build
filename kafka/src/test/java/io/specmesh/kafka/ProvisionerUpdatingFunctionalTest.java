@@ -28,6 +28,7 @@ import static org.apache.kafka.common.resource.ResourceType.TRANSACTIONAL_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
@@ -48,8 +49,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.acl.AccessControlEntry;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.config.TopicConfig;
@@ -111,7 +116,7 @@ class ProvisionerUpdatingFunctionalTest {
     @Order(1)
     void shouldProvisionExistingSpec() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
-            TopicProvisioner.provision(false, API_SPEC, adminClient);
+            TopicProvisioner.provision(false, false, API_SPEC, adminClient);
             AclProvisioner.provision(false, API_SPEC, adminClient);
             SchemaProvisioner.provision(false, API_SPEC, "./build/resources/test", srClient());
         }
@@ -124,18 +129,19 @@ class ProvisionerUpdatingFunctionalTest {
 
             // DRY RUN Test
             final var dryRunChangeset =
-                    TopicProvisioner.provision(true, API_UPDATE_SPEC, adminClient);
+                    TopicProvisioner.provision(true, false, API_UPDATE_SPEC, adminClient);
 
             assertThat(
                     dryRunChangeset.stream().map(Topic::name).collect(Collectors.toSet()),
-                    is(containsInAnyOrder(USER_SIGNED_UP)));
+                    is(hasItem(USER_SIGNED_UP)));
 
             final var dryFirstUpdate = dryRunChangeset.iterator().next();
 
             assertThat(dryFirstUpdate.state(), is(STATE.UPDATE));
 
             // REAL Test
-            final var changeset = TopicProvisioner.provision(false, API_UPDATE_SPEC, adminClient);
+            final var changeset =
+                    TopicProvisioner.provision(false, false, API_UPDATE_SPEC, adminClient);
 
             final var change = changeset.iterator().next();
 
@@ -208,6 +214,55 @@ class ProvisionerUpdatingFunctionalTest {
                     createdAcls.stream().filter(acl -> acl.state().equals(STATE.CREATED)).count(),
                     is(2L));
         }
+    }
+
+    @Test
+    @Order(5)
+    void shouldCleanupNonSpecTopicsDryRun()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        try (Admin adminClient = KAFKA_ENV.adminClient()) {
+            adminClient
+                    .createTopics(
+                            List.of(new NewTopic(API_SPEC.id() + ".should.not.be", 1, (short) 1)))
+                    .all()
+                    .get(20, TimeUnit.SECONDS);
+
+            assertThat(topicCount(adminClient), is(3L));
+
+            // create the unspecified topic
+            final var unSpecifiedTopics =
+                    TopicProvisioner.provision(true, true, API_SPEC, adminClient);
+            // 'should.not.be' topic that should not be
+            assertThat(unSpecifiedTopics, is(hasSize(1)));
+            assertThat(topicCount(adminClient), is(3L));
+        }
+    }
+
+    @Test
+    @Order(6)
+    void shouldCleanupNonSpecTopicsIRL()
+            throws ExecutionException, InterruptedException {
+        try (Admin adminClient = KAFKA_ENV.adminClient()) {
+
+            assertThat(topicCount(adminClient), is(3L));
+
+            // create the unspecified topic
+            final var unSpecifiedTopics =
+                    TopicProvisioner.provision(false, true, API_SPEC, adminClient);
+
+            // 'should.not.be' topic that should not be
+            assertThat(unSpecifiedTopics, is(hasSize(1)));
+
+            // 'should.not.be' topic was removed
+            assertThat(topicCount(adminClient), is(2L));
+        }
+    }
+
+    private static long topicCount(final Admin adminClient)
+            throws InterruptedException, ExecutionException {
+        return adminClient.listTopics().listings().get().stream()
+                .filter(t -> t.name().startsWith(API_SPEC.id()))
+                .count();
     }
 
     private static CachedSchemaRegistryClient srClient() {
