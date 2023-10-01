@@ -35,7 +35,7 @@ dependencies {
     api("io.confluent:kafka-protobuf-serializer:$confluentVersion")
     api("io.confluent:kafka-streams-protobuf-serde:$confluentVersion")
     api("io.confluent:kafka-streams-avro-serde:$confluentVersion")
-    api("com.google.protobuf:protobuf-java:3.24.2")
+    api("com.google.protobuf:protobuf-java:3.24.3")
 
     implementation(project(":parser"))
 
