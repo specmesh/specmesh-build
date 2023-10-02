@@ -19,7 +19,6 @@ package io.specmesh.kafka.provision;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.kafka.KafkaApiSpec;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
@@ -40,20 +39,24 @@ public final class AclProvisioner {
      * Provision acls in the Kafka cluster
      *
      * @param dryRun for mode of operation
+     * @param cleanUnspecified remove unwanted
      * @param apiSpec respect the spec
      * @param adminClient cluster connection
      * @return status of provisioning
      * @throws Provisioner.ProvisioningException on interrupt
      */
     public static Collection<Acl> provision(
-            final boolean dryRun, final KafkaApiSpec apiSpec, final Admin adminClient) {
+            final boolean dryRun,
+            final boolean cleanUnspecified,
+            final KafkaApiSpec apiSpec,
+            final Admin adminClient) {
 
-        final var requiredAcls = apiSpec.requiredAcls();
-        final var existing = reader(adminClient).read(requiredAcls);
+        final var requiredAcls = bindingsToAcls(apiSpec.requiredAcls());
+        final var existing = reader(adminClient).read(apiSpec.id(), requiredAcls);
 
-        final var required = calculator().calculate(existing, bindingsToAcls(requiredAcls));
+        final var required = calculator(cleanUnspecified).calculate(existing, requiredAcls);
 
-        return writer(dryRun, adminClient).write(required);
+        return writer(dryRun, cleanUnspecified, adminClient).mutate(required);
     }
 
     /**
@@ -61,8 +64,9 @@ public final class AclProvisioner {
      *
      * @return calculator
      */
-    private static AclChangeSetCalculators.ChangeSetCalculator calculator() {
-        return AclChangeSetCalculators.ChangeSetBuilder.builder().build();
+    private static AclChangeSetCalculators.ChangeSetCalculator calculator(
+            final boolean cleanUnspecified) {
+        return AclChangeSetCalculators.ChangeSetBuilder.builder().build(cleanUnspecified);
     }
 
     /**
@@ -79,11 +83,17 @@ public final class AclProvisioner {
      * acl writer
      *
      * @param dryRun - real or not
+     * @param cleanUnspecified - remove unspecd
      * @param adminClient - cluster connection
      * @return - writer instance
      */
-    private static AclWriters.AclWriter writer(final boolean dryRun, final Admin adminClient) {
-        return AclWriters.AclWriterBuilder.builder().noop(dryRun).adminClient(adminClient).build();
+    private static AclMutators.AclMutator writer(
+            final boolean dryRun, final boolean cleanUnspecified, final Admin adminClient) {
+        return AclMutators.AclMutatorBuilder.builder()
+                .noop(dryRun)
+                .unspecified(cleanUnspecified)
+                .adminClient(adminClient)
+                .build();
     }
 
     /**
@@ -92,14 +102,14 @@ public final class AclProvisioner {
      * @param allAcls bindings to convert
      * @return - converted set
      */
-    private static List<Acl> bindingsToAcls(final Set<AclBinding> allAcls) {
+    private static Collection<Acl> bindingsToAcls(final Set<AclBinding> allAcls) {
         return allAcls.stream()
                 .map(
                         aclBinding ->
                                 Acl.builder()
                                         .aclBinding(aclBinding)
                                         .name(aclBinding.toString())
-                                        .state(Status.STATE.READ)
+                                        .state(Status.STATE.CREATE)
                                         .build())
                 .collect(Collectors.toList());
     }

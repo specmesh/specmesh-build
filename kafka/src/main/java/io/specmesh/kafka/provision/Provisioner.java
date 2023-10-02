@@ -64,7 +64,7 @@ public final class Provisioner {
                                         apiSpec,
                                         schemaResources,
                                         registryClient)));
-        status.acls(AclProvisioner.provision(dryRun, apiSpec, adminClient));
+        status.acls(AclProvisioner.provision(dryRun, cleanUnspecified, apiSpec, adminClient));
         return status.build();
     }
 
