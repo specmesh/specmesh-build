@@ -30,7 +30,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.specmesh.kafka.provision.AclProvisioner;
 import io.specmesh.kafka.provision.Status.STATE;
 import io.specmesh.kafka.provision.TopicProvisioner;
 import io.specmesh.kafka.provision.TopicProvisioner.Topic;
@@ -62,7 +61,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
         value = "IC_INIT_CIRCULARITY",
         justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positive")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class ProvisionerUpdatingFunctionalTest {
+class TopicProvisionerUpdateFunctionalTest {
 
     private static final KafkaApiSpec API_SPEC =
             TestSpecLoader.loadFromClassPath("provisioner-functional-test-api.yaml");
@@ -106,7 +105,6 @@ class ProvisionerUpdatingFunctionalTest {
     void shouldProvisionExistingSpec() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
             TopicProvisioner.provision(false, false, API_SPEC, adminClient);
-            AclProvisioner.provision(false, API_SPEC, adminClient);
         }
     }
 
@@ -140,25 +138,6 @@ class ProvisionerUpdatingFunctionalTest {
             assertThat(
                     change.messages(),
                     is(Matchers.containsString(TopicConfig.RETENTION_MS_CONFIG)));
-        }
-    }
-
-    @Test
-    @Order(4)
-    void shouldPublishUpdatedAcls() {
-        try (Admin adminClient = KAFKA_ENV.adminClient()) {
-            final var dryRunAcls = AclProvisioner.provision(true, API_UPDATE_SPEC, adminClient);
-            assertThat(dryRunAcls, is(hasSize(2)));
-            assertThat(
-                    dryRunAcls.stream().filter(acl -> acl.state().equals(STATE.CREATE)).count(),
-                    is(2L));
-
-            final var createdAcls = AclProvisioner.provision(false, API_UPDATE_SPEC, adminClient);
-
-            assertThat(createdAcls, is(hasSize(2)));
-            assertThat(
-                    createdAcls.stream().filter(acl -> acl.state().equals(STATE.CREATED)).count(),
-                    is(2L));
         }
     }
 

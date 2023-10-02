@@ -26,38 +26,47 @@ import static org.apache.kafka.common.resource.ResourceType.CLUSTER;
 import static org.apache.kafka.common.resource.ResourceType.GROUP;
 import static org.apache.kafka.common.resource.ResourceType.TRANSACTIONAL_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.specmesh.apiparser.model.ApiSpec;
-import io.specmesh.apiparser.model.Bindings;
-import io.specmesh.apiparser.model.Channel;
-import io.specmesh.apiparser.model.KafkaBinding;
 import io.specmesh.kafka.provision.AclProvisioner;
-import io.specmesh.kafka.provision.TopicProvisioner;
+import io.specmesh.kafka.provision.Provisioner;
+import io.specmesh.kafka.provision.Status.STATE;
 import io.specmesh.test.TestSpecLoader;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.common.acl.AccessControlEntry;
 import org.apache.kafka.common.acl.AclBinding;
+import org.apache.kafka.common.acl.AclBindingFilter;
+import org.apache.kafka.common.resource.PatternType;
 import org.apache.kafka.common.resource.ResourcePattern;
-import org.junit.jupiter.api.BeforeAll;
+import org.apache.kafka.common.resource.ResourceType;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+/**
+ * Tests execution DryRuns and UPDATES where the provisioner-functional-test-api.yml is already
+ * provisioned
+ */
 @SuppressFBWarnings(
         value = "IC_INIT_CIRCULARITY",
         justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positive")
-class ExporterFunctionalTest {
-
-    private static final String aggregateId = ".london.hammersmith.olympia.bigdatalondon";
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+class AclProvisionerUpdateFunctionalTest {
 
     private static final KafkaApiSpec API_SPEC =
-            TestSpecLoader.loadFromClassPath("apispec-functional-test-app.yaml");
+            TestSpecLoader.loadFromClassPath("provisioner-functional-test-api.yaml");
+
+    private static final KafkaApiSpec API_UPDATE_SPEC =
+            TestSpecLoader.loadFromClassPath("provisioner-update-functional-test-api.yaml");
 
     private enum Domain {
         /** The domain associated with the spec. */
@@ -79,73 +88,75 @@ class ExporterFunctionalTest {
     @RegisterExtension
     private static final KafkaEnvironment KAFKA_ENV =
             DockerKafkaEnvironment.builder()
-                    .withoutSchemaRegistry()
                     .withSaslAuthentication(
                             ADMIN_USER,
                             ADMIN_USER + "-secret",
                             Domain.SELF.domainId,
-                            Domain.SELF.domainId + "-secret",
-                            Domain.UNRELATED.domainId,
-                            Domain.UNRELATED.domainId + "-secret",
-                            Domain.LIMITED.domainId,
-                            Domain.LIMITED.domainId + "-secret")
+                            Domain.SELF.domainId + "-secret")
                     .withKafkaAcls(aclsForOtherDomain(Domain.LIMITED))
                     .withKafkaAcls(aclsForOtherDomain(Domain.UNRELATED))
                     .build();
 
-    @BeforeAll
-    static void setUp() {
+    @Test
+    @Order(1)
+    void shouldProvisionExistingSpec() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
-            TopicProvisioner.provision(false, false, API_SPEC, adminClient);
             AclProvisioner.provision(false, false, API_SPEC, adminClient);
         }
     }
 
     @Test
-    void shouldExportAPIFromCluster() throws Exporter.ExporterException {
-
+    @Order(2)
+    void shouldPublishUpdatedAcls() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
-            final ApiSpec exported = Exporter.export(aggregateId, adminClient);
+            final var dryRunAcls =
+                    AclProvisioner.provision(true, false, API_UPDATE_SPEC, adminClient);
+            assertThat(dryRunAcls, is(hasSize(2)));
             assertThat(
-                    exported.channels().keySet(),
-                    containsInAnyOrder(
-                            ".london.hammersmith.olympia.bigdatalondon._protected.retail.subway.food.purchase",
-                            ".london.hammersmith.olympia.bigdatalondon._public.attendee",
-                            ".london.hammersmith.olympia.bigdatalondon._private.retail.subway.customers"));
+                    dryRunAcls.stream().filter(acl -> acl.state().equals(STATE.CREATE)).count(),
+                    is(2L));
+
+            final var createdAcls =
+                    AclProvisioner.provision(false, false, API_UPDATE_SPEC, adminClient);
+
+            assertThat(createdAcls, is(hasSize(2)));
+            assertThat(
+                    createdAcls.stream().filter(acl -> acl.state().equals(STATE.CREATED)).count(),
+                    is(2L));
         }
     }
 
     @Test
-    void shouldExportYAMLAPIFromCluster() throws Exporter.ExporterException, IOException {
+    @Order(3)
+    void shouldCleanUnSpecdAcls()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
-        final ApiSpec apiSpec =
-                ApiSpec.builder()
-                        .id("urn:asyncapi-id")
-                        .version("version-123")
-                        .channels(
-                                Map.of(
-                                        "one-topic-channel",
-                                        Channel.builder()
-                                                .description("one-topic-channel-description")
-                                                .bindings(
-                                                        Bindings.builder()
-                                                                .kafka(
-                                                                        KafkaBinding.builder()
-                                                                                .groupId(
-                                                                                        "kafka-binding-group-id")
-                                                                                .build())
-                                                                .build())
-                                                .build()))
-                        .build();
-        assertThat(
-                new ExporterYamlWriter().export(apiSpec),
-                is(
-                        new String(
-                                ExporterFunctionalTest.class
-                                        .getClassLoader()
-                                        .getResourceAsStream("exporter-expected-spec.yaml")
-                                        .readAllBytes(),
-                                StandardCharsets.UTF_8)));
+            adminClient.deleteAcls(List.of(AclBindingFilter.ANY));
+
+            // Setup UnExpected ACL
+            final var pattern =
+                    new ResourcePattern(
+                            ResourceType.TOPIC,
+                            API_SPEC.id() + "_public.something.NOT_NEEDED",
+                            PatternType.LITERAL);
+            final var aclBinding1 =
+                    new AclBinding(pattern, API_SPEC.requiredAcls().iterator().next().entry());
+
+            adminClient
+                    .createAcls(List.of(aclBinding1))
+                    .all()
+                    .get(Provisioner.REQUEST_TIMEOUT, TimeUnit.SECONDS);
+
+            final var dryRunAcls = AclProvisioner.provision(true, true, API_SPEC, adminClient);
+            assertThat(dryRunAcls, is(hasSize(1)));
+            assertThat(dryRunAcls.iterator().next().state(), is(STATE.DELETE));
+
+            final var createdAcls = AclProvisioner.provision(false, true, API_SPEC, adminClient);
+
+            assertThat(createdAcls, is(hasSize(1)));
+            assertThat(createdAcls.iterator().next().state(), is(STATE.DELETED));
+        }
     }
 
     private static Set<AclBinding> aclsForOtherDomain(final Domain domain) {
