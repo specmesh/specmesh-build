@@ -237,14 +237,21 @@ public class TopicMutators {
                             .collect(Collectors.toList());
 
             try {
+                unwanted.forEach(topic -> topic.state(STATE.DELETE));
                 if (!dryRun) {
                     adminClient
                             .deleteTopics(toTopicNames(unwanted))
                             .all()
                             .get(Provisioner.REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                    unwanted.forEach(topic -> topic.state(STATE.DELETED));
                 }
             } catch (InterruptedException | ExecutionException | TimeoutException ex) {
-                throw new ProvisioningException("Failed to cleanup unwanted topics", ex);
+                unwanted.forEach(
+                        topic ->
+                                topic.exception(
+                                                new ProvisioningException(
+                                                        "failed to delete topics", ex))
+                                        .state(STATE.FAILED));
             }
             return unwanted;
         }
