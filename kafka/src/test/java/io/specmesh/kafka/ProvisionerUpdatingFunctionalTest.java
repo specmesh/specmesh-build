@@ -26,6 +26,8 @@ import static org.apache.kafka.common.resource.ResourceType.CLUSTER;
 import static org.apache.kafka.common.resource.ResourceType.GROUP;
 import static org.apache.kafka.common.resource.ResourceType.TRANSACTIONAL_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.kafka.provision.AclProvisioner;
@@ -119,11 +121,11 @@ class ProvisionerUpdatingFunctionalTest {
 
             assertThat(
                     dryRunChangeset.stream().map(Topic::name).collect(Collectors.toSet()),
-                    Matchers.is(Matchers.hasItem(USER_SIGNED_UP)));
+                    is(Matchers.hasItem(USER_SIGNED_UP)));
 
             final var dryFirstUpdate = dryRunChangeset.iterator().next();
 
-            assertThat(dryFirstUpdate.state(), Matchers.is(STATE.UPDATE));
+            assertThat(dryFirstUpdate.state(), is(STATE.UPDATE));
 
             // REAL Test
             final var changeset =
@@ -131,13 +133,13 @@ class ProvisionerUpdatingFunctionalTest {
 
             final var change = changeset.iterator().next();
 
-            assertThat(change.name(), Matchers.is(USER_SIGNED_UP));
-            assertThat(change.partitions(), Matchers.is(99));
-            assertThat(change.messages(), Matchers.is(Matchers.containsString("partitions")));
-            assertThat(change.config().get(TopicConfig.RETENTION_MS_CONFIG), Matchers.is("999000"));
+            assertThat(change.name(), is(USER_SIGNED_UP));
+            assertThat(change.partitions(), is(99));
+            assertThat(change.messages(), is(Matchers.containsString("partitions")));
+            assertThat(change.config().get(TopicConfig.RETENTION_MS_CONFIG), is("999000"));
             assertThat(
                     change.messages(),
-                    Matchers.is(Matchers.containsString(TopicConfig.RETENTION_MS_CONFIG)));
+                    is(Matchers.containsString(TopicConfig.RETENTION_MS_CONFIG)));
         }
     }
 
@@ -146,17 +148,17 @@ class ProvisionerUpdatingFunctionalTest {
     void shouldPublishUpdatedAcls() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
             final var dryRunAcls = AclProvisioner.provision(true, API_UPDATE_SPEC, adminClient);
-            assertThat(dryRunAcls, Matchers.is(Matchers.hasSize(2)));
+            assertThat(dryRunAcls, is(hasSize(2)));
             assertThat(
                     dryRunAcls.stream().filter(acl -> acl.state().equals(STATE.CREATE)).count(),
-                    Matchers.is(2L));
+                    is(2L));
 
             final var createdAcls = AclProvisioner.provision(false, API_UPDATE_SPEC, adminClient);
 
-            assertThat(createdAcls, Matchers.is(Matchers.hasSize(2)));
+            assertThat(createdAcls, is(hasSize(2)));
             assertThat(
                     createdAcls.stream().filter(acl -> acl.state().equals(STATE.CREATED)).count(),
-                    Matchers.is(2L));
+                    is(2L));
         }
     }
 
@@ -171,7 +173,7 @@ class ProvisionerUpdatingFunctionalTest {
                     .all()
                     .get(20, TimeUnit.SECONDS);
 
-            assertThat(topicCount(adminClient), Matchers.is(3L));
+            assertThat(topicCount(adminClient), is(3L));
 
             // create the unspecified topic
             final var unSpecifiedTopics =
@@ -188,7 +190,7 @@ class ProvisionerUpdatingFunctionalTest {
     void shouldCleanupNonSpecTopicsIRL() throws ExecutionException, InterruptedException {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
-            assertThat(topicCount(adminClient), Matchers.is(3L));
+            assertThat(topicCount(adminClient), is(3L));
 
             // create the unspecified topic
             final var unSpecifiedTopics =
@@ -199,7 +201,7 @@ class ProvisionerUpdatingFunctionalTest {
             assertThat(unSpecifiedTopics.iterator().next().state(), is(STATE.DELETED));
 
             // 'should.not.be' topic was removed
-            assertThat(topicCount(adminClient), Matchers.is(2L));
+            assertThat(topicCount(adminClient), is(2L));
         }
     }
 
