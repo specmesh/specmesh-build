@@ -67,6 +67,24 @@ public final class SchemaChangeSetCalculators {
         }
     }
 
+    /** Return set of 'unspecific' (i.e. non-required) schemas */
+    public static class CleanUnspecifiedCalculator implements ChangeSetCalculator {
+
+        /**
+         * remove the required items from the existing.. the remainder are not specified
+         *
+         * @param existing - existing
+         * @param required - needed
+         * @return schemas that aren't specd
+         */
+        @Override
+        public Collection<Schema> calculate(
+                final Collection<Schema> existing, final Collection<Schema> required) {
+            existing.removeAll(required);
+            return existing;
+        }
+    }
+
     /** Returns those schemas to create and ignores existing */
     public static final class UpdateCalculator implements ChangeSetCalculator {
 
@@ -190,11 +208,18 @@ public final class SchemaChangeSetCalculators {
         /**
          * build it
          *
+         * @param cleanUnspecified - cleanup
          * @param client sr client
          * @return required calculator
          */
-        public ChangeSetCalculator build(final SchemaRegistryClient client) {
-            return new Collective(new UpdateCalculator(client), new CreateCalculator());
+        public ChangeSetCalculator build(
+                final boolean cleanUnspecified, final SchemaRegistryClient client) {
+            if (cleanUnspecified) {
+                return new CleanUnspecifiedCalculator();
+
+            } else {
+                return new Collective(new UpdateCalculator(client), new CreateCalculator());
+            }
         }
     }
 }

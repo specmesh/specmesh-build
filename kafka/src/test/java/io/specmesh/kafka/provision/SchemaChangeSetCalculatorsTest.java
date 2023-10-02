@@ -69,7 +69,7 @@ class SchemaChangeSetCalculatorsTest {
                                 .payload(readFile("-v3-bad.avsc"))
                                 .build());
 
-        final var calculator = SchemaChangeSetCalculators.builder().build(client);
+        final var calculator = SchemaChangeSetCalculators.builder().build(false, client);
 
         final var schemas = calculator.calculate(existing, required);
         assertThat(schemas.iterator().next().state(), is(Status.STATE.FAILED));
