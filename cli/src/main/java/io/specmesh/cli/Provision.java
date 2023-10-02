@@ -90,12 +90,21 @@ public class Provision implements Callable<Integer> {
     @Option(
             names = {"-dry", "--dry-run"},
             description =
-                    "Compares the cluster against the spec, outputting proposed changes if"
-                        + " compatible.If the spec incompatible with the cluster (not sure how it"
-                        + " could be) then will fail with a descriptive error message.A return"
-                        + " value of 0=indicates no changes needed; 1=changes needed; -1=not"
-                        + " compatible, blah blah")
+                    "Compares the cluster resources against the spec, outputting proposed changes"
+                        + " if compatible. If the spec incompatible with the cluster (not sure how"
+                        + " it could be) then will fail with a descriptive error message. A return"
+                        + " value of '0' = indicates no changes needed; '1' = changes needed; '-1'"
+                        + " not compatible")
     private boolean dryRun;
+
+    @Option(
+            names = {"-clean", "--clean-unspecified"},
+            description =
+                    "Compares the cluster resources against the spec, outputting proposed set of"
+                        + " resources that are unexpected (not specified). Use with '-dry-run' for"
+                        + " non-destructive checks. This operation will not create resources, it"
+                        + " will only remove unspecified resources")
+    private boolean cleanUnspecified;
 
     @Option(
             names = "-D",
@@ -113,6 +122,7 @@ public class Provision implements Callable<Integer> {
         final var status =
                 Provisioner.provision(
                         dryRun,
+                        cleanUnspecified,
                         specMeshSpec(),
                         schemaPath,
                         Clients.adminClient(brokerUrl, username, secret),

@@ -32,6 +32,7 @@ public final class Provisioner {
      * Provision Topics, ACLS and schemas
      *
      * @param dryRun test or execute
+     * @param cleanUnspecified cleanup
      * @param apiSpec given spec
      * @param schemaResources schema path
      * @param adminClient kafka admin client
@@ -41,6 +42,7 @@ public final class Provisioner {
      */
     public static Status provision(
             final boolean dryRun,
+            final boolean cleanUnspecified,
             final KafkaApiSpec apiSpec,
             final String schemaResources,
             final Admin adminClient,
@@ -49,12 +51,19 @@ public final class Provisioner {
         apiSpec.apiSpec().validate();
 
         final var status =
-                Status.builder().topics(TopicProvisioner.provision(dryRun, apiSpec, adminClient));
+                Status.builder()
+                        .topics(
+                                TopicProvisioner.provision(
+                                        dryRun, cleanUnspecified, apiSpec, adminClient));
         schemaRegistryClient.ifPresent(
                 registryClient ->
                         status.schemas(
                                 SchemaProvisioner.provision(
-                                        dryRun, apiSpec, schemaResources, registryClient)));
+                                        dryRun,
+                                        cleanUnspecified,
+                                        apiSpec,
+                                        schemaResources,
+                                        registryClient)));
         status.acls(AclProvisioner.provision(dryRun, apiSpec, adminClient));
         return status.build();
     }

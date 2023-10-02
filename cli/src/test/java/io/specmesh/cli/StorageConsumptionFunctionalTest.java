@@ -76,6 +76,7 @@ class StorageConsumptionFunctionalTest {
 
         Provisioner.provision(
                 false,
+                false,
                 API_SPEC,
                 "./build/resources/test",
                 KAFKA_ENV.adminClient(),

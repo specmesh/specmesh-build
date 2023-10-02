@@ -17,12 +17,15 @@
 package io.specmesh.kafka.provision;
 
 import static io.specmesh.kafka.provision.Status.STATE.CREATED;
+import static io.specmesh.kafka.provision.Status.STATE.DELETE;
+import static io.specmesh.kafka.provision.Status.STATE.DELETED;
 import static io.specmesh.kafka.provision.Status.STATE.FAILED;
 import static io.specmesh.kafka.provision.Status.STATE.UPDATED;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
+import io.specmesh.kafka.provision.Provisioner.ProvisioningException;
 import io.specmesh.kafka.provision.SchemaProvisioner.Schema;
 import io.specmesh.kafka.provision.Status.STATE;
 import java.io.IOException;
@@ -31,52 +34,106 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/** Writers for writing Schemas */
-public final class SchemaWriters {
+/** Mutators for mutating Schemas */
+public final class SchemaMutators {
 
     public static final String DEFAULT_EVOLUTION = "FORWARD_TRANSITIVE";
 
     /** defensive */
-    private SchemaWriters() {}
+    private SchemaMutators() {}
 
     /** Collection based */
-    public static final class CollectiveWriter implements SchemaWriter {
+    public static final class CollectiveMutator implements SchemaMutator {
 
-        private final Stream<SchemaWriter> writers;
+        private final Stream<SchemaMutator> mutators;
 
         /**
          * iterate over the writers
          *
-         * @param writers to iterate
+         * @param mutators to iterate
          */
-        private CollectiveWriter(final SchemaWriter... writers) {
-            this.writers = Arrays.stream(writers);
+        private CollectiveMutator(final SchemaMutator... mutators) {
+            this.mutators = Arrays.stream(mutators);
         }
 
         /**
          * writes updates
          *
-         * @param topics to write
+         * @param schemas to write
          * @return updated status
          */
         @Override
-        public Collection<Schema> write(final Collection<Schema> topics) {
-            return this.writers
-                    .map(writer -> writer.write(topics))
+        public Collection<Schema> mutate(final Collection<Schema> schemas) {
+            return this.mutators
+                    .map(mutator -> mutator.mutate(schemas))
                     .flatMap(Collection::stream)
                     .collect(Collectors.toList());
         }
     }
 
-    /** Handles schema updates */
-    public static final class UpdateWriter implements SchemaWriter {
+    /** Remove unspecified */
+    public static final class CleanUnspecifiedMutator implements SchemaMutator {
+
+        private final boolean dryRun;
+        private final SchemaRegistryClient srClient;
+
+        @SuppressFBWarnings(
+                value = "EI_EXPOSE_REP2",
+                justification = "client passed as param to prevent API pollution")
+        public CleanUnspecifiedMutator(final boolean dryRun, final SchemaRegistryClient srClient) {
+            this.dryRun = dryRun;
+            this.srClient = srClient;
+        }
+
+        /**
+         * Write updated schemas
+         *
+         * @param schemas to delete (maybe)
+         * @return updated set of schemas
+         */
+        @Override
+        public Collection<Schema> mutate(final Collection<Schema> schemas) {
+            return schemas.stream()
+                    .filter(
+                            schema ->
+                                    !schema.state().equals(STATE.UPDATE)
+                                            && !schema.state().equals(STATE.CREATE))
+                    .peek(
+                            schema -> {
+                                try {
+                                    schema.state(DELETE);
+                                    if (!dryRun) {
+                                        final var schemaIds =
+                                                srClient.deleteSubject(schema.subject());
+
+                                        schema.state(DELETED);
+                                        schema.messages(
+                                                "Subject:"
+                                                        + schema.subject()
+                                                        + " DELETED ids: "
+                                                        + schemaIds);
+                                    }
+                                } catch (IOException | RestClientException e) {
+                                    schema.exception(
+                                            new ProvisioningException(
+                                                    "Failed to update schema:" + schema.subject(),
+                                                    e));
+                                    schema.state(FAILED);
+                                }
+                            })
+                    .collect(Collectors.toList());
+        }
+    }
+
+    /** Updates */
+    public static final class UpdateMutator implements SchemaMutator {
 
         private final SchemaRegistryClient client;
 
         @SuppressFBWarnings(
                 value = "EI_EXPOSE_REP2",
                 justification = "client passed as param to prevent API pollution")
-        public UpdateWriter(final SchemaRegistryClient client) {
+        public UpdateMutator(final SchemaRegistryClient client) {
             this.client = client;
         }
 
@@ -87,7 +144,7 @@ public final class SchemaWriters {
          * @return updated set of schemas
          */
         @Override
-        public Collection<Schema> write(final Collection<Schema> schemas) {
+        public Collection<Schema> mutate(final Collection<Schema> schemas) {
             return schemas.stream()
                     .filter(schema -> schema.state().equals(STATE.UPDATE))
                     .peek(
@@ -103,7 +160,7 @@ public final class SchemaWriters {
                                                     + schemaId);
                                 } catch (IOException | RestClientException e) {
                                     schema.exception(
-                                            new Provisioner.ProvisioningException(
+                                            new ProvisioningException(
                                                     "Failed to update schema:" + schema.subject(),
                                                     e));
                                     schema.state(FAILED);
@@ -113,8 +170,8 @@ public final class SchemaWriters {
         }
     }
 
-    /** Writes Schemas */
-    public static final class SimpleWriter implements SchemaWriter {
+    /** Mutate Schemas */
+    public static final class WriteMutator implements SchemaMutator {
 
         private final SchemaRegistryClient client;
 
@@ -123,7 +180,7 @@ public final class SchemaWriters {
          *
          * @param client - cluster connection
          */
-        private SimpleWriter(final SchemaRegistryClient client) {
+        private WriteMutator(final SchemaRegistryClient client) {
             this.client = client;
         }
 
@@ -134,7 +191,7 @@ public final class SchemaWriters {
          * @return set of schemas with CREATE or FAILED + Exception
          */
         @Override
-        public Collection<Schema> write(final Collection<Schema> schemas) {
+        public Collection<Schema> mutate(final Collection<Schema> schemas) {
 
             return schemas.stream()
                     .filter(schema -> schema.state().equals(STATE.CREATE))
@@ -154,7 +211,7 @@ public final class SchemaWriters {
                                     schema.state(CREATED);
                                 } catch (IOException | RestClientException e) {
                                     schema.exception(
-                                            new Provisioner.ProvisioningException(
+                                            new ProvisioningException(
                                                     "Failed to write schema:" + schema.subject(),
                                                     e));
                                     schema.state(FAILED);
@@ -164,8 +221,8 @@ public final class SchemaWriters {
         }
     }
 
-    /** Do nothing writer */
-    public static final class NoopSchemaWriter implements SchemaWriter {
+    /** Do nothing mutator */
+    public static final class NoopSchemaMutator implements SchemaMutator {
 
         /**
          * Do nothing
@@ -174,20 +231,20 @@ public final class SchemaWriters {
          * @return schemas without status change
          */
         @Override
-        public Collection<Schema> write(final Collection<Schema> schemas) {
+        public Collection<Schema> mutate(final Collection<Schema> schemas) {
             return schemas;
         }
     }
 
     /** Write schemas API */
-    interface SchemaWriter {
+    interface SchemaMutator {
         /**
          * Write some schemas
          *
          * @param schemas to write
          * @return updated status of schemas
          */
-        Collection<Schema> write(Collection<Schema> schemas);
+        Collection<Schema> mutate(Collection<Schema> schemas);
     }
 
     /**
@@ -195,28 +252,29 @@ public final class SchemaWriters {
      *
      * @return builder
      */
-    public static SchemaWriterBuilder builder() {
-        return SchemaWriterBuilder.builder();
+    public static SchemaMutatorBuilder builder() {
+        return SchemaMutatorBuilder.builder();
     }
 
-    /** TopicWriter builder */
+    /** Mutator builder */
     @SuppressFBWarnings(
             value = "EI_EXPOSE_REP2",
             justification = "adminClient() passed as param to prevent API pollution")
-    public static final class SchemaWriterBuilder {
+    public static final class SchemaMutatorBuilder {
         private SchemaRegistryClient client;
-        private boolean noopWriter;
+        private boolean dryRun;
+        private boolean cleanUnspecified;
 
         /** defensive */
-        private SchemaWriterBuilder() {}
+        private SchemaMutatorBuilder() {}
 
         /**
          * main builder
          *
          * @return builder
          */
-        public static SchemaWriterBuilder builder() {
-            return new SchemaWriterBuilder();
+        public static SchemaMutatorBuilder builder() {
+            return new SchemaMutatorBuilder();
         }
 
         /**
@@ -225,7 +283,7 @@ public final class SchemaWriters {
          * @param client - cluster connection
          * @return builder
          */
-        public SchemaWriterBuilder schemaRegistryClient(final SchemaRegistryClient client) {
+        public SchemaMutatorBuilder schemaRegistryClient(final SchemaRegistryClient client) {
             this.client = client;
             return this;
         }
@@ -236,21 +294,34 @@ public final class SchemaWriters {
          * @param dryRun - true is dry running
          * @return the builder
          */
-        public SchemaWriterBuilder noop(final boolean dryRun) {
-            noopWriter = dryRun;
+        public SchemaMutatorBuilder noop(final boolean dryRun) {
+            this.dryRun = dryRun;
+            return this;
+        }
+
+        /**
+         * Clean un-specified schemas
+         *
+         * @param cleanUnspecified flag
+         * @return mutator
+         */
+        public SchemaMutatorBuilder cleanUnspecified(final boolean cleanUnspecified) {
+            this.cleanUnspecified = cleanUnspecified;
             return this;
         }
 
         /**
          * build it
          *
-         * @return the specified topic writer impl
+         * @return the specified the right kind of mutator
          */
-        public SchemaWriter build() {
-            if (noopWriter) {
-                return new NoopSchemaWriter();
+        public SchemaMutator build() {
+            if (cleanUnspecified) {
+                return new CleanUnspecifiedMutator(dryRun, client);
+            } else if (dryRun) {
+                return new NoopSchemaMutator();
             } else {
-                return new CollectiveWriter(new UpdateWriter(client), new SimpleWriter(client));
+                return new CollectiveMutator(new UpdateMutator(client), new WriteMutator(client));
             }
         }
     }
