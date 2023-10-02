@@ -234,6 +234,7 @@ class ProvisionerUpdatingFunctionalTest {
                     TopicProvisioner.provision(true, true, API_SPEC, adminClient);
             // 'should.not.be' topic that should not be
             assertThat(unSpecifiedTopics, is(hasSize(1)));
+            assertThat(unSpecifiedTopics.iterator().next().state(), is(STATE.DELETE));
             assertThat(topicCount(adminClient), is(3L));
         }
     }
@@ -251,6 +252,7 @@ class ProvisionerUpdatingFunctionalTest {
 
             // 'should.not.be' topic that should not be
             assertThat(unSpecifiedTopics, is(hasSize(1)));
+            assertThat(unSpecifiedTopics.iterator().next().state(), is(STATE.DELETED));
 
             // 'should.not.be' topic was removed
             assertThat(topicCount(adminClient), is(2L));
