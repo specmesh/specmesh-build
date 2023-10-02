@@ -172,7 +172,8 @@ class SchemaProvisionerUpdateFunctionalTest {
         }
     }
 
-    private static void testCleanUnSpecSchemas(final SchemaRegistryClient srClient) throws IOException, RestClientException {
+    private static void testCleanUnSpecSchemas(final SchemaRegistryClient srClient)
+            throws IOException, RestClientException {
         final var cleanerSet2 =
                 SchemaProvisioner.provision(
                         false, true, API_UPDATE_SPEC, "./build/resources/test", srClient());
@@ -186,7 +187,8 @@ class SchemaProvisionerUpdateFunctionalTest {
         assertThat(allSchemasforSpec, is(hasSize(2)));
     }
 
-    private static void testDryRun(final String subject, final SchemaRegistryClient srClient) throws IOException, RestClientException {
+    private static void testDryRun(final String subject, final SchemaRegistryClient srClient)
+            throws IOException, RestClientException {
         // test dry run
         final var cleanerSet =
                 SchemaProvisioner.provision(
