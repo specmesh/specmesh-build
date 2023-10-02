@@ -59,7 +59,11 @@ public final class Provisioner {
                 registryClient ->
                         status.schemas(
                                 SchemaProvisioner.provision(
-                                        dryRun, apiSpec, schemaResources, registryClient)));
+                                        dryRun,
+                                        cleanUnspecified,
+                                        apiSpec,
+                                        schemaResources,
+                                        registryClient)));
         status.acls(AclProvisioner.provision(dryRun, apiSpec, adminClient));
         return status.build();
     }

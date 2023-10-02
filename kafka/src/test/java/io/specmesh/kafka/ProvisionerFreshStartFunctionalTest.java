@@ -196,7 +196,8 @@ class ProvisionerFreshStartFunctionalTest {
 
         final var srClient = srClient();
         final var changeset =
-                SchemaProvisioner.provision(true, API_SPEC, "./build/resources/test", srClient);
+                SchemaProvisioner.provision(
+                        true, false, API_SPEC, "./build/resources/test", srClient);
 
         // Verify - 11 created
         assertThat(
@@ -350,7 +351,8 @@ class ProvisionerFreshStartFunctionalTest {
 
         final var srClient = srClient();
         final var changeset =
-                SchemaProvisioner.provision(false, API_SPEC, "./build/resources/test", srClient);
+                SchemaProvisioner.provision(
+                        false, false, API_SPEC, "./build/resources/test", srClient);
 
         // Verify - 11 created
         assertThat(
