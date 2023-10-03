@@ -9,6 +9,27 @@ This page also contains a simple docker guide for local testing.
 
 This command will provision Kafka resources using AsyncApi spec (aka. App, or data product) and publish to the configured cluster and schema registry environment. It can be run manually, and also as part of a GitOps workflow, and/or build promotion of the spec into different environments where cluster and SR endpoints are configured as environment variables.
 
+### Common  config
+`provision` will look for a `provision.properties` file in the docker /app/ folder (i.e. /app/provision.properties)
+A sample config can contain default data config.
+
+
+File provision.properties (will be automatically loaded from docker `/app/provision.properties`)
+```properties
+spec=/app/simple_schema_demo-api.yaml
+acl.enabled=true
+sr.enabled=true
+dry.run=true
+bootstrap.server=broker1:9092
+username=admin
+secret=nothing
+schema.registry=http://schema-registry:8081
+schema.path=/app/1
+sr.api.key=admin
+sr.api.secret=nothing
+
+```
+
 ### Usage
 
 > % docker run --rm --network kafka_network -v "$(pwd)/resources:/app" ghcr.io/specmesh/specmesh-build-cli  provision -bs kafka:9092  -sr http://schema-registry:8081 -spec /app/simple_schema_demo-api.yaml -schemaPath /app
@@ -18,33 +39,52 @@ This command will provision Kafka resources using AsyncApi spec (aka. App, or da
   <summary>Long form</summary>
 
 ```
- provision [-d] [-bs=<brokerUrl>] [-s=<secret>]
-                 [-schemaPath=<schemaPath>] [-spec=<spec>]
+ Usage: provision [-aclEnabled] [-clean] [-dry] [-srEnabled] [-bs=<brokerUrl>]
+                 [-s=<secret>] [-schemaPath=<schemaPath>] [-spec=<spec>]
                  [-sr=<schemaRegistryUrl>] [-srKey=<srApiKey>]
                  [-srSecret=<srApiSecret>] [-u=<username>]
-Apply the provided specification to provision kafka resources and permissions
-on the cluster
+                 [-D=<String=String>]...
+Apply a specification.yaml to provision kafka resources on a cluster.
+Use 'provision.properties' for common arguments
+ Explicit properties file location /app/provision.properties
+
+
+      -aclEnabled, --acl-enabled
+                             True (default) will provision/publish/validate
+                               ACls. False will ignore ACL related operations
       -bs, --bootstrap-server=<brokerUrl>
                              Kafka bootstrap server url
-  -d, --dry-run              Compares the cluster against the spec, outputting
-                               proposed changes if compatible.If the spec
-                               incompatible with the cluster (not sure how it
-                               could be) then will fail with a descriptive
-                               error message.A return value of 0=indicates no
-                               changes needed; 1=changes needed; -1=not
-                               compatible, blah blah
-  -s, --secret=<secret>      secret credential for the cluster connection
-      -schemaPath, --schemaPath=<schemaPath>
+      -clean, --clean-unspecified
+                             Compares the cluster resources against the spec,
+                               outputting proposed set of resources that are
+                               unexpected (not specified). Use with '-dry-run'
+                               for non-destructive checks. This operation will
+                               not create resources, it will only remove
+                               unspecified resources
+      -D, --property=<String=String>
+                             Specify Java runtime properties for Apache Kafka.
+      -dry, --dry-run        Compares the cluster resources against the spec,
+                               outputting proposed changes if  compatible. If
+                               the spec incompatible with the cluster then will
+                               fail with a descriptive error message. A return
+                               value of '0' = indicates no  changes needed; '1'
+                               = changes needed; '-1' not compatible
+      -s, --secret=<secret>      secret credential for the cluster connection
+      -schemaPath, --schema-path=<schemaPath>
                              schemaPath where the set of referenced schemas
                                will be loaded
       -spec, --spec=<spec>   specmesh specification file
-      -sr, --srUrl=<schemaRegistryUrl>
+      -sr, --schema-registry=<schemaRegistryUrl>
                              schemaRegistryUrl
-      -srKey, --srApiKey=<srApiKey>
+      -srEnabled, --sr-enabled
+                             True (default) will provision/publish/validate
+                               schemas. False will ignore schema related
+                               operations
+      -srKey, --sr-api-key=<srApiKey>
                              srApiKey for schema registry
-      -srSecret, --srApiSecret=<srApiSecret>
+      -srSecret, --sr-api-secret=<srApiSecret>
                              srApiSecret for schema secret
-  -u, --username=<username>  username or api key for the cluster connection
+      -u, --username=<username>  username or api key for the cluster connection
   
 ```
 </details>

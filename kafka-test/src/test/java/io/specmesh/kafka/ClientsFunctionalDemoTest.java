@@ -107,6 +107,7 @@ class ClientsFunctionalDemoTest {
             final SchemaRegistryClient schemaRegistryClient =
                     new CachedSchemaRegistryClient(KAFKA_ENV.schemeRegistryServer(), 5);
             Provisioner.provision(
+                    true,
                     false,
                     false,
                     API_SPEC,

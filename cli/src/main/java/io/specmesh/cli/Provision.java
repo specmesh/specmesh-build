@@ -23,7 +23,11 @@ import io.specmesh.kafka.Clients;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.provision.Provisioner;
 import io.specmesh.kafka.provision.Status;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
@@ -32,8 +36,9 @@ import picocli.CommandLine.Option;
 @Command(
         name = "provision",
         description =
-                "Apply the provided specification to provision kafka resources and permissions on"
-                        + " the cluster")
+                "Apply a specification.yaml to provision kafka resources on a cluster.\n"
+                        + "Use 'provision.properties' for common arguments\n"
+                        + " Explicit properties file location /app/provision.properties\n\n")
 public class Provision implements Callable<Integer> {
 
     private Status state;
@@ -44,13 +49,63 @@ public class Provision implements Callable<Integer> {
      * @param args args
      */
     public static void main(final String[] args) {
-        System.exit(new CommandLine(new Provision()).execute(args));
+
+        final var properties = new Properties();
+        final var propertyFilename =
+                System.getProperty("provision.properties", "provision.properties");
+        try (FileInputStream fis = new FileInputStream(propertyFilename)) {
+            System.out.println(
+                    "Loading `"
+                            + propertyFilename
+                            + "` from:"
+                            + new File(propertyFilename).getAbsolutePath());
+            properties.load(fis);
+            properties
+                    .entrySet()
+                    .forEach(
+                            entry -> {
+                                properties.put(
+                                        entry.getKey().toString().replace(".", "-"),
+                                        entry.getValue());
+                            });
+            System.out.println(
+                    "Loaded `properties` from cwd:" + new File(propertyFilename).getAbsolutePath());
+        } catch (IOException e) {
+            System.out.println(
+                    "Missing `"
+                            + propertyFilename
+                            + " ` FROM:"
+                            + new File(propertyFilename).getAbsolutePath()
+                            + "\nERROR:"
+                            + e);
+            e.printStackTrace();
+        }
+
+        final var provider = new CommandLine.PropertiesDefaultProvider(properties);
+        System.exit(
+                new CommandLine(new Provision()).setDefaultValueProvider(provider).execute(args));
     }
 
     @Option(
             names = {"-bs", "--bootstrap-server"},
             description = "Kafka bootstrap server url")
     private String brokerUrl = "";
+
+    @Option(
+            names = {"-srEnabled", "--sr-enabled"},
+            fallbackValue = "true",
+            description =
+                    "True (default) will provision/publish/validate schemas. False will ignore"
+                            + " schema related operations")
+    private boolean srEnabled;
+
+    @Option(
+            names = {"-aclEnabled", "--acl-enabled"},
+            fallbackValue = "true",
+            description =
+                    "True (default) will provision/publish/validate ACls. False will ignore ACL"
+                            + " related operations")
+    private boolean aclEnabled;
 
     @Option(
             names = {"-sr", "--schema-registry"},
@@ -89,16 +144,18 @@ public class Provision implements Callable<Integer> {
 
     @Option(
             names = {"-dry", "--dry-run"},
+            fallbackValue = "false",
             description =
                     "Compares the cluster resources against the spec, outputting proposed changes"
-                        + " if compatible. If the spec incompatible with the cluster (not sure how"
-                        + " it could be) then will fail with a descriptive error message. A return"
-                        + " value of '0' = indicates no changes needed; '1' = changes needed; '-1'"
-                        + " not compatible")
+                            + " if  compatible. If the spec incompatible with the cluster then will"
+                            + " fail with a descriptive error message. A return value of '0' ="
+                            + " indicates no  changes needed; '1' = changes needed; '-1' not"
+                            + " compatible")
     private boolean dryRun;
 
     @Option(
             names = {"-clean", "--clean-unspecified"},
+            fallbackValue = "false",
             description =
                     "Compares the cluster resources against the spec, outputting proposed set of"
                         + " resources that are unexpected (not specified). Use with '-dry-run' for"
@@ -107,12 +164,9 @@ public class Provision implements Callable<Integer> {
     private boolean cleanUnspecified;
 
     @Option(
-            names = "-D",
+            names = {"-D", "--property"},
             mapFallbackValue = "",
-            description =
-                    "Specify Java runtime system properties for Apache Kafka. Note: bulk properties"
-                            + " can be set via '-Dconfig.properties=somefile.properties"
-                            + " ") // allow -Dkey
+            description = "Specify Java runtime properties for Apache Kafka." + " ") // allow -Dkey
     void setProperty(final Map<String, String> props) {
         props.forEach((k, v) -> System.setProperty(k, v));
     }
@@ -121,12 +175,14 @@ public class Provision implements Callable<Integer> {
     public Integer call() throws Exception {
         final var status =
                 Provisioner.provision(
+                        aclEnabled,
                         dryRun,
                         cleanUnspecified,
                         specMeshSpec(),
                         schemaPath,
                         Clients.adminClient(brokerUrl, username, secret),
-                        Clients.schemaRegistryClient(schemaRegistryUrl, srApiKey, srApiSecret));
+                        Clients.schemaRegistryClient(
+                                srEnabled, schemaRegistryUrl, srApiKey, srApiSecret));
 
         System.out.println(status.toString());
         this.state = status;

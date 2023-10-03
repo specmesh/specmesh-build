@@ -5,6 +5,7 @@ function provision() {
   exec java \
    -Xms64m -Xmx64m \
    -Dlog4j.configurationFile=/log/log4j2.xml \
+   -Dprovision.properties=/app/provision.properties \
    -cp "/opt/specmesh/service/lib/*" \
    io.specmesh.cli.Provision "$@"
 }
