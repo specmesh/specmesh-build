@@ -75,6 +75,7 @@ class StorageConsumptionFunctionalTest {
     void shouldGetStorageAndConsumptionMetrics() throws Exception {
 
         Provisioner.provision(
+                true,
                 false,
                 false,
                 API_SPEC,

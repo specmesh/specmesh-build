@@ -143,8 +143,11 @@ public final class Clients {
     }
 
     public static Optional<SchemaRegistryClient> schemaRegistryClient(
-            final String schemaRegistryUrl, final String srApiKey, final String srApiSecret) {
-        if (schemaRegistryUrl != null) {
+            final boolean srEnabled,
+            final String schemaRegistryUrl,
+            final String srApiKey,
+            final String srApiSecret) {
+        if (srEnabled && schemaRegistryUrl != null) {
             final Map<String, Object> properties = new HashMap<>();
             if (srApiKey != null) {
                 properties.put(

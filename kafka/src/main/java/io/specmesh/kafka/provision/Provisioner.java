@@ -31,6 +31,7 @@ public final class Provisioner {
     /**
      * Provision Topics, ACLS and schemas
      *
+     * @param aclEnabled
      * @param dryRun test or execute
      * @param cleanUnspecified cleanup
      * @param apiSpec given spec
@@ -41,6 +42,7 @@ public final class Provisioner {
      * @throws ProvisioningException when cant provision resources
      */
     public static Status provision(
+            final boolean aclEnabled,
             final boolean dryRun,
             final boolean cleanUnspecified,
             final KafkaApiSpec apiSpec,
@@ -64,7 +66,9 @@ public final class Provisioner {
                                         apiSpec,
                                         schemaResources,
                                         registryClient)));
-        status.acls(AclProvisioner.provision(dryRun, cleanUnspecified, apiSpec, adminClient));
+        if (aclEnabled) {
+            status.acls(AclProvisioner.provision(dryRun, cleanUnspecified, apiSpec, adminClient));
+        }
         return status.build();
     }
 
