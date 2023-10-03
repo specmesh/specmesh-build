@@ -11,7 +11,7 @@ This command will provision Kafka resources using AsyncApi spec (aka. App, or da
 
 ### Common  config
 `provision` will look for a `provision.properties` file in the docker /app/ folder (i.e. /app/provision.properties)
-A sample config can contain default data config.
+A sample config is used for managing common config properties.
 
 
 File provision.properties (will be automatically loaded from docker `/app/provision.properties`)
