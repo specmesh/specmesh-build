@@ -60,9 +60,14 @@ public class Provision implements Callable<Integer> {
                             + "` from:"
                             + new File(propertyFilename).getAbsolutePath());
             properties.load(fis);
-            properties.entrySet().forEach(entry -> {
-                properties.put(entry.getKey().toString().replace(".", "-"), entry.getValue());
-            });
+            properties
+                    .entrySet()
+                    .forEach(
+                            entry -> {
+                                properties.put(
+                                        entry.getKey().toString().replace(".", "-"),
+                                        entry.getValue());
+                            });
             System.out.println(
                     "Loaded `properties` from cwd:" + new File(propertyFilename).getAbsolutePath());
         } catch (IOException e) {
