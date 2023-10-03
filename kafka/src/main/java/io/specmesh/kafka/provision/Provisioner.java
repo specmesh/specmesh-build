@@ -31,7 +31,7 @@ public final class Provisioner {
     /**
      * Provision Topics, ACLS and schemas
      *
-     * @param aclEnabled
+     * @param aclEnabled enable or disable ACLs
      * @param dryRun test or execute
      * @param cleanUnspecified cleanup
      * @param apiSpec given spec
