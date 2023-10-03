@@ -14,7 +14,7 @@ This command will provision Kafka resources using AsyncApi spec (aka. App, or da
 A default config file can optionally be used for managing/accessing common properties.
 
 
-File provision.properties (will be automatically loaded from docker `/app/provision.properties`)
+File provision.properties (automatically loaded from docker `/app/provision.properties`)
 ```properties
 spec=/app/simple_schema_demo-api.yaml
 acl.enabled=true
