@@ -6,9 +6,6 @@ ENV VERSION=$APP_VERSION
 
 LABEL org.opencontainers.image.source=https://github.com/specmesh/specmesh-build/tree/main/cli
 
-RUN yum update -y
-RUN yum install -y tar lsof
-
 RUN mkdir -p /opt/specmesh
 
 COPY bin /bin
@@ -16,13 +13,9 @@ COPY log4j /log
 
 RUN chmod +x /bin/*.sh
 
-COPY ${APP_NAME}-${APP_VERSION}.tar /opt/specmesh
 WORKDIR /opt/specmesh
 
-RUN tar xf ${APP_NAME}-${APP_VERSION}.tar
 RUN ln -s ${APP_NAME}-${APP_VERSION} service
-
-
 
 ENTRYPOINT ["/bin/wrapper.sh"]
 #No CMD instruction is provided, allowing you to pass any number of arguments at runtime.
