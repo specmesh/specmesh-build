@@ -13,6 +13,7 @@ COPY log4j /log
 
 RUN chmod +x /bin/*.sh
 
+COPY ${APP_NAME}-${APP_VERSION} /opt/specmesh/${APP_NAME}-${APP_VERSION}
 WORKDIR /opt/specmesh
 
 RUN ln -s ${APP_NAME}-${APP_VERSION} service
