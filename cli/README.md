@@ -4,6 +4,8 @@ Commands to provision, export and capture production & consumption chargeback me
 
 This page also contains a simple docker guide for local testing.
 
+[See further down the page for setting up a Docker environment](https://github.com/specmesh/specmesh-build/tree/main/cli#quickstart-using-docker-on-the-local-machine) 
+
 
 ## Command: Provision
 

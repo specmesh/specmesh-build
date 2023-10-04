@@ -93,7 +93,7 @@ public class Provision implements Callable<Integer> {
 
     @Option(
             names = {"-srEnabled", "--sr-enabled"},
-            fallbackValue = "true",
+            defaultValue = "true",
             description =
                     "True (default) will provision/publish/validate schemas. False will ignore"
                             + " schema related operations")
@@ -101,7 +101,7 @@ public class Provision implements Callable<Integer> {
 
     @Option(
             names = {"-aclEnabled", "--acl-enabled"},
-            fallbackValue = "true",
+            defaultValue = "true",
             description =
                     "True (default) will provision/publish/validate ACls. False will ignore ACL"
                             + " related operations")
