@@ -1,3 +1,4 @@
+
 FROM eclipse-temurin:11-jre-focal
 
 ARG APP_NAME

@@ -4,6 +4,8 @@ Commands to provision, export and capture production & consumption chargeback me
 
 This page also contains a simple docker guide for local testing.
 
+[See further down the page for setting up a Docker environment](https://github.com/specmesh/specmesh-build/tree/main/cli#quickstart-using-docker-on-the-local-machine) 
+
 
 ## Command: Provision
 
@@ -39,7 +41,7 @@ sr.api.secret=nothing
   <summary>Long form</summary>
 
 ```
- Usage: provision [-aclEnabled] [-clean] [-dry] [-srEnabled] [-bs=<brokerUrl>]
+ Usage: provision [-aclDisabled] [-clean] [-dry] [-srDisabled] [-bs=<brokerUrl>]
                  [-s=<secret>] [-schemaPath=<schemaPath>] [-spec=<spec>]
                  [-sr=<schemaRegistryUrl>] [-srKey=<srApiKey>]
                  [-srSecret=<srApiSecret>] [-u=<username>]
@@ -49,9 +51,8 @@ Use 'provision.properties' for common arguments
  Explicit properties file location /app/provision.properties
 
 
-      -aclEnabled, --acl-enabled
-                             True (default) will provision/publish/validate
-                               ACls. False will ignore ACL related operations
+      -aclDisabled, --acl-disabled
+                             Ignore ACL related operations
       -bs, --bootstrap-server=<brokerUrl>
                              Kafka bootstrap server url
       -clean, --clean-unspecified
@@ -76,10 +77,8 @@ Use 'provision.properties' for common arguments
       -spec, --spec=<spec>   specmesh specification file
       -sr, --schema-registry=<schemaRegistryUrl>
                              schemaRegistryUrl
-      -srEnabled, --sr-enabled
-                             True (default) will provision/publish/validate
-                               schemas. False will ignore schema related
-                               operations
+      -srDisabled, --sr-disabled
+                             Ignore schema related operations
       -srKey, --sr-api-key=<srApiKey>
                              srApiKey for schema registry
       -srSecret, --sr-api-secret=<srApiSecret>

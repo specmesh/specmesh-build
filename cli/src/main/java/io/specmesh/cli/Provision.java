@@ -92,20 +92,14 @@ public class Provision implements Callable<Integer> {
     private String brokerUrl = "";
 
     @Option(
-            names = {"-srEnabled", "--sr-enabled"},
-            fallbackValue = "true",
-            description =
-                    "True (default) will provision/publish/validate schemas. False will ignore"
-                            + " schema related operations")
-    private boolean srEnabled;
+            names = {"-srDisabled", "--sr-disabled"},
+            description = "Ignore schema related operations")
+    private boolean srDisabled = false;
 
     @Option(
-            names = {"-aclEnabled", "--acl-enabled"},
-            fallbackValue = "true",
-            description =
-                    "True (default) will provision/publish/validate ACls. False will ignore ACL"
-                            + " related operations")
-    private boolean aclEnabled;
+            names = {"-aclDisabled", "--acl-enabled"},
+            description = "Ignore ACL related operations")
+    private boolean aclDisabled;
 
     @Option(
             names = {"-sr", "--schema-registry"},
@@ -175,14 +169,14 @@ public class Provision implements Callable<Integer> {
     public Integer call() throws Exception {
         final var status =
                 Provisioner.provision(
-                        aclEnabled,
+                        !aclDisabled,
                         dryRun,
                         cleanUnspecified,
                         specMeshSpec(),
                         schemaPath,
                         Clients.adminClient(brokerUrl, username, secret),
                         Clients.schemaRegistryClient(
-                                srEnabled, schemaRegistryUrl, srApiKey, srApiSecret));
+                                !srDisabled, schemaRegistryUrl, srApiKey, srApiSecret));
 
         System.out.println(status.toString());
         this.state = status;
