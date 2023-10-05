@@ -76,8 +76,8 @@ public final class SchemaProvisioner {
                     "Required Schemas Failed to load:" + required);
         }
 
-        return mutator(dryRun, cleanUnspecified, client)
-                .mutate(calculator(client, cleanUnspecified).calculate(existing, required));
+        final var schemas = calculator(client, cleanUnspecified).calculate(existing, required);
+        return mutator(dryRun, cleanUnspecified, client).mutate(schemas);
     }
 
     /**
