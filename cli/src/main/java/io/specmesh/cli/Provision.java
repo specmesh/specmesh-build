@@ -93,14 +93,12 @@ public class Provision implements Callable<Integer> {
 
     @Option(
             names = {"-srDisabled", "--sr-disabled"},
-            description =
-                    "Ignore schema related operations")
+            description = "Ignore schema related operations")
     private boolean srDisabled = false;
 
     @Option(
             names = {"-aclDisabled", "--acl-enabled"},
-            description =
-                    "Ignore ACL related operations")
+            description = "Ignore ACL related operations")
     private boolean aclDisabled;
 
     @Option(
