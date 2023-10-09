@@ -94,10 +94,10 @@ public class Provision implements Callable<Integer> {
     @Option(
             names = {"-srDisabled", "--sr-disabled"},
             description = "Ignore schema related operations")
-    private boolean srDisabled = false;
+    private boolean srDisabled;
 
     @Option(
-            names = {"-aclDisabled", "--acl-enabled"},
+            names = {"-aclDisabled", "--acl-disabled"},
             description = "Ignore ACL related operations")
     private boolean aclDisabled;
 
@@ -162,7 +162,7 @@ public class Provision implements Callable<Integer> {
             mapFallbackValue = "",
             description = "Specify Java runtime properties for Apache Kafka." + " ") // allow -Dkey
     void setProperty(final Map<String, String> props) {
-        props.forEach((k, v) -> System.setProperty(k, v));
+        props.forEach(System::setProperty);
     }
 
     @Override
