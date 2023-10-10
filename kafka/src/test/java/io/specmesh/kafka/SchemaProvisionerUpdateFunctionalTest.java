@@ -16,16 +16,8 @@
 
 package io.specmesh.kafka;
 
-import static org.apache.kafka.common.acl.AclOperation.ALL;
-import static org.apache.kafka.common.acl.AclOperation.IDEMPOTENT_WRITE;
-import static org.apache.kafka.common.acl.AclPermissionType.ALLOW;
-import static org.apache.kafka.common.resource.PatternType.LITERAL;
-import static org.apache.kafka.common.resource.PatternType.PREFIXED;
-import static org.apache.kafka.common.resource.Resource.CLUSTER_NAME;
-import static org.apache.kafka.common.resource.ResourceType.CLUSTER;
-import static org.apache.kafka.common.resource.ResourceType.GROUP;
-import static org.apache.kafka.common.resource.ResourceType.TRANSACTIONAL_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
@@ -35,25 +27,18 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
 import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
+import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
 import io.confluent.kafka.schemaregistry.json.JsonSchemaProvider;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
-import io.specmesh.kafka.provision.AclProvisioner;
 import io.specmesh.kafka.provision.SchemaProvisioner;
+import io.specmesh.kafka.provision.SchemaProvisioner.Schema;
 import io.specmesh.kafka.provision.Status.STATE;
-import io.specmesh.kafka.provision.TopicProvisioner;
-import io.specmesh.kafka.provision.TopicProvisioner.Topic;
 import io.specmesh.test.TestSpecLoader;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.kafka.clients.admin.Admin;
-import org.apache.kafka.common.acl.AccessControlEntry;
-import org.apache.kafka.common.acl.AclBinding;
-import org.apache.kafka.common.config.TopicConfig;
-import org.apache.kafka.common.resource.ResourcePattern;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -68,15 +53,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
         value = "IC_INIT_CIRCULARITY",
         justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positive")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class ProvisionerUpdatingFunctionalTest {
+class SchemaProvisionerUpdateFunctionalTest {
 
     private static final KafkaApiSpec API_SPEC =
             TestSpecLoader.loadFromClassPath("provisioner-functional-test-api.yaml");
 
     private static final KafkaApiSpec API_UPDATE_SPEC =
             TestSpecLoader.loadFromClassPath("provisioner-update-functional-test-api.yaml");
-
-    public static final String USER_SIGNED_UP = "simple.provision_demo._public.user_signed_up";
 
     private enum Domain {
         /** The domain associated with the spec. */
@@ -103,58 +86,23 @@ class ProvisionerUpdatingFunctionalTest {
                             ADMIN_USER + "-secret",
                             Domain.SELF.domainId,
                             Domain.SELF.domainId + "-secret")
-                    .withKafkaAcls(aclsForOtherDomain(Domain.LIMITED))
-                    .withKafkaAcls(aclsForOtherDomain(Domain.UNRELATED))
                     .build();
 
+    /** setup for following update tests */
     @Test
     @Order(1)
     void shouldProvisionExistingSpec() {
-        try (Admin adminClient = KAFKA_ENV.adminClient()) {
-            TopicProvisioner.provision(false, API_SPEC, adminClient);
-            AclProvisioner.provision(false, API_SPEC, adminClient);
-            SchemaProvisioner.provision(false, API_SPEC, "./build/resources/test", srClient());
-        }
+        SchemaProvisioner.provision(false, false, API_SPEC, "./build/resources/test", srClient());
     }
 
     @Test
     @Order(2)
-    void shouldDoTopicUpdates() {
-        try (Admin adminClient = KAFKA_ENV.adminClient()) {
-
-            // DRY RUN Test
-            final var dryRunChangeset =
-                    TopicProvisioner.provision(true, API_UPDATE_SPEC, adminClient);
-
-            assertThat(
-                    dryRunChangeset.stream().map(Topic::name).collect(Collectors.toSet()),
-                    is(containsInAnyOrder(USER_SIGNED_UP)));
-
-            final var dryFirstUpdate = dryRunChangeset.iterator().next();
-
-            assertThat(dryFirstUpdate.state(), is(STATE.UPDATE));
-
-            // REAL Test
-            final var changeset = TopicProvisioner.provision(false, API_UPDATE_SPEC, adminClient);
-
-            final var change = changeset.iterator().next();
-
-            assertThat(change.name(), is(USER_SIGNED_UP));
-            assertThat(change.partitions(), is(99));
-            assertThat(change.messages(), is(containsString("partitions")));
-            assertThat(change.config().get(TopicConfig.RETENTION_MS_CONFIG), is("999000"));
-            assertThat(change.messages(), is(containsString(TopicConfig.RETENTION_MS_CONFIG)));
-        }
-    }
-
-    @Test
-    @Order(3)
     void shouldPublishUpdatedSchemas() throws RestClientException, IOException {
 
         final var srClient = srClient();
         final var dryRunChangeset =
                 SchemaProvisioner.provision(
-                        true, API_UPDATE_SPEC, "./build/resources/test", srClient);
+                        true, false, API_UPDATE_SPEC, "./build/resources/test", srClient);
 
         // Verify - the Update is proposed
         assertThat(
@@ -168,7 +116,7 @@ class ProvisionerUpdatingFunctionalTest {
 
         final var updateChangeset =
                 SchemaProvisioner.provision(
-                        false, API_UPDATE_SPEC, "./build/resources/test", srClient);
+                        false, false, API_UPDATE_SPEC, "./build/resources/test", srClient);
 
         final var parsedSchemas =
                 srClient.getSchemas(updateChangeset.iterator().next().subject(), false, true);
@@ -192,25 +140,73 @@ class ProvisionerUpdatingFunctionalTest {
     }
 
     @Test
-    @Order(4)
-    void shouldPublishUpdatedAcls() {
-        try (Admin adminClient = KAFKA_ENV.adminClient()) {
-            final var dryRunAcls = AclProvisioner.provision(true, API_UPDATE_SPEC, adminClient);
-            assertThat(dryRunAcls, is(hasSize(2)));
-            assertThat(
-                    dryRunAcls.stream().filter(acl -> acl.state().equals(STATE.CREATE)).count(),
-                    is(2L));
+    @Order(3)
+    void shouldRemoveUnspecdSchemas() throws RestClientException, IOException {
 
-            final var createdAcls = AclProvisioner.provision(false, API_UPDATE_SPEC, adminClient);
+        final var subject = "simple.provision_demo._public.NOT_user_signed_up-value";
+        final var schemaContent =
+                "{\n"
+                    + "  \"type\": \"record\",\n"
+                    + "  \"namespace\": \"simple.provision_demo._public.user_signed_up_value\",\n"
+                    + "  \"name\": \"UserSignedUp\",\n"
+                    + "  \"fields\": [\n"
+                    + "    {\"name\": \"fullName\", \"type\": \"string\"},\n"
+                    + "    {\"name\": \"age\", \"type\": \"int\"}\n"
+                    + "  ]\n"
+                    + "}";
+        final var schema =
+                Schema.builder()
+                        .subject(subject)
+                        .type("/schema/simple.provision_demo._public.user_signed_up.avsc")
+                        .payload(schemaContent)
+                        .state(STATE.READ)
+                        .build();
 
-            assertThat(createdAcls, is(hasSize(2)));
-            assertThat(
-                    createdAcls.stream().filter(acl -> acl.state().equals(STATE.CREATED)).count(),
-                    is(2L));
+        try (SchemaRegistryClient srClient = srClient()) {
+
+            // insert the bad schema
+            srClient.register(subject, schema.getSchema());
+
+            testDryRun(subject, srClient);
+            testCleanUnSpecSchemas(srClient);
         }
     }
 
-    private static CachedSchemaRegistryClient srClient() {
+    private static void testCleanUnSpecSchemas(final SchemaRegistryClient srClient)
+            throws IOException, RestClientException {
+        final var cleanerSet2 =
+                SchemaProvisioner.provision(
+                        false, true, API_UPDATE_SPEC, "./build/resources/test", srClient());
+
+        // verify it was removed
+        assertThat(cleanerSet2.iterator().next().state(), is(STATE.DELETED));
+
+        final var allSchemasforSpec = srClient.getAllSubjectsByPrefix(API_SPEC.id());
+
+        // verify removal
+        assertThat(allSchemasforSpec, is(hasSize(2)));
+    }
+
+    private static void testDryRun(final String subject, final SchemaRegistryClient srClient)
+            throws IOException, RestClientException {
+        // test dry run
+        final var cleanerSet =
+                SchemaProvisioner.provision(
+                        true, true, API_UPDATE_SPEC, "./build/resources/test", srClient());
+
+        // verify dry run
+        assertThat(cleanerSet, is(hasSize(1)));
+        assertThat(
+                cleanerSet.stream().map(Schema::subject).collect(Collectors.toList()),
+                contains(subject));
+        // verify intent to DELETE
+        assertThat(cleanerSet.iterator().next().state(), is(STATE.DELETE));
+
+        final var allSchemasforId = srClient.getAllSubjectsByPrefix(API_SPEC.id());
+        assertThat(allSchemasforId, is(hasSize(3)));
+    }
+
+    private static SchemaRegistryClient srClient() {
         return new CachedSchemaRegistryClient(
                 KAFKA_ENV.schemeRegistryServer(),
                 5,
@@ -219,19 +215,5 @@ class ProvisionerUpdatingFunctionalTest {
                         new AvroSchemaProvider(),
                         new JsonSchemaProvider()),
                 Map.of());
-    }
-
-    private static Set<AclBinding> aclsForOtherDomain(final Domain domain) {
-        final String principal = "User:" + domain.domainId;
-        return Set.of(
-                new AclBinding(
-                        new ResourcePattern(CLUSTER, CLUSTER_NAME, LITERAL),
-                        new AccessControlEntry(principal, "*", IDEMPOTENT_WRITE, ALLOW)),
-                new AclBinding(
-                        new ResourcePattern(GROUP, domain.domainId, LITERAL),
-                        new AccessControlEntry(principal, "*", ALL, ALLOW)),
-                new AclBinding(
-                        new ResourcePattern(TRANSACTIONAL_ID, domain.domainId, PREFIXED),
-                        new AccessControlEntry(principal, "*", ALL, ALLOW)));
     }
 }

@@ -67,7 +67,7 @@ tasks.register<Copy>("prepareDocker") {
 
     from(
         layout.projectDirectory.file("Dockerfile"),
-        layout.buildDirectory.file("distributions/${project.name}-${project.version}.tar"),
+        tarTree(layout.buildDirectory.file("distributions/${project.name}-${project.version}.tar")),
         layout.projectDirectory.dir("include"),
     )
 

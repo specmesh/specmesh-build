@@ -28,11 +28,29 @@ import java.util.stream.Collectors;
  */
 public class AclChangeSetCalculators {
 
+    /** Calc unspecified acls */
+    public static final class CleanUnspecifiedCalculator implements ChangeSetCalculator {
+
+        /**
+         * returns unspec'd acls
+         *
+         * @param existingAcls - existing
+         * @param requiredAcls - needed
+         * @return set of acls to remove
+         */
+        @Override
+        public Collection<Acl> calculate(
+                final Collection<Acl> existingAcls, final Collection<Acl> requiredAcls) {
+            existingAcls.removeAll(requiredAcls);
+            return existingAcls;
+        }
+    }
+
     /** Returns those acls to create and ignores existing */
     public static final class CreateOrUpdateCalculator implements ChangeSetCalculator {
 
         /**
-         * Calculate set of Acls that dont already exist
+         * Calculate set of Acls that don't already exist
          *
          * @param existingAcls - existing
          * @param requiredAcls - needed
@@ -85,7 +103,7 @@ public class AclChangeSetCalculators {
          *
          * @param existingAcls - existing
          * @param requiredAcls - needed
-         * @return - set of those that dont exist
+         * @return - set of those that don't exist
          */
         Collection<Acl> calculate(Collection<Acl> existingAcls, Collection<Acl> requiredAcls);
     }
@@ -108,10 +126,15 @@ public class AclChangeSetCalculators {
         /**
          * build it
          *
+         * @param cleanUnspecified - clean up
          * @return required calculator
          */
-        public ChangeSetCalculator build() {
-            return new CreateOrUpdateCalculator();
+        public ChangeSetCalculator build(final boolean cleanUnspecified) {
+            if (cleanUnspecified) {
+                return new CleanUnspecifiedCalculator();
+            } else {
+                return new CreateOrUpdateCalculator();
+            }
         }
     }
 }

@@ -113,7 +113,7 @@ class ProvisionerFreshStartFunctionalTest {
     void shouldDryRunTopicsFromEmptyCluster() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
-            final var changeset = TopicProvisioner.provision(true, API_SPEC, adminClient);
+            final var changeset = TopicProvisioner.provision(true, false, API_SPEC, adminClient);
 
             assertThat(
                     changeset.stream().map(Topic::name).collect(Collectors.toSet()),
@@ -159,7 +159,7 @@ class ProvisionerFreshStartFunctionalTest {
     void shouldDryRunACLsFromEmptyCluster() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
-            final var changeset = AclProvisioner.provision(true, API_SPEC, adminClient);
+            final var changeset = AclProvisioner.provision(true, false, API_SPEC, adminClient);
 
             // Verify - 11 created
             assertThat(
@@ -196,7 +196,8 @@ class ProvisionerFreshStartFunctionalTest {
 
         final var srClient = srClient();
         final var changeset =
-                SchemaProvisioner.provision(true, API_SPEC, "./build/resources/test", srClient);
+                SchemaProvisioner.provision(
+                        true, false, API_SPEC, "./build/resources/test", srClient);
 
         // Verify - 11 created
         assertThat(
@@ -225,7 +226,7 @@ class ProvisionerFreshStartFunctionalTest {
     void shouldProvisionTopicsFromEmptyCluster() throws ExecutionException, InterruptedException {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
-            final var changeSet = TopicProvisioner.provision(false, API_SPEC, adminClient);
+            final var changeSet = TopicProvisioner.provision(false, false, API_SPEC, adminClient);
 
             // Verify - changeset
             assertThat(
@@ -301,7 +302,7 @@ class ProvisionerFreshStartFunctionalTest {
     void shouldDoRealACLsFromEmptyCluster() throws ExecutionException, InterruptedException {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
-            final var changeset = AclProvisioner.provision(false, API_SPEC, adminClient);
+            final var changeset = AclProvisioner.provision(false, false, API_SPEC, adminClient);
 
             // Verify - 11 created
             assertThat(
@@ -350,7 +351,8 @@ class ProvisionerFreshStartFunctionalTest {
 
         final var srClient = srClient();
         final var changeset =
-                SchemaProvisioner.provision(false, API_SPEC, "./build/resources/test", srClient);
+                SchemaProvisioner.provision(
+                        false, false, API_SPEC, "./build/resources/test", srClient);
 
         // Verify - 11 created
         assertThat(

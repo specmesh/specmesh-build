@@ -78,6 +78,8 @@ class SimpleAdminClientTest {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
             final var client = SmAdminClient.create(adminClient);
             Provisioner.provision(
+                    true,
+                    false,
                     false,
                     API_SPEC,
                     "./build/resources/test",

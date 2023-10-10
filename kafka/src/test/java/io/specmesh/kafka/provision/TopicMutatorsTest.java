@@ -23,8 +23,8 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.specmesh.kafka.provision.TopicMutators.UpdateMutator;
 import io.specmesh.kafka.provision.TopicProvisioner.Topic;
-import io.specmesh.kafka.provision.TopicWriters.UpdateWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -41,14 +41,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/** Fussy mutation tests */
 @ExtendWith(MockitoExtension.class)
-class TopicWritersTest {
+class TopicMutatorsTest {
 
     @Mock Admin client;
 
     @Test
     void shouldWriteUpdatesForRetentionChange() throws Exception {
-        final var topicWriter = new UpdateWriter(client);
+        final var topicWriter = new UpdateMutator(client);
 
         // Mock hell - crappy admin api
         final var topicDescriptionFuture = mock(KafkaFuture.class);
@@ -71,7 +72,7 @@ class TopicWritersTest {
                                 .partitions(1)
                                 .config(Map.of(TopicConfig.RETENTION_MS_CONFIG, "1000"))
                                 .build());
-        final var updated = topicWriter.write(updates);
+        final var updated = topicWriter.mutate(updates);
         final var next = updated.iterator().next();
 
         // verify
@@ -82,7 +83,7 @@ class TopicWritersTest {
 
     @Test
     void shouldWriteUpdatesToPartitionsWhenLarger() throws Exception {
-        final var topicWriter = new UpdateWriter(client);
+        final var topicWriter = new UpdateMutator(client);
 
         // Mock hell - crappy admin api
         final var topicDescriptionFuture = mock(KafkaFuture.class);
@@ -111,7 +112,7 @@ class TopicWritersTest {
                                 .state(Status.STATE.UPDATE)
                                 .partitions(999)
                                 .build());
-        final var updated = topicWriter.write(updates);
+        final var updated = topicWriter.mutate(updates);
         final var next = updated.iterator().next();
 
         // verify

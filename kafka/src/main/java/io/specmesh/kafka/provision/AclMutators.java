@@ -26,11 +26,73 @@ import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.common.acl.AclBindingFilter;
 
-/** AclsWriters for writing Acls */
-public class AclWriters {
+/** Mutant Acls */
+public class AclMutators {
 
     /** Writes Acls */
-    public static final class SimpleAclWriter implements AclWriter {
+    public static final class AclUnspecCleaner implements AclMutator {
+
+        private final Admin adminClient;
+        private final boolean dryRun;
+
+        /**
+         * defensive
+         *
+         * @param adminClient - cluster connection
+         * @param dryRun - dryRun
+         */
+        private AclUnspecCleaner(final Admin adminClient, final boolean dryRun) {
+            this.adminClient = adminClient;
+            this.dryRun = dryRun;
+        }
+
+        /**
+         * Write the set of acls and change status to CREATED
+         *
+         * @param acls to write
+         * @return set of ACLs with CREATE or FAILED + Exception
+         */
+        @Override
+        public Collection<Acl> mutate(final Collection<Acl> acls) {
+
+            final var aclsToDelete =
+                    acls.stream()
+                            .filter(
+                                    acl ->
+                                            !acl.state().equals(STATE.CREATE)
+                                                    && !acl.state().equals(STATE.UPDATE))
+                            .collect(Collectors.toList());
+
+            final var aclBindingFilters =
+                    aclsToDelete.stream()
+                            .map(acl -> acl.aclBinding().toFilter())
+                            .collect(Collectors.toList());
+
+            try {
+                aclsToDelete.forEach(acl -> acl.state(STATE.DELETE));
+                if (!dryRun) {
+                    adminClient.deleteAcls(aclBindingFilters);
+                    aclsToDelete.forEach(acl -> acl.state(STATE.DELETED));
+                }
+            } catch (Exception ex) {
+                acls.stream()
+                        .peek(
+                                acl ->
+                                        acl.state(STATE.FAILED)
+                                                .messages(
+                                                        acl.messages() + "\n Failed to delete ACLs")
+                                                .exception(
+                                                        new ProvisioningException(
+                                                                        "Failed to delete ACL", ex)
+                                                                .toString()));
+                return acls;
+            }
+            return aclsToDelete;
+        }
+    }
+
+    /** Writes Acls */
+    public static final class AclWriter implements AclMutator {
 
         private final Admin adminClient;
 
@@ -39,7 +101,7 @@ public class AclWriters {
          *
          * @param adminClient - cluster connection
          */
-        private SimpleAclWriter(final Admin adminClient) {
+        private AclWriter(final Admin adminClient) {
             this.adminClient = adminClient;
         }
 
@@ -50,23 +112,9 @@ public class AclWriters {
          * @return set of ACLs with CREATE or FAILED + Exception
          */
         @Override
-        public Collection<Acl> write(final Collection<Acl> acls) {
+        public Collection<Acl> mutate(final Collection<Acl> acls) {
 
-            final var updateBindingsFilters = bindingFiltersForUpdates(acls);
-            try {
-                adminClient.deleteAcls(updateBindingsFilters);
-            } catch (Exception ex) {
-                acls.stream()
-                        .filter(acl -> acl.state().equals(STATE.UPDATE))
-                        .peek(
-                                acl ->
-                                        acl.state(STATE.FAILED)
-                                                .messages(
-                                                        acl.messages() + "\n Failed to delete ACLs")
-                                                .exception(
-                                                        new ProvisioningException(
-                                                                        "Failed to delete ACL", ex)
-                                                                .toString()));
+            if (deleteAclsInPrepForUpdate(acls)) {
                 return acls;
             }
 
@@ -98,8 +146,29 @@ public class AclWriters {
             return acls;
         }
 
+        private boolean deleteAclsInPrepForUpdate(final Collection<Acl> acls) {
+            final var updateBindingsFilters = bindingFiltersForUpdates(acls);
+            try {
+                adminClient.deleteAcls(updateBindingsFilters);
+            } catch (Exception ex) {
+                acls.stream()
+                        .filter(acl -> acl.state().equals(STATE.UPDATE))
+                        .peek(
+                                acl ->
+                                        acl.state(STATE.FAILED)
+                                                .messages(
+                                                        acl.messages() + "\n Failed to delete ACLs")
+                                                .exception(
+                                                        new ProvisioningException(
+                                                                        "Failed to delete ACL", ex)
+                                                                .toString()));
+                return true;
+            }
+            return false;
+        }
+
         /**
-         * Extract the bindingFilter for updates (so they can be deleted)
+         * Extract the bindingFilter for updates - need to deleted first
          *
          * @param acls to filter
          * @return bindings
@@ -113,7 +182,7 @@ public class AclWriters {
     }
 
     /** Do nothing writer */
-    public static final class NoopAclWriter implements AclWriter {
+    public static final class NoopAclMutator implements AclMutator {
 
         /**
          * Do nothing
@@ -122,40 +191,41 @@ public class AclWriters {
          * @return acls with status set to CREATED or FAILED
          */
         @Override
-        public Collection<Acl> write(final Collection<Acl> acls) {
+        public Collection<Acl> mutate(final Collection<Acl> acls) {
             return acls;
         }
     }
 
     /** Write Acls API */
-    interface AclWriter {
+    interface AclMutator {
         /**
          * Write some acls
          *
          * @param acls to write
          * @return updated status of acls
          */
-        Collection<Acl> write(Collection<Acl> acls);
+        Collection<Acl> mutate(Collection<Acl> acls);
     }
 
-    /** TopicWriter builder */
+    /** Mutator builder */
     @SuppressFBWarnings(
             value = "EI_EXPOSE_REP2",
             justification = "adminClient() passed as param to prevent API pollution")
-    public static final class AclWriterBuilder {
+    public static final class AclMutatorBuilder {
         private Admin adminClient;
-        private boolean noopWriter;
+        private boolean dryRun;
+        private boolean cleanUnspecified;
 
         /** defensive */
-        private AclWriterBuilder() {}
+        private AclMutatorBuilder() {}
 
         /**
          * main builder
          *
          * @return builder
          */
-        public static AclWriterBuilder builder() {
-            return new AclWriterBuilder();
+        public static AclMutatorBuilder builder() {
+            return new AclMutatorBuilder();
         }
 
         /**
@@ -164,32 +234,40 @@ public class AclWriters {
          * @param adminClient - cluster connection
          * @return builder
          */
-        public AclWriterBuilder adminClient(final Admin adminClient) {
+        public AclMutatorBuilder adminClient(final Admin adminClient) {
             this.adminClient = adminClient;
             return this;
         }
 
         /**
-         * use a noop writer
+         * use a noop
          *
          * @param dryRun - true is dry running
          * @return the builder
          */
-        public AclWriterBuilder noop(final boolean dryRun) {
-            noopWriter = dryRun;
+        public AclMutatorBuilder noop(final boolean dryRun) {
+            this.dryRun = dryRun;
+            return this;
+        }
+
+        public AclMutatorBuilder unspecified(final boolean cleanUnspecified) {
+            this.cleanUnspecified = cleanUnspecified;
             return this;
         }
 
         /**
          * build it
          *
-         * @return the specified topic writer impl
+         * @return the required mutator impl
          */
-        public AclWriter build() {
-            if (noopWriter) {
-                return new NoopAclWriter();
+        public AclMutator build() {
+            if (cleanUnspecified) {
+                return new AclUnspecCleaner(adminClient, dryRun);
+            }
+            if (dryRun) {
+                return new NoopAclMutator();
             } else {
-                return new SimpleAclWriter(adminClient);
+                return new AclWriter(adminClient);
             }
         }
     }
