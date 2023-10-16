@@ -101,7 +101,7 @@ class StorageConsumptionFunctionalTest {
                         .parseArgs(
                                 ("--bootstrap-server "
                                                 + KAFKA_ENV.kafkaBootstrapServers()
-                                                + " --agg-id simple:schema_demo"
+                                                + " --domain-id simple:schema_demo"
                                                 + " --username admin"
                                                 + " --secret admin-secret")
                                         .split(" "));

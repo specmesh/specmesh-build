@@ -531,10 +531,10 @@ A consumer group `some.other.app` with id `console-consumer...` is actively cons
   <summary>Long form</summary>
 
 ```
-Usage: export [-aggid=<aggid>] [-bs=<brokerUrl>] [-s=<secret>] [-u=<username>]
+Usage: export [-domainid=<domain>] [-bs=<brokerUrl>] [-s=<secret>] [-u=<username>]
 Build an incomplete spec from a running Cluster
-      -aggid, --agg-id=<aggid>
-                          specmesh - agg-id/prefix - aggregate identified
+      -domainid, --domain-id=<domain>
+                          specmesh - domain-id/prefix - domain/context identified
                             (app-id) to export against
       -bs, --bootstrap-server=<brokerUrl>
                           Kafka bootstrap server url

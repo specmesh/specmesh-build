@@ -36,6 +36,10 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
     runtimeOnly("org.apache.logging.log4j:log4j-slf4j2-impl:$log4jVersion")
 
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
+
+
+
     implementation(project(":parser"))
     implementation(project(":kafka"))
     testImplementation(project(":kafka-test"))
