@@ -1,6 +1,11 @@
 # SpecMesh CLI
 
-Commands to provision, export and capture production & consumption chargeback metrics for a SpecMesh app (aka data product - AsyncApi.yml)
+Commands:
+- `provision` from a spec.yml file
+- `export` existing Kafka resources to a spec when providing a domain-id to filter against
+-  capture `production`, `consumption` (chargeback metrics)  for a given spec and build chargeback reporting/billing
+- `flatten` to prefix the 'id' to each channel allowing existing tools to be used - for example: https://microcks.io/ and Spring boot code generators etc. many more [here](https://www.asyncapi.com/tools)
+
 
 This page also contains a simple docker guide for local testing.
 
