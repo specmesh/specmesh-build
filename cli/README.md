@@ -1,6 +1,11 @@
 # SpecMesh CLI
 
-Commands to provision, export and capture production & consumption chargeback metrics for a SpecMesh app (aka data product - AsyncApi.yml)
+Commands:
+- `provision` from a spec.yml file
+- `export` existing Kafka resources to a spec when providing a domain-id to filter against
+-  capture `production`, `consumption` (chargeback metrics)  for a given spec and build chargeback reporting/billing
+- `flatten` to prefix the 'id' to each channel allowing existing tools to be used - for example: https://microcks.io/ and Spring boot code generators etc. many more [here](https://www.asyncapi.com/tools)
+
 
 This page also contains a simple docker guide for local testing.
 
@@ -531,10 +536,10 @@ A consumer group `some.other.app` with id `console-consumer...` is actively cons
   <summary>Long form</summary>
 
 ```
-Usage: export [-aggid=<aggid>] [-bs=<brokerUrl>] [-s=<secret>] [-u=<username>]
+Usage: export [-domainid=<domain>] [-bs=<brokerUrl>] [-s=<secret>] [-u=<username>]
 Build an incomplete spec from a running Cluster
-      -aggid, --agg-id=<aggid>
-                          specmesh - agg-id/prefix - aggregate identified
+      -domainid, --domain-id=<domain>
+                          specmesh - domain-id/prefix - domain/context identified
                             (app-id) to export against
       -bs, --bootstrap-server=<brokerUrl>
                           Kafka bootstrap server url

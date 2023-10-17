@@ -52,9 +52,8 @@ public class Export implements Callable<Integer> {
     private String brokerUrl = "";
 
     @Option(
-            names = {"-aggid", "--agg-id"},
-            description =
-                    "specmesh - agg-id/prefix - aggregate identified (app-id) to export against")
+            names = {"-id", "--domain-id"},
+            description = "specmesh - domain/prefix - domain identified (app-id) to export against")
     private String aggid;
 
     @Option(

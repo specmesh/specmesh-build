@@ -37,10 +37,20 @@ function export() {
 
 }
 
+function flatten() {
+  echo "Flatten..."
+  exec java \
+   -Xms64m -Xmx64m \
+   -Dlog4j.configurationFile=/log/log4j2.xml \
+   -cp "/opt/specmesh/service/lib/*" \
+   io.specmesh.cli.Flatten "$@"
+
+}
+
 
 function usage() {
   echo "Usage "
-  echo " Commands         [provision, consumption, storage, export]"
+  echo " Commands         [provision, consumption, storage, export, flatten]"
   echo " Common args      --bootstrap-server|-bs, --username,-u, --secret,-p"
   echo " Schema Reg args  --schema-registry, -sr, --sr-api-key,-srKey, --sr-api-secret,-srSecret, --schema-path,-schemaPath "
   echo " Other args       --spec,-spec, --appId,-appId "
@@ -50,7 +60,7 @@ function usage() {
 }
 
 
-if [ $# -le 4 ]; then
+if [ $# -le 3 ]; then
   usage
 fi
 
@@ -71,6 +81,11 @@ case $1 in
       shift
       export "$@"
       ;;
+  flatten)
+      shift
+      flatten "$@"
+      ;;
+
   *)
     usage
     ;;
