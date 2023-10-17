@@ -42,19 +42,19 @@ import org.apache.kafka.clients.admin.TopicDescription;
 import org.apache.kafka.common.config.ConfigResource;
 
 /** Write topics using provided input set */
-public class TopicWriters {
+public class TopicMutators {
 
-    /** Collection based */
-    public static final class CollectiveWriter implements TopicWriter {
+    /** collection based */
+    public static final class CollectiveMutator implements TopicMutator {
 
-        private final Stream<TopicWriter> writers;
+        private final Stream<TopicMutator> writers;
 
         /**
          * iterate over the writers
          *
          * @param writers to iterate
          */
-        private CollectiveWriter(final TopicWriter... writers) {
+        private CollectiveMutator(final TopicMutator... writers) {
             this.writers = Arrays.stream(writers);
         }
 
@@ -65,16 +65,16 @@ public class TopicWriters {
          * @return updated status
          */
         @Override
-        public Collection<Topic> write(final Collection<Topic> topics) {
+        public Collection<Topic> mutate(final Collection<Topic> topics) {
             return this.writers
-                    .map(writer -> writer.write(topics))
+                    .map(writer -> writer.mutate(topics))
                     .flatMap(Collection::stream)
                     .collect(Collectors.toList());
         }
     }
 
-    /** only handles update requests */
-    public static final class UpdateWriter implements TopicWriter {
+    /** updates */
+    public static final class UpdateMutator implements TopicMutator {
 
         private final Admin adminClient;
 
@@ -83,7 +83,7 @@ public class TopicWriters {
          *
          * @param adminClient - cluster connection
          */
-        UpdateWriter(final Admin adminClient) {
+        UpdateMutator(final Admin adminClient) {
             this.adminClient = adminClient;
         }
 
@@ -94,7 +94,7 @@ public class TopicWriters {
          * @return topics with updated flag
          * @throws ProvisioningException when things break
          */
-        public Collection<Topic> write(final Collection<Topic> topics)
+        public Collection<Topic> mutate(final Collection<Topic> topics)
                 throws ProvisioningException {
 
             final var topicsToUpdate =
@@ -200,8 +200,75 @@ public class TopicWriters {
         }
     }
 
-    /** creates the topic */
-    public static final class CreateWriter implements TopicWriter {
+    /** delete non-spec resources */
+    public static final class CleanUnspecifiedMutator implements TopicMutator {
+
+        private final boolean dryRun;
+        private final Admin adminClient;
+
+        /**
+         * Needs the admin client
+         *
+         * @param dryRun - test or execute flag
+         * @param adminClient - cluster connection
+         */
+        CleanUnspecifiedMutator(final boolean dryRun, final Admin adminClient) {
+            this.dryRun = dryRun;
+            this.adminClient = adminClient;
+        }
+
+        /**
+         * Remove topics that are not CREATE or UPSDATE (i.e. not in the spec)
+         *
+         * @param topics to write
+         * @return topics with updated flag
+         * @throws ProvisioningException when things break
+         */
+        public Collection<Topic> mutate(final Collection<Topic> topics)
+                throws ProvisioningException {
+
+            // spec topics will have CREATE or UPDATE status - remove the others (unwanted)
+            final var unwanted =
+                    topics.stream()
+                            .filter(
+                                    topic ->
+                                            !topic.state().equals(STATE.CREATE)
+                                                    && !topic.state().equals(STATE.UPDATE))
+                            .collect(Collectors.toList());
+
+            try {
+                unwanted.forEach(topic -> topic.state(STATE.DELETE));
+                if (!dryRun) {
+                    adminClient
+                            .deleteTopics(toTopicNames(unwanted))
+                            .all()
+                            .get(Provisioner.REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                    unwanted.forEach(topic -> topic.state(STATE.DELETED));
+                }
+            } catch (InterruptedException | ExecutionException | TimeoutException ex) {
+                unwanted.forEach(
+                        topic ->
+                                topic.exception(
+                                                new ProvisioningException(
+                                                        "failed to delete topics", ex))
+                                        .state(STATE.FAILED));
+            }
+            return unwanted;
+        }
+
+        /**
+         * convert to names
+         *
+         * @param topicsToUpdate source list
+         * @return just the names
+         */
+        private List<String> toTopicNames(final List<Topic> topicsToUpdate) {
+            return topicsToUpdate.stream().map(Topic::name).collect(Collectors.toList());
+        }
+    }
+
+    /** creations */
+    public static final class CreateMutator implements TopicMutator {
 
         private final Admin adminClient;
 
@@ -210,7 +277,7 @@ public class TopicWriters {
          *
          * @param adminClient - cluster connection
          */
-        private CreateWriter(final Admin adminClient) {
+        private CreateMutator(final Admin adminClient) {
             this.adminClient = adminClient;
         }
 
@@ -221,7 +288,7 @@ public class TopicWriters {
          * @return topics with updated flag
          * @throws ProvisioningException when things break
          */
-        public Collection<Topic> write(final Collection<Topic> topics)
+        public Collection<Topic> mutate(final Collection<Topic> topics)
                 throws ProvisioningException {
 
             final var topicsToCreate =
@@ -266,8 +333,8 @@ public class TopicWriters {
         }
     }
 
-    /** Noop write that does nada */
-    public static final class NoopWriter implements TopicWriter {
+    /** Noopper that does nada */
+    public static final class NoopMutator implements TopicMutator {
         /**
          * Do nothing write
          *
@@ -275,33 +342,35 @@ public class TopicWriters {
          * @return unmodified list
          * @throws ProvisioningException when things go wrong
          */
-        public Collection<Topic> write(final Collection<Topic> topics)
+        public Collection<Topic> mutate(final Collection<Topic> topics)
                 throws ProvisioningException {
             return topics;
         }
     }
 
-    /** Interface for writing topics to kafka */
-    interface TopicWriter {
+    /** Interface for writing/mutating topics to kafka */
+    interface TopicMutator {
         /**
          * Api for writing
          *
-         * @param topics to write
+         * @param topics to do stuff against
          * @return updated state of topics written
          */
-        Collection<Topic> write(Collection<Topic> topics);
+        Collection<Topic> mutate(Collection<Topic> topics);
     }
 
-    /** TopicWriter builder */
+    /** TopicMutator builder */
     @SuppressFBWarnings(
             value = "EI_EXPOSE_REP2",
             justification = "adminClient() passed as param to prevent API pollution")
-    public static final class TopicWriterBuilder {
+    public static final class TopicMutatorBuilder {
         private Admin adminClient;
-        private boolean noopWriter;
+        private boolean noop;
+        private boolean cleanUnspecified;
+        private boolean dryRun;
 
         /** defensive */
-        private TopicWriterBuilder() {}
+        private TopicMutatorBuilder() {}
 
         /**
          * add the adminClient
@@ -309,19 +378,32 @@ public class TopicWriters {
          * @param adminClient - cluster connection
          * @return builder
          */
-        public TopicWriterBuilder adminClient(final Admin adminClient) {
+        public TopicMutatorBuilder adminClient(final Admin adminClient) {
             this.adminClient = adminClient;
             return this;
         }
 
         /**
-         * use a noop writer
+         * use a noop mutator
          *
          * @param dryRun - true is dry running
          * @return the builder
          */
-        public TopicWriterBuilder noopWriter(final boolean dryRun) {
-            this.noopWriter = dryRun;
+        public TopicMutatorBuilder noopMutator(final boolean dryRun) {
+            this.noop = dryRun;
+            return this;
+        }
+        /**
+         * use the delete mutator
+         *
+         * @param cleanUnspecified - to cleanup resources
+         * @param dryRun - test.validate the proposed operation
+         * @return the builder
+         */
+        public TopicMutatorBuilder cleanUnspecified(
+                final boolean cleanUnspecified, final boolean dryRun) {
+            this.cleanUnspecified = cleanUnspecified;
+            this.dryRun = dryRun;
             return this;
         }
 
@@ -330,21 +412,23 @@ public class TopicWriters {
          *
          * @return builder
          */
-        public static TopicWriterBuilder builder() {
-            return new TopicWriterBuilder();
+        public static TopicMutatorBuilder builder() {
+            return new TopicMutatorBuilder();
         }
 
         /**
          * build it
          *
-         * @return the specified topic writer impl
+         * @return the specified topic mutator impl
          */
-        public TopicWriter build() {
-            if (noopWriter) {
-                return new NoopWriter();
+        public TopicMutator build() {
+            if (cleanUnspecified) {
+                return new CleanUnspecifiedMutator(dryRun, adminClient);
+            } else if (noop) {
+                return new NoopMutator();
             } else {
-                return new CollectiveWriter(
-                        new CreateWriter(adminClient), new UpdateWriter(adminClient));
+                return new CollectiveMutator(
+                        new CreateMutator(adminClient), new UpdateMutator(adminClient));
             }
         }
     }

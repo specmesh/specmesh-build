@@ -21,11 +21,10 @@ import io.specmesh.kafka.provision.AclProvisioner.Acl;
 import io.specmesh.kafka.provision.Provisioner.ProvisioningException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.Admin;
-import org.apache.kafka.common.acl.AclBinding;
+import org.apache.kafka.common.acl.AclBindingFilter;
 
 /** AclReaders for reading Acls */
 public class AclReaders {
@@ -45,53 +44,68 @@ public class AclReaders {
         }
 
         /**
-         * Read set of acls for specAclsBindingsNeeded
+         * Read set of acls that exist for this Spec (and those that dont) - i.e. removed
          *
          * @param specAclsBindingsNeeded to filter against
-         * @return found acls with status set to READ
+         * @return existing ACLs with status set to READ
          */
         @Override
-        public Collection<Acl> read(final Set<AclBinding> specAclsBindingsNeeded) {
+        public Collection<Acl> read(
+                final String prefixPattern, final Collection<Acl> specAclsBindingsNeeded) {
 
-            final var aclBindingFilters =
-                    specAclsBindingsNeeded.stream()
-                            .map(AclBinding::toFilter)
-                            .collect(Collectors.toList());
+            try {
+                // crappy admin client for reading 'ALL' ACLs to pickup removed ACLs
+                final var allAcls =
+                        adminClient
+                                .describeAcls(AclBindingFilter.ANY)
+                                .values()
+                                .get(Provisioner.REQUEST_TIMEOUT, TimeUnit.SECONDS);
 
-            final var existingAcls =
-                    aclBindingFilters.stream()
-                            .map(
-                                    bindingFilter -> {
-                                        try {
-                                            return adminClient
-                                                    .describeAcls(bindingFilter)
-                                                    .values()
-                                                    .get(
-                                                            Provisioner.REQUEST_TIMEOUT,
-                                                            TimeUnit.SECONDS);
-                                        } catch (Exception e) {
-                                            if (e.getCause()
-                                                    .toString()
-                                                    .contains(
-                                                            "org.apache.kafka.common.errors.SecurityDisabledException")) {
-                                                return List.<AclBinding>of();
-                                            }
-                                            throw new ProvisioningException(
-                                                    "Failed to read ACLs", e);
-                                        }
-                                    })
-                            .flatMap(Collection::stream)
-                            .collect(Collectors.toList());
+                // will include ACLs that may have been removed
+                final var existingAclsSuperSet =
+                        allAcls.stream()
+                                .filter(
+                                        aclBinding ->
+                                                aclBinding
+                                                        .toFilter()
+                                                        .patternFilter()
+                                                        .name()
+                                                        .contains(prefixPattern))
+                                .collect(Collectors.toSet());
 
-            return existingAcls.stream()
-                    .map(
-                            aclBinding ->
-                                    Acl.builder()
-                                            .name(aclBinding.toString())
-                                            .aclBinding(aclBinding)
-                                            .state(Status.STATE.READ)
-                                            .build())
-                    .collect(Collectors.toList());
+                // now look for any in the spec that didnt get discovered in the 'filtering' - will
+                // be 'CLUSTER' type
+                final var aclNeededAsStringSet =
+                        specAclsBindingsNeeded.stream()
+                                .map(acl -> acl.aclBinding().toString())
+                                .collect(Collectors.toSet());
+                final var allAclsSpecifiedAndFound =
+                        allAcls.stream()
+                                .filter(anAcl -> aclNeededAsStringSet.contains(anAcl.toString()))
+                                .collect(Collectors.toList());
+
+                // add them  to the list
+                existingAclsSuperSet.addAll(allAclsSpecifiedAndFound);
+
+                return existingAclsSuperSet.stream()
+                        .map(
+                                aclBinding ->
+                                        Acl.builder()
+                                                .name(aclBinding.toString())
+                                                .aclBinding(aclBinding)
+                                                .state(Status.STATE.READ)
+                                                .build())
+                        .collect(Collectors.toList());
+            } catch (Exception e) {
+                if (e.getCause() != null
+                        && e.getCause()
+                                .toString()
+                                .contains(
+                                        "org.apache.kafka.common.errors.SecurityDisabledException")) {
+                    return List.of();
+                }
+                throw new ProvisioningException("Failed to read ACLs", e);
+            }
         }
     }
 
@@ -100,10 +114,11 @@ public class AclReaders {
         /**
          * read some acls
          *
-         * @param prefix to read
+         * @param prefixPattern prefixpattern
+         * @param acls to read
          * @return updated status of acls
          */
-        Collection<Acl> read(Set<AclBinding> prefix);
+        Collection<Acl> read(String prefixPattern, Collection<Acl> acls);
     }
 
     /** builder */

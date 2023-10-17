@@ -30,6 +30,7 @@ channels:
 
     publish:
       summary: Inform about environmental lighting conditions for a particular streetlight.
+      description: Doing clever things
       operationId: onLightMeasured
       message:
         bindings:

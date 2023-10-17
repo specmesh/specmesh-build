@@ -135,3 +135,4 @@ channels:
 # Developer Notes
 
 1. Install the intellij checkstyle plugin and load the config from config/checkstyle.xml
+1. build using: ./gradlew spotlessApply build

@@ -36,6 +36,10 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
     runtimeOnly("org.apache.logging.log4j:log4j-slf4j2-impl:$log4jVersion")
 
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
+
+
+
     implementation(project(":parser"))
     implementation(project(":kafka"))
     testImplementation(project(":kafka-test"))
@@ -67,7 +71,7 @@ tasks.register<Copy>("prepareDocker") {
 
     from(
         layout.projectDirectory.file("Dockerfile"),
-        layout.buildDirectory.file("distributions/${project.name}-${project.version}.tar"),
+        tarTree(layout.buildDirectory.file("distributions/${project.name}-${project.version}.tar")),
         layout.projectDirectory.dir("include"),
     )
 

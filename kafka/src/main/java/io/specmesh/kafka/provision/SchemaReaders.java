@@ -104,33 +104,33 @@ public final class SchemaReaders {
      *
      * @return builder
      */
-    public static AclReaderBuilder builder() {
-        return AclReaderBuilder.builder();
+    public static SchemaReaderBuilder builder() {
+        return SchemaReaderBuilder.builder();
     }
 
     /** builder */
     @SuppressFBWarnings(
             value = "EI_EXPOSE_REP2",
             justification = "adminClient() passed as param to prevent API pollution")
-    public static final class AclReaderBuilder {
+    public static final class SchemaReaderBuilder {
 
-        private SchemaRegistryClient schemaRegistryClient;
+        private SchemaRegistryClient srClient;
 
         /** defensive */
-        private AclReaderBuilder() {}
+        private SchemaReaderBuilder() {}
 
         /**
          * main builder
          *
          * @return builder
          */
-        public static AclReaderBuilder builder() {
-            return new AclReaderBuilder();
+        public static SchemaReaderBuilder builder() {
+            return new SchemaReaderBuilder();
         }
 
-        public AclReaderBuilder schemaRegistryClient(
+        public SchemaReaderBuilder schemaRegistryClient(
                 final SchemaRegistryClient schemaRegistryClient) {
-            this.schemaRegistryClient = schemaRegistryClient;
+            this.srClient = schemaRegistryClient;
             return this;
         }
 
@@ -140,7 +140,7 @@ public final class SchemaReaders {
          * @return the specified reader impl
          */
         public SchemaReader build() {
-            return new SimpleSchemaReader(schemaRegistryClient);
+            return new SimpleSchemaReader(srClient);
         }
     }
 }

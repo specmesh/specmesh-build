@@ -16,8 +16,8 @@
 
 package io.specmesh.kafka.provision;
 
+import static io.specmesh.kafka.provision.Status.STATE.CREATE;
 import static io.specmesh.kafka.provision.Status.STATE.FAILED;
-import static io.specmesh.kafka.provision.Status.STATE.READ;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
@@ -52,6 +52,7 @@ public final class SchemaProvisioner {
      * Provision schemas to Schema Registry
      *
      * @param dryRun for mode of operation
+     * @param cleanUnspecified for cleanup operations
      * @param apiSpec the api spec
      * @param baseResourcePath the path under which external schemas are stored.
      * @param client the client for the schema registry
@@ -59,6 +60,7 @@ public final class SchemaProvisioner {
      */
     public static Collection<Schema> provision(
             final boolean dryRun,
+            final boolean cleanUnspecified,
             final KafkaApiSpec apiSpec,
             final String baseResourcePath,
             final SchemaRegistryClient client) {
@@ -74,21 +76,26 @@ public final class SchemaProvisioner {
                     "Required Schemas Failed to load:" + required);
         }
 
-        return writer(dryRun, client).write(calculator(client).calculate(existing, required));
+        final var schemas = calculator(client, cleanUnspecified).calculate(existing, required);
+        return mutator(dryRun, cleanUnspecified, client).mutate(schemas);
     }
 
     /**
      * schema writer
      *
      * @param dryRun real or noops writer
+     * @param cleanUnspecified - clean unexpected resource
      * @param schemaRegistryClient - sr connection
      * @return writer instance
      */
-    private static SchemaWriters.SchemaWriter writer(
-            final boolean dryRun, final SchemaRegistryClient schemaRegistryClient) {
-        return SchemaWriters.builder()
+    private static SchemaMutators.SchemaMutator mutator(
+            final boolean dryRun,
+            final boolean cleanUnspecified,
+            final SchemaRegistryClient schemaRegistryClient) {
+        return SchemaMutators.builder()
                 .schemaRegistryClient(schemaRegistryClient)
                 .noop(dryRun)
+                .cleanUnspecified(cleanUnspecified)
                 .build();
     }
 
@@ -98,8 +105,8 @@ public final class SchemaProvisioner {
      * @return calculator
      */
     private static SchemaChangeSetCalculators.ChangeSetCalculator calculator(
-            final SchemaRegistryClient client) {
-        return SchemaChangeSetCalculators.builder().build(client);
+            final SchemaRegistryClient client, final boolean cleanUnspecified) {
+        return SchemaChangeSetCalculators.builder().build(cleanUnspecified, client);
     }
 
     /**
@@ -130,7 +137,7 @@ public final class SchemaProvisioner {
                                 schema.type(schemaInfo.schemaRef())
                                         .subject(schemaSubject)
                                         .payload(readSchemaContent(schemaPath));
-                                schema.state(READ);
+                                schema.state(CREATE);
 
                             } catch (Provisioner.ProvisioningException ex) {
                                 schema.state(FAILED);

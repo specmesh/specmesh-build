@@ -1,13 +1,41 @@
 # SpecMesh CLI
 
-Commands to provision, export and capture production & consumption chargeback metrics for a SpecMesh app (aka data product - AsyncApi.yml)
+Commands:
+- `provision` from a spec.yml file
+- `export` existing Kafka resources to a spec when providing a domain-id to filter against
+-  capture `production`, `consumption` (chargeback metrics)  for a given spec and build chargeback reporting/billing
+- `flatten` to prefix the 'id' to each channel allowing existing tools to be used - for example: https://microcks.io/ and Spring boot code generators etc. many more [here](https://www.asyncapi.com/tools)
+
 
 This page also contains a simple docker guide for local testing.
+
+[See further down the page for setting up a Docker environment](https://github.com/specmesh/specmesh-build/tree/main/cli#quickstart-using-docker-on-the-local-machine) 
 
 
 ## Command: Provision
 
 This command will provision Kafka resources using AsyncApi spec (aka. App, or data product) and publish to the configured cluster and schema registry environment. It can be run manually, and also as part of a GitOps workflow, and/or build promotion of the spec into different environments where cluster and SR endpoints are configured as environment variables.
+
+### Common  config
+`provision` will look for a `provision.properties` file in the docker /app/ folder (i.e. /app/provision.properties)
+A default config file can optionally be used for managing/accessing common properties.
+
+
+File provision.properties (automatically loaded from docker `/app/provision.properties`)
+```properties
+spec=/app/simple_schema_demo-api.yaml
+acl.enabled=true
+sr.enabled=true
+dry.run=true
+bootstrap.server=broker1:9092
+username=admin
+secret=nothing
+schema.registry=http://schema-registry:8081
+schema.path=/app/1
+sr.api.key=admin
+sr.api.secret=nothing
+
+```
 
 ### Usage
 
@@ -18,33 +46,49 @@ This command will provision Kafka resources using AsyncApi spec (aka. App, or da
   <summary>Long form</summary>
 
 ```
- provision [-d] [-bs=<brokerUrl>] [-s=<secret>]
-                 [-schemaPath=<schemaPath>] [-spec=<spec>]
+ Usage: provision [-aclDisabled] [-clean] [-dry] [-srDisabled] [-bs=<brokerUrl>]
+                 [-s=<secret>] [-schemaPath=<schemaPath>] [-spec=<spec>]
                  [-sr=<schemaRegistryUrl>] [-srKey=<srApiKey>]
                  [-srSecret=<srApiSecret>] [-u=<username>]
-Apply the provided specification to provision kafka resources and permissions
-on the cluster
+                 [-D=<String=String>]...
+Apply a specification.yaml to provision kafka resources on a cluster.
+Use 'provision.properties' for common arguments
+ Explicit properties file location /app/provision.properties
+
+
+      -aclDisabled, --acl-disabled
+                             Ignore ACL related operations
       -bs, --bootstrap-server=<brokerUrl>
                              Kafka bootstrap server url
-  -d, --dry-run              Compares the cluster against the spec, outputting
-                               proposed changes if compatible.If the spec
-                               incompatible with the cluster (not sure how it
-                               could be) then will fail with a descriptive
-                               error message.A return value of 0=indicates no
-                               changes needed; 1=changes needed; -1=not
-                               compatible, blah blah
-  -s, --secret=<secret>      secret credential for the cluster connection
-      -schemaPath, --schemaPath=<schemaPath>
+      -clean, --clean-unspecified
+                             Compares the cluster resources against the spec,
+                               outputting proposed set of resources that are
+                               unexpected (not specified). Use with '-dry-run'
+                               for non-destructive checks. This operation will
+                               not create resources, it will only remove
+                               unspecified resources
+      -D, --property=<String=String>
+                             Specify Java runtime properties for Apache Kafka.
+      -dry, --dry-run        Compares the cluster resources against the spec,
+                               outputting proposed changes if  compatible. If
+                               the spec incompatible with the cluster then will
+                               fail with a descriptive error message. A return
+                               value of '0' = indicates no  changes needed; '1'
+                               = changes needed; '-1' not compatible
+      -s, --secret=<secret>      secret credential for the cluster connection
+      -schemaPath, --schema-path=<schemaPath>
                              schemaPath where the set of referenced schemas
                                will be loaded
       -spec, --spec=<spec>   specmesh specification file
-      -sr, --srUrl=<schemaRegistryUrl>
+      -sr, --schema-registry=<schemaRegistryUrl>
                              schemaRegistryUrl
-      -srKey, --srApiKey=<srApiKey>
+      -srDisabled, --sr-disabled
+                             Ignore schema related operations
+      -srKey, --sr-api-key=<srApiKey>
                              srApiKey for schema registry
-      -srSecret, --srApiSecret=<srApiSecret>
+      -srSecret, --sr-api-secret=<srApiSecret>
                              srApiSecret for schema secret
-  -u, --username=<username>  username or api key for the cluster connection
+      -u, --username=<username>  username or api key for the cluster connection
   
 ```
 </details>
@@ -492,10 +536,10 @@ A consumer group `some.other.app` with id `console-consumer...` is actively cons
   <summary>Long form</summary>
 
 ```
-Usage: export [-aggid=<aggid>] [-bs=<brokerUrl>] [-s=<secret>] [-u=<username>]
+Usage: export [-domainid=<domain>] [-bs=<brokerUrl>] [-s=<secret>] [-u=<username>]
 Build an incomplete spec from a running Cluster
-      -aggid, --agg-id=<aggid>
-                          specmesh - agg-id/prefix - aggregate identified
+      -domainid, --domain-id=<domain>
+                          specmesh - domain-id/prefix - domain/context identified
                             (app-id) to export against
       -bs, --bootstrap-server=<brokerUrl>
                           Kafka bootstrap server url
