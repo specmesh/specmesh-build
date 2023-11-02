@@ -77,7 +77,7 @@ subprojects {
         set("junitPioneerVersion", "2.1.0")
         set("spotBugsVersion", "4.7.3")
         set("hamcrestVersion", "1.3")
-        set("log4jVersion", "2.20.0")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
+        set("log4jVersion", "2.21.1")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
         set("classGraphVersion", "4.8.21")
         set("testcontainersVersion", "1.18.3")
         set("lombokVersion", "1.18.30")
