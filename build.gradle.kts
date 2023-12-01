@@ -74,7 +74,7 @@ subprojects {
         set("medeiaValidatorVersion", "1.1.0")
         set("junitVersion", "5.10.0")
         set("mockitoVersion", "5.6.0")
-        set("junitPioneerVersion", "2.1.0")
+        set("junitPioneerVersion", "2.2.0")
         set("spotBugsVersion", "4.8.0")
         set("hamcrestVersion", "1.3")
         set("log4jVersion", "2.21.1")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
