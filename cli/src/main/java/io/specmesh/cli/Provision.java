@@ -29,6 +29,9 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Callable;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
@@ -39,6 +42,10 @@ import picocli.CommandLine.Option;
                 "Apply a specification.yaml to provision kafka resources on a cluster.\n"
                         + "Use 'provision.properties' for common arguments\n"
                         + " Explicit properties file location /app/provision.properties\n\n")
+@Getter
+@Accessors(fluent = true)
+@Builder
+@SuppressFBWarnings
 public class Provision implements Callable<Integer> {
 
     private Status state;
@@ -83,12 +90,15 @@ public class Provision implements Callable<Integer> {
 
         final var provider = new CommandLine.PropertiesDefaultProvider(properties);
         System.exit(
-                new CommandLine(new Provision()).setDefaultValueProvider(provider).execute(args));
+                new CommandLine(Provision.builder())
+                        .setDefaultValueProvider(provider)
+                        .execute(args));
     }
 
     @Option(
             names = {"-bs", "--bootstrap-server"},
             description = "Kafka bootstrap server url")
+    @Builder.Default
     private String brokerUrl = "";
 
     @Option(

@@ -42,6 +42,13 @@ class ProvisionFunctionalTest {
                     .withKafkaAcls()
                     .build();
 
+    @Test
+    void shouldProvisionCmdWithLombock() throws Exception {
+        final var provision = Provision.builder().brokerUrl("borker").aclDisabled(false).build();
+        assertThat(provision.aclDisabled(), is(false));
+        assertThat(provision.brokerUrl(), is("borker"));
+    }
+
     /**
      * Provision all resources apart from schemas. note: Dont specify SR credentials to avoid schema
      * publishing
@@ -51,7 +58,7 @@ class ProvisionFunctionalTest {
     @Test
     void shouldProvisionTopicsAndAclResourcesWithoutSchemas() throws Exception {
 
-        final Provision provision = new Provision();
+        final Provision provision = Provision.builder().build();
 
         // Given:
         final CommandLine.ParseResult parseResult =
