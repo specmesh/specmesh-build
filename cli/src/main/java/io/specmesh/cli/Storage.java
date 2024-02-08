@@ -46,6 +46,7 @@ import picocli.CommandLine.Option;
 @Getter
 @Accessors(fluent = true)
 @Builder
+@SuppressFBWarnings
 public class Storage implements Callable<Integer> {
 
     /**

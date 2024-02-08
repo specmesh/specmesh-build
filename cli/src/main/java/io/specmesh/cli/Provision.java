@@ -45,6 +45,7 @@ import picocli.CommandLine.Option;
 @Getter
 @Accessors(fluent = true)
 @Builder
+@SuppressFBWarnings
 public class Provision implements Callable<Integer> {
 
     private Status state;

@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.kafka.KafkaApiSpec;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -41,6 +42,7 @@ import picocli.CommandLine.Option;
 @Getter
 @Accessors(fluent = true)
 @Builder
+@SuppressFBWarnings
 public class Flatten implements Callable<Integer> {
 
     /**

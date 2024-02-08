@@ -45,6 +45,7 @@ import picocli.CommandLine.Option;
 @Getter
 @Accessors(fluent = true)
 @Builder
+@SuppressFBWarnings
 public class Consumption implements Callable<Integer> {
 
     private Map<String, ConsumerGroup> state;

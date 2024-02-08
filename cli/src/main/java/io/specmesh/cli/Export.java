@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.kafka.Clients;
 import io.specmesh.kafka.Exporter;
@@ -39,6 +40,7 @@ import picocli.CommandLine.Option;
 @Getter
 @Accessors(fluent = true)
 @Builder
+@SuppressFBWarnings
 public class Export implements Callable<Integer> {
 
     private ApiSpec state;
