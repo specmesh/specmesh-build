@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
-
 import lombok.Builder;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -61,7 +60,8 @@ public class Storage implements Callable<Integer> {
     @Option(
             names = {"-bs", "--bootstrap-server"},
             description = "Kafka bootstrap server url")
-    @Builder.Default private String brokerUrl = "";
+    @Builder.Default
+    private String brokerUrl = "";
 
     @Option(
             names = {"-spec", "--spec"},

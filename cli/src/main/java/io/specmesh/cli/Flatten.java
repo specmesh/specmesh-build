@@ -27,7 +27,6 @@ import io.specmesh.kafka.KafkaApiSpec;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Callable;
-
 import lombok.Builder;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -56,7 +55,8 @@ public class Flatten implements Callable<Integer> {
     @Option(
             names = {"-in", "--in-spec"},
             description = "Source spec to flatten")
-    @Builder.Default private String inSpec = "";
+    @Builder.Default
+    private String inSpec = "";
 
     @Option(
             names = {"-out", "--out-spec"},

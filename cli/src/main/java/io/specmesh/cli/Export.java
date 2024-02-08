@@ -27,7 +27,6 @@ import io.specmesh.kafka.Clients;
 import io.specmesh.kafka.Exporter;
 import java.util.Map;
 import java.util.concurrent.Callable;
-
 import lombok.Builder;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -56,7 +55,8 @@ public class Export implements Callable<Integer> {
     @Option(
             names = {"-bs", "--bootstrap-server"},
             description = "Kafka bootstrap server url")
-    @Builder.Default private String brokerUrl = "";
+    @Builder.Default
+    private String brokerUrl = "";
 
     @Option(
             names = {"-id", "--domain-id"},

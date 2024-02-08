@@ -47,7 +47,6 @@ class ProvisionFunctionalTest {
         final var provision = Provision.builder().brokerUrl("borker").aclDisabled(false).build();
         assertThat(provision.aclDisabled(), is(false));
         assertThat(provision.brokerUrl(), is("borker"));
-
     }
 
     /**
