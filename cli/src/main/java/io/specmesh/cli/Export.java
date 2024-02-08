@@ -27,12 +27,19 @@ import io.specmesh.kafka.Clients;
 import io.specmesh.kafka.Exporter;
 import java.util.Map;
 import java.util.concurrent.Callable;
+
+import lombok.Builder;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import org.apache.kafka.clients.admin.Admin;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
 /** Basic/incomplete export of the spec-api using a app-id prefix */
 @Command(name = "export", description = "Build an incomplete spec from a running Cluster")
+@Getter
+@Accessors(fluent = true)
+@Builder
 public class Export implements Callable<Integer> {
 
     private ApiSpec state;
@@ -43,13 +50,13 @@ public class Export implements Callable<Integer> {
      * @param args args
      */
     public static void main(final String[] args) {
-        System.exit(new CommandLine(new Export()).execute(args));
+        System.exit(new CommandLine(Export.builder().build()).execute(args));
     }
 
     @Option(
             names = {"-bs", "--bootstrap-server"},
             description = "Kafka bootstrap server url")
-    private String brokerUrl = "";
+    @Builder.Default private String brokerUrl = "";
 
     @Option(
             names = {"-id", "--domain-id"},
