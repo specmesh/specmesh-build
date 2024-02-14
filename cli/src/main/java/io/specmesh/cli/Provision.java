@@ -193,16 +193,6 @@ public class Provision implements Callable<Integer> {
         return 0;
     }
 
-    /**
-     * get processed state
-     *
-     * @return processed state
-     */
-    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "omg")
-    public Status state() {
-        return state;
-    }
-
     private KafkaApiSpec specMeshSpec() {
         return KafkaApiSpec.loadFromClassPath(spec, Provision.class.getClassLoader());
     }
