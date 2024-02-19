@@ -75,8 +75,10 @@ public final class Clients {
             }
 
             if (!System.getProperty(CONFIG_PROPERTIES, NONE).equals(NONE)) {
-                return validate(AdminClient.create(
-                        loadPropertiesFile(properties, System.getProperty(CONFIG_PROPERTIES))));
+                return validate(
+                        AdminClient.create(
+                                loadPropertiesFile(
+                                        properties, System.getProperty(CONFIG_PROPERTIES))));
             } else {
                 return validate(AdminClient.create(properties));
             }
@@ -90,8 +92,10 @@ public final class Clients {
         try {
             adminClient.describeCluster().clusterId().get(TIMEOUT, TimeUnit.SECONDS);
         } catch (Exception e) {
-            throw new RuntimeException("AdminClient cannot access the cluster (client.describeCluster), " +
-                    "check connection-url/credentials/broker logs", e);
+            throw new RuntimeException(
+                    "AdminClient cannot access the cluster (client.describeCluster), "
+                            + "check connection-url/credentials/broker logs",
+                    e);
         }
         return adminClient;
     }
