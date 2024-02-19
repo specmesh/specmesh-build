@@ -115,7 +115,5 @@ class ProvisionFunctionalTest {
                                 "_schemas")));
 
         assertThat(status.schemas(), hasSize(3));
-
-
     }
 }
