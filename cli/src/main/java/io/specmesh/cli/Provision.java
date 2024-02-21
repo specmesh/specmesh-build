@@ -90,7 +90,7 @@ public class Provision implements Callable<Integer> {
 
         final var provider = new CommandLine.PropertiesDefaultProvider(properties);
         System.exit(
-                new CommandLine(Provision.builder())
+                new CommandLine(Provision.builder().build())
                         .setDefaultValueProvider(provider)
                         .execute(args));
     }
