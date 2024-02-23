@@ -256,6 +256,7 @@ class ClientsFunctionalDemoTest {
 
         final KafkaConsumer<Long, V> consumer = Clients.consumer(Long.class, valueClass, props);
         consumer.subscribe(List.of(topicName));
+        consumer.poll(Duration.ofSeconds(1));
         return consumer;
     }
 
@@ -280,7 +281,7 @@ class ClientsFunctionalDemoTest {
                         // change for common data types
                         // "value.subject.name.strategy",
                         // "io.confluent.kafka.serializers.subject.RecordNameStrategy",
-                        "schema.reflection", "false"));
+                        "schema.reflection", "true"));
     }
 
     private static <V> Producer<Long, V> producer(
@@ -317,7 +318,7 @@ class ClientsFunctionalDemoTest {
                         // change for common data types
                         // "value.subject.name.strategy",
                         // "io.confluent.kafka.serializers.subject.RecordNameStrategy",
-                        "schema.reflection", "false"));
+                        "schema.reflection", "true"));
     }
 
     private static <V> List<V> values(final Consumer<Long, V> consumer) {
