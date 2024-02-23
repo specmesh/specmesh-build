@@ -18,6 +18,9 @@ package io.specmesh.kafka.provision;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.kafka.KafkaApiSpec;
+import java.util.Collection;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,10 +29,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.apache.kafka.clients.admin.Admin;
-
-import java.util.Collection;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /** Provisions topics */
 public final class TopicProvisioner {

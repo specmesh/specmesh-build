@@ -179,9 +179,9 @@ public class KafkaApiSpec {
                                     && (channel.bindings() == null
                                             || channel.bindings().kafka() == null)) {
                                 throw new IllegalStateException(
-                                        "'publish' channels require Kafka bindings for kafka bindings for topic" +
-                                                " config (partitions, replicas etc) and the root channel level. " +
-                                                " channel: ["
+                                        "'publish' channels require Kafka bindings for kafka"
+                                                + " bindings for topic config (partitions, replicas"
+                                                + " etc) and the root channel level.  channel: ["
                                                 + name
                                                 + "] Domain owner: ["
                                                 + id()

@@ -26,7 +26,10 @@ public class ExceptionWrapper extends RuntimeException {
     @Override
     public String toString() {
         final var sb = new StringBuilder();
-        sb.append(getClass().getName()).append(": ").append(wrappedException.getMessage()).append("\n");
+        sb.append(getClass().getName())
+                .append(": ")
+                .append(wrappedException.getMessage())
+                .append("\n");
         for (StackTraceElement stackTraceElement : wrappedException.getStackTrace()) {
             sb.append("\tat ").append(stackTraceElement).append("\n");
         }
