@@ -16,11 +16,13 @@
 
 package io.specmesh.kafka.provision;
 
+
 public class ExceptionWrapper extends RuntimeException {
     private final Exception wrappedException;
 
-    public ExceptionWrapper(final Exception wrappedException) {
-        this.wrappedException = wrappedException;
+    public ExceptionWrapper(final Exception exception) {
+        this.wrappedException = new Exception(exception.getMessage());
+        this.wrappedException.setStackTrace(exception.getStackTrace());
     }
 
     @Override
