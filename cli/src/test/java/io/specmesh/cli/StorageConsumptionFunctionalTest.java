@@ -95,7 +95,7 @@ class StorageConsumptionFunctionalTest {
     }
 
     private static void shouldExportStuff() throws Exception {
-        final var command = new Export();
+        final var command = Export.builder().build();
         final CommandLine.ParseResult parseResult =
                 new CommandLine(command)
                         .parseArgs(
@@ -135,7 +135,7 @@ class StorageConsumptionFunctionalTest {
     }
 
     private static void shouldDoStorageStats() throws Exception {
-        final var command = new Storage();
+        final var command = Storage.builder().build();
         final CommandLine.ParseResult parseResult =
                 new CommandLine(command)
                         .parseArgs(
@@ -160,7 +160,7 @@ class StorageConsumptionFunctionalTest {
     }
 
     private static void checkConsumptionStats() throws Exception {
-        final var consumptionCommand = new Consumption();
+        final var consumptionCommand = Consumption.builder().build();
         // Given:
         final CommandLine.ParseResult parseResult =
                 new CommandLine(consumptionCommand)

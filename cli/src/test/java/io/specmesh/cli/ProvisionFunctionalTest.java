@@ -18,6 +18,7 @@ package io.specmesh.cli;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import io.specmesh.kafka.DockerKafkaEnvironment;
@@ -42,6 +43,13 @@ class ProvisionFunctionalTest {
                     .withKafkaAcls()
                     .build();
 
+    @Test
+    void shouldProvisionCmdWithLombock() throws Exception {
+        final var provision = Provision.builder().brokerUrl("borker").aclDisabled(false).build();
+        assertThat(provision.aclDisabled(), is(false));
+        assertThat(provision.brokerUrl(), is("borker"));
+    }
+
     /**
      * Provision all resources apart from schemas. note: Dont specify SR credentials to avoid schema
      * publishing
@@ -49,9 +57,9 @@ class ProvisionFunctionalTest {
      * @throws Exception - when broken
      */
     @Test
-    void shouldProvisionTopicsAndAclResourcesWithoutSchemas() throws Exception {
+    void shouldProvisionTopicsAndAclResourcesWithSchemas() throws Exception {
 
-        final Provision provision = new Provision();
+        final Provision provision = Provision.builder().build();
 
         // Given:
         final CommandLine.ParseResult parseResult =
@@ -59,7 +67,7 @@ class ProvisionFunctionalTest {
                         .parseArgs(
                                 ("--bootstrap-server "
                                                 + KAFKA_ENV.kafkaBootstrapServers()
-                                                + " --spec simple_spec_demo-api.yaml"
+                                                + " --spec simple_schema_demo-api.yaml"
                                                 + " --username admin"
                                                 + " --secret admin-secret"
                                                 + " --schema-registry "
@@ -86,9 +94,9 @@ class ProvisionFunctionalTest {
                 topicProvisionStatus.stream().map(Topic::name).collect(Collectors.toSet()),
                 is(
                         containsInAnyOrder(
-                                "simple.spec_demo._public.user_signed_up",
-                                "simple.spec_demo._private.user_checkout",
-                                "simple.spec_demo._protected.purchased")));
+                                "simple.schema_demo._public.user_signed_up",
+                                "simple.schema_demo._public.user_checkout",
+                                "simple.schema_demo._public.user_info")));
 
         /*
          * Loose sanity checks follow because we don't need to retest the tests that other tests test
@@ -101,9 +109,11 @@ class ProvisionFunctionalTest {
                 topicNames,
                 is(
                         containsInAnyOrder(
-                                "simple.spec_demo._public.user_signed_up",
-                                "simple.spec_demo._private.user_checkout",
-                                "simple.spec_demo._protected.purchased",
+                                "simple.schema_demo._public.user_signed_up",
+                                "simple.schema_demo._public.user_checkout",
+                                "simple.schema_demo._public.user_info",
                                 "_schemas")));
+
+        assertThat(status.schemas(), hasSize(3));
     }
 }

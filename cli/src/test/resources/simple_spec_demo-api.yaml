@@ -1,5 +1,5 @@
 asyncapi: '2.5.0'
-id: 'urn:simple:spec_demo'
+id: 'urn:simple.spec_demo'
 info:
   title: Simple Spec for CLI demo
   version: '1.0.0'

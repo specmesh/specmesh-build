@@ -36,7 +36,7 @@ class FlattenTest {
     @Test
     void shouldFlattenIt() throws Exception {
 
-        final var flatten = new Flatten();
+        final var flatten = Flatten.builder().build();
 
         final var outSpexc = "build/finished-spec.yml";
 

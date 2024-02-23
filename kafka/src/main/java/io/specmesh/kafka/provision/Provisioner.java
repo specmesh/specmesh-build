@@ -78,7 +78,7 @@ public final class Provisioner {
             super(msg);
         }
 
-        ProvisioningException(final String msg, final Throwable cause) {
+        public ProvisioningException(final String msg, final Throwable cause) {
             super(msg, cause);
         }
     }

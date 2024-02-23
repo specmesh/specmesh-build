@@ -23,10 +23,14 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.kafka.KafkaApiSpec;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Callable;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
@@ -35,6 +39,10 @@ import picocli.CommandLine.Option;
         name = "flatten",
         description =
                 "Flattens the 'id' into the channel name to support fully qualified channel names")
+@Getter
+@Accessors(fluent = true)
+@Builder
+@SuppressFBWarnings
 public class Flatten implements Callable<Integer> {
 
     /**
@@ -43,12 +51,13 @@ public class Flatten implements Callable<Integer> {
      * @param args args
      */
     public static void main(final String[] args) {
-        System.exit(new CommandLine(new Flatten()).execute(args));
+        System.exit(new CommandLine(Flatten.builder().build()).execute(args));
     }
 
     @Option(
             names = {"-in", "--in-spec"},
             description = "Source spec to flatten")
+    @Builder.Default
     private String inSpec = "";
 
     @Option(
