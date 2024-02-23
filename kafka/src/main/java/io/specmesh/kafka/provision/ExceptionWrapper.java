@@ -16,7 +16,6 @@
 
 package io.specmesh.kafka.provision;
 
-
 public class ExceptionWrapper extends RuntimeException {
     private final Exception wrappedException;
 
