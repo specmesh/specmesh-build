@@ -83,8 +83,7 @@ public class AclMutators {
                                                         acl.messages() + "\n Failed to delete ACLs")
                                                 .exception(
                                                         new ProvisioningException(
-                                                                        "Failed to delete ACL", ex)
-                                                                .toString()));
+                                                                "Failed to delete ACL", ex)));
                 return acls;
             }
             return aclsToDelete;
@@ -139,8 +138,8 @@ public class AclMutators {
                         acl -> {
                             acl.state(STATE.FAILED);
                             acl.exception(
-                                    new ProvisioningException("Failed to provision set of Acls", ex)
-                                            .toString());
+                                    new ProvisioningException(
+                                            "Failed to provision set of Acls", ex));
                         });
             }
             return acls;
@@ -160,8 +159,7 @@ public class AclMutators {
                                                         acl.messages() + "\n Failed to delete ACLs")
                                                 .exception(
                                                         new ProvisioningException(
-                                                                        "Failed to delete ACL", ex)
-                                                                .toString()));
+                                                                "Failed to delete ACL", ex)));
                 return true;
             }
             return false;

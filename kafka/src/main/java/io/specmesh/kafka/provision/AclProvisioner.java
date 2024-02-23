@@ -126,7 +126,12 @@ public final class AclProvisioner {
         @EqualsAndHashCode.Include private String name;
         private Status.STATE state;
         private AclBinding aclBinding;
-        private String exception;
+        private Exception exception;
         @Builder.Default private String messages = "";
+
+        public Acl exception(final Exception exception) {
+            this.exception = new ExceptionWrapper(exception);
+            return this;
+        }
     }
 }
