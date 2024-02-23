@@ -256,7 +256,6 @@ class ClientsFunctionalDemoTest {
 
         final KafkaConsumer<Long, V> consumer = Clients.consumer(Long.class, valueClass, props);
         consumer.subscribe(List.of(topicName));
-        consumer.poll(Duration.ofSeconds(1));
         return consumer;
     }
 
@@ -273,7 +272,10 @@ class ClientsFunctionalDemoTest {
     private Consumer<Long, UserSignedUp> avroConsumer(
             final String topicName, final String userName) {
         return consumer(
-                UserSignedUp.class, topicName, KafkaAvroDeserializer.class, userName, Map.of());
+                UserSignedUp.class, topicName, KafkaAvroDeserializer.class, userName, Map.of(
+                        // change for common data types
+                        // "value.subject.name.strategy", "io.confluent.kafka.serializers.subject.RecordNameStrategy",
+                        "schema.reflection", "false"));
     }
 
     private static <V> Producer<Long, V> producer(
@@ -302,7 +304,10 @@ class ClientsFunctionalDemoTest {
     }
 
     private static Producer<Long, UserSignedUp> avroProducer(final String user) {
-        return producer(UserSignedUp.class, KafkaAvroSerializer.class, user, Map.of());
+        return producer(UserSignedUp.class, KafkaAvroSerializer.class, user, Map.of(
+                // change for common data types
+                // "value.subject.name.strategy", "io.confluent.kafka.serializers.subject.RecordNameStrategy",
+                "schema.reflection", "false"));
     }
 
     private static <V> List<V> values(final Consumer<Long, V> consumer) {
