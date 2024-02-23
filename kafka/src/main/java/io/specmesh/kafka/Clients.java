@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -49,6 +50,7 @@ public final class Clients {
     public static final String NONE = "none";
     public static final String PLAIN = "PLAIN";
     public static final String SASL_PLAINTEXT = "SASL_PLAINTEXT";
+    public static final int TIMEOUT = 30;
 
     private Clients() {}
 
@@ -73,15 +75,29 @@ public final class Clients {
             }
 
             if (!System.getProperty(CONFIG_PROPERTIES, NONE).equals(NONE)) {
-                return AdminClient.create(
-                        loadPropertiesFile(properties, System.getProperty(CONFIG_PROPERTIES)));
+                return validate(
+                        AdminClient.create(
+                                loadPropertiesFile(
+                                        properties, System.getProperty(CONFIG_PROPERTIES))));
             } else {
-                return AdminClient.create(properties);
+                return validate(AdminClient.create(properties));
             }
         } catch (Exception ex) {
             throw new ClientsException(
                     "cannot load:" + brokerUrl + " with username:" + username, ex);
         }
+    }
+
+    private static Admin validate(final AdminClient adminClient) {
+        try {
+            adminClient.describeCluster().clusterId().get(TIMEOUT, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "AdminClient cannot access the cluster (client.describeCluster), "
+                            + "check connection-url/credentials/broker logs",
+                    e);
+        }
+        return adminClient;
     }
 
     private static Map<String, Object> loadPropertiesFile(

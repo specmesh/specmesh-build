@@ -131,5 +131,10 @@ public final class TopicProvisioner {
         @Builder.Default private Map<String, String> config = Map.of();
         private Exception exception;
         @Builder.Default private String messages = "";
+
+        public Topic exception(final Exception exception) {
+            this.exception = new ExceptionWrapper(exception);
+            return this;
+        }
     }
 }

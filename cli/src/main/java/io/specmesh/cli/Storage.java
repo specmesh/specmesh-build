@@ -30,6 +30,9 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import org.apache.kafka.clients.admin.NewTopic;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
@@ -40,6 +43,10 @@ import picocli.CommandLine.Option;
         description =
                 "Given a spec, break down the storage requirements (including replication) against"
                         + " each of its topic in bytes")
+@Getter
+@Accessors(fluent = true)
+@Builder
+@SuppressFBWarnings
 public class Storage implements Callable<Integer> {
 
     /**
@@ -48,12 +55,13 @@ public class Storage implements Callable<Integer> {
      * @param args args
      */
     public static void main(final String[] args) {
-        System.exit(new CommandLine(new Storage()).execute(args));
+        System.exit(new CommandLine(Storage.builder().build()).execute(args));
     }
 
     @Option(
             names = {"-bs", "--bootstrap-server"},
             description = "Kafka bootstrap server url")
+    @Builder.Default
     private String brokerUrl = "";
 
     @Option(
