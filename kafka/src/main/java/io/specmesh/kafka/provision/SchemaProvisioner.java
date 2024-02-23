@@ -188,6 +188,11 @@ public final class SchemaProvisioner {
         private Exception exception;
         @Builder.Default private String messages = "";
 
+        public Schema exception(final Exception exception) {
+            this.exception = new ExceptionWrapper(exception);
+            return this;
+        }
+
         public ParsedSchema getSchema() {
 
             if (type.endsWith(".avsc") || type.equals("AVRO")) {
