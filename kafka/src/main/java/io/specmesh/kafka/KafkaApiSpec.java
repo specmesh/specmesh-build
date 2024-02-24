@@ -54,7 +54,7 @@ import org.apache.kafka.common.resource.ResourcePattern;
 import org.apache.kafka.common.resource.ResourceType;
 
 /** Kafka entity mappings from the AsyncAPISpec */
-public class KafkaApiSpec {
+public final class KafkaApiSpec {
 
     private static final String GRANT_ACCESS_TAG = "grant-access:";
 
