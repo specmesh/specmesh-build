@@ -18,12 +18,15 @@ package io.specmesh.cli;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import io.specmesh.kafka.DockerKafkaEnvironment;
 import io.specmesh.kafka.KafkaEnvironment;
+import io.specmesh.kafka.provision.Status;
 import io.specmesh.kafka.provision.TopicProvisioner.Topic;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.ListTopicsResult;
@@ -48,6 +51,22 @@ class ProvisionFunctionalTest {
         final var provision = Provision.builder().brokerUrl("borker").aclDisabled(false).build();
         assertThat(provision.aclDisabled(), is(false));
         assertThat(provision.brokerUrl(), is("borker"));
+    }
+
+    @Test
+    void shouldNotSwallowExceptions() throws Exception {
+        final var topic = Topic.builder().build();
+        final var swallowed =
+                Status.builder()
+                        .topics(
+                                List.of(
+                                        topic.exception(
+                                                new RuntimeException(
+                                                        new RuntimeException("swallowed")))))
+                        .build();
+        assertThat(
+                swallowed.topics().iterator().next().exception().toString(),
+                containsString(".java:"));
     }
 
     /**
