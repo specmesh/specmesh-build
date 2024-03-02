@@ -228,12 +228,12 @@ public final class DockerKafkaEnvironment
         private static final int DEFAULT_CONTAINER_STARTUP_ATTEMPTS = 3;
         private static final Duration DEFAULT_CONTAINER_STARTUP_TIMEOUT = Duration.ofSeconds(30);
 
-        private static final String DEFAULT_KAFKA_DOCKER_IMAGE = "confluentinc/cp-kafka:7.3.1";
+        private static final String DEFAULT_KAFKA_DOCKER_IMAGE = "confluentinc/cp-kafka:7.5.3";
         private static final Map<String, String> DEFAULT_KAFKA_ENV =
                 Map.of("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "false");
 
         private static final String DEFAULT_SCHEMA_REG_IMAGE =
-                "confluentinc/cp-schema-registry:7.3.1";
+                "confluentinc/cp-schema-registry:7.5.3";
 
         private int startUpAttempts = DEFAULT_CONTAINER_STARTUP_ATTEMPTS;
         private Duration startUpTimeout = DEFAULT_CONTAINER_STARTUP_TIMEOUT;
