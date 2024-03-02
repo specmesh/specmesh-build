@@ -27,7 +27,7 @@ public final class SchemaRegistryContainer extends GenericContainer<SchemaRegist
 
     private static final int KAFKA_INSECURE_BROKER_CONNECTION = 9092;
     private static final DockerImageName DEFAULT_IMAGE_NAME =
-            DockerImageName.parse("confluentinc/cp-schema-registry:7.3.1");
+            DockerImageName.parse("confluentinc/cp-schema-registry:7.5.3");
 
     /** Port the SR will listen on. */
     public static final int SCHEMA_REGISTRY_PORT = 8081;
