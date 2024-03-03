@@ -1,0 +1,64 @@
+asyncapi: '2.4.0'
+id: 'urn:com.example.trading'
+info:
+  title: Streetlights API
+  version: '1.0.0'
+  description: |
+    The Smartylighting Streetlights API allows you
+    to remotely manage the city lights.
+  license:
+    name: Apache 2.0
+    url: 'https://www.apache.org/licenses/LICENSE-2.0'
+servers:
+  mosquitto:
+    url: mqtt://test.mosquitto.org
+    protocol: kafka
+channels:
+  _public.trade:
+    bindings:
+      kafka:
+        envs:
+          - staging
+          - prod
+        partitions: 3
+        replicas: 1
+        configs:
+          cleanup.policy: delete
+          retention.ms: 999000
+
+    publish:
+      summary: Trade feed
+      description: Doing clever things
+      operationId: onTrade received
+      message:
+        bindings:
+          kafka:
+            schemaIdLocation: "header"
+            key:
+              type: string
+
+        schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
+        contentType: "application/octet-stream"
+        payload:
+          $ref: "/schema/com.example.trading.Trade.avsc"
+
+
+  # SUBSCRIBER WILL REQUEST SCHEMA from SR and CodeGen required classes. Header will be used for Id
+  com.example.shared._public.currency:
+    subscribe:
+      summary: currency values
+      operationId: onCurrency
+      bindings:
+        kafka:
+          groupId: 'aCurrencyGroupId'
+      message:
+        schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
+        contentType: "application/octet-stream"
+        bindings:
+          kafka:
+            schemaIdLocation: "header"
+            key:
+              type: string
+        payload:
+          $ref: "/schema/com.example.shared.Currency.avsc"
+
