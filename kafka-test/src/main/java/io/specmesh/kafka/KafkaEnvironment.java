@@ -45,7 +45,7 @@ public interface KafkaEnvironment extends Extension {
     /**
      * schema registry client
      *
-     * @return
+     * @return srClient
      */
     SchemaRegistryClient srClient();
 }
