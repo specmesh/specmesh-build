@@ -68,7 +68,7 @@ subprojects {
         set("openTracingVersion", "0.33.0")
         set("observabilityVersion", "1.1.8")
         set("guavaVersion", "33.0.0-jre")
-        set("confluentVersion", "7.5.1")
+        set("confluentVersion", "7.6.0")
         set("jacksonVersion", "2.16.1")
         set("protobufVersion", "3.25.2")
         set("medeiaValidatorVersion", "1.1.0")
