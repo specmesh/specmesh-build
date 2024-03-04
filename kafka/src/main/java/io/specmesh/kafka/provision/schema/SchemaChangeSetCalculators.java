@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package io.specmesh.kafka.provision;
+package io.specmesh.kafka.provision.schema;
 
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
-import io.specmesh.kafka.provision.SchemaProvisioner.Schema;
+import io.specmesh.kafka.provision.Status;
+import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;

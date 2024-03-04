@@ -22,10 +22,6 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 
-import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
-import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
-import io.confluent.kafka.schemaregistry.json.JsonSchemaProvider;
-import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.specmesh.kafka.Clients;
@@ -81,7 +77,7 @@ class StorageConsumptionFunctionalTest {
                 API_SPEC,
                 "./build/resources/test",
                 KAFKA_ENV.adminClient(),
-                Optional.of(srClient()));
+                Optional.of(KAFKA_ENV.srClient()));
 
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
             final var client = SmAdminClient.create(adminClient);
@@ -261,16 +257,5 @@ class StorageConsumptionFunctionalTest {
         props.putAll(Clients.clientSaslAuthProperties(userName, userName + "-secret"));
 
         return Clients.producer(Long.class, valueClass, props);
-    }
-
-    private static CachedSchemaRegistryClient srClient() {
-        return new CachedSchemaRegistryClient(
-                KAFKA_ENV.schemeRegistryServer(),
-                5,
-                List.of(
-                        new ProtobufSchemaProvider(),
-                        new AvroSchemaProvider(),
-                        new JsonSchemaProvider()),
-                Map.of());
     }
 }

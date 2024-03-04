@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.specmesh.kafka.provision;
+package io.specmesh.kafka.provision.schema;
 
 import static io.specmesh.kafka.provision.Status.STATE.CREATED;
 import static io.specmesh.kafka.provision.Status.STATE.DELETE;
@@ -26,8 +26,8 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
 import io.specmesh.kafka.provision.Provisioner.ProvisioningException;
-import io.specmesh.kafka.provision.SchemaProvisioner.Schema;
 import io.specmesh.kafka.provision.Status.STATE;
+import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;

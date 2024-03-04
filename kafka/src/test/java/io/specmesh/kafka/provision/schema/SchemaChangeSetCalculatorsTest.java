@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.specmesh.kafka.provision;
+package io.specmesh.kafka.provision.schema;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -21,20 +21,14 @@ import static org.hamcrest.Matchers.is;
 
 import io.confluent.kafka.schemaregistry.ParsedSchema;
 import io.confluent.kafka.schemaregistry.avro.AvroSchema;
-import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
-import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.json.JsonSchema;
-import io.confluent.kafka.schemaregistry.json.JsonSchemaProvider;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchema;
-import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
 import io.specmesh.kafka.DockerKafkaEnvironment;
 import io.specmesh.kafka.KafkaEnvironment;
-import io.specmesh.kafka.provision.SchemaProvisioner.Schema;
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import io.specmesh.kafka.provision.Provisioner;
+import io.specmesh.kafka.provision.Status;
+import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -48,9 +42,14 @@ class SchemaChangeSetCalculatorsTest {
     @Test
     void shouldOutputMessagesOnBorkedSchema() throws Exception {
 
-        final var client = srClient();
+        final var client = KAFKA_ENV.srClient();
 
-        client.register("subject", getSchema(".avsc", readFile(".avsc")));
+        client.register(
+                "subject",
+                new SchemaReaders.FileSystemSchemaReader()
+                        .readLocal(filename(".avsc"))
+                        .iterator()
+                        .next());
 
         final var existing =
                 List.of(
@@ -58,7 +57,9 @@ class SchemaChangeSetCalculatorsTest {
                                 .type("AVRO")
                                 .subject("subject")
                                 .state(Status.STATE.READ)
-                                .payload(readFile(".avsc"))
+                                .schemas(
+                                        new SchemaReaders.FileSystemSchemaReader()
+                                                .readLocal(filename(".avsc")))
                                 .build());
         final var required =
                 List.of(
@@ -66,7 +67,9 @@ class SchemaChangeSetCalculatorsTest {
                                 .subject("subject")
                                 .type("AVRO")
                                 .state(Status.STATE.READ)
-                                .payload(readFile("-v3-bad.avsc"))
+                                .schemas(
+                                        new SchemaReaders.FileSystemSchemaReader()
+                                                .readLocal(filename("-v3-bad.avsc")))
                                 .build());
 
         final var calculator = SchemaChangeSetCalculators.builder().build(false, client);
@@ -79,24 +82,8 @@ class SchemaChangeSetCalculatorsTest {
         assertThat(schemas.iterator().next().messages(), is(containsString("borked")));
     }
 
-    private static String readFile(final String extra) {
-        try {
-            return Files.readString(
-                    Path.of("./build/resources/test/schema/" + SCHEMA_FILENAME + extra));
-        } catch (Exception ex) {
-            throw new RuntimeException(new File(".").getAbsolutePath(), ex);
-        }
-    }
-
-    private static CachedSchemaRegistryClient srClient() {
-        return new CachedSchemaRegistryClient(
-                KAFKA_ENV.schemeRegistryServer(),
-                5,
-                List.of(
-                        new ProtobufSchemaProvider(),
-                        new AvroSchemaProvider(),
-                        new JsonSchemaProvider()),
-                Map.of());
+    private static String filename(final String extra) {
+        return "./build/resources/test/schema/" + SCHEMA_FILENAME + extra;
     }
 
     static ParsedSchema getSchema(final String schemaRefType, final String content) {

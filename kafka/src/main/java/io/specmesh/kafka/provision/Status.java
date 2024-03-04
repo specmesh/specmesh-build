@@ -17,6 +17,7 @@
 package io.specmesh.kafka.provision;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.specmesh.kafka.provision.schema.SchemaProvisioner;
 import java.util.Collection;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

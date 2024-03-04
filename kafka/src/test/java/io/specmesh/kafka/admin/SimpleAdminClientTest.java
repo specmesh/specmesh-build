@@ -20,10 +20,6 @@ import static io.specmesh.kafka.Clients.producerProperties;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
-import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
-import io.confluent.kafka.schemaregistry.json.JsonSchemaProvider;
-import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.specmesh.kafka.Clients;
@@ -84,7 +80,7 @@ class SimpleAdminClientTest {
                     API_SPEC,
                     "./build/resources/test",
                     adminClient,
-                    Optional.of(srClient()));
+                    Optional.of(KAFKA_ENV.srClient()));
 
             // write seed info
             try (var producer = avroProducer(OWNER_USER)) {
@@ -183,16 +179,5 @@ class SimpleAdminClientTest {
         props.putAll(Clients.clientSaslAuthProperties(userName, userName + "-secret"));
 
         return Clients.producer(Long.class, valueClass, props);
-    }
-
-    private static CachedSchemaRegistryClient srClient() {
-        return new CachedSchemaRegistryClient(
-                KAFKA_ENV.schemeRegistryServer(),
-                5,
-                List.of(
-                        new ProtobufSchemaProvider(),
-                        new AvroSchemaProvider(),
-                        new JsonSchemaProvider()),
-                Map.of());
     }
 }

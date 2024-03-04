@@ -13,9 +13,11 @@
     {
       "name": "detail", "type": "string",  "doc": "Trade details."
     },
+    // Avro namespace reference
     {
       "name": "currency",
       "type": "com.example.shared.Currency",
+      "subject": "com.example.shared.Currency",
       "doc": "Currency is from another 'domain'."
     }
   ]

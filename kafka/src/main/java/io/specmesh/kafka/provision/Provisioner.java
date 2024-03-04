@@ -18,6 +18,7 @@ package io.specmesh.kafka.provision;
 
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.specmesh.kafka.KafkaApiSpec;
+import io.specmesh.kafka.provision.schema.SchemaProvisioner;
 import java.util.Optional;
 import org.apache.kafka.clients.admin.Admin;
 
@@ -74,7 +75,7 @@ public final class Provisioner {
 
     public static class ProvisioningException extends RuntimeException {
 
-        ProvisioningException(final String msg) {
+        public ProvisioningException(final String msg) {
             super(msg);
         }
 
