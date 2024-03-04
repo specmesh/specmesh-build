@@ -73,10 +73,10 @@ class SchemaChangeSetCalculatorsTest {
 
         final var schemas = calculator.calculate(existing, required);
         assertThat(schemas.iterator().next().state(), is(Status.STATE.FAILED));
-        assertThat(schemas.iterator().next().messages(), is(containsString("Incompatibility")));
         assertThat(
                 schemas.iterator().next().messages(),
-                is(containsString("type:READER_FIELD_MISSING_DEFAULT_VALUE")));
+                is(containsString("READER_FIELD_MISSING_DEFAULT_VALUE")));
+        assertThat(schemas.iterator().next().messages(), is(containsString("borked")));
     }
 
     private static String readFile(final String extra) {
