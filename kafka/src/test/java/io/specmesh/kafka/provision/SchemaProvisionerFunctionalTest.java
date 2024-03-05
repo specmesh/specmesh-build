@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
 import io.confluent.kafka.schemaregistry.avro.AvroSchema;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
@@ -47,6 +48,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
  * Tests execution DryRuns and UPDATES where the provisioner-functional-test-api.yml is already
  * provisioned
  */
+@SuppressFBWarnings(
+        value = "IC_INIT_CIRCULARITY",
+        justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positive")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class SchemaProvisionerFunctionalTest {
 
