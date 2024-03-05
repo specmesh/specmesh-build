@@ -135,7 +135,19 @@ channels:
 
 ## Schema References (AVRO)
 
-To use schema references note the following conventions:
+Schema References are supported only by the Confluent Avro Serde. Common/Shared schemas are configured to be shared using the 'subject' as the full Record name (namespace+name). For example: com.example.shared.Currency - as opposed to the topic name (default schema subject). The way in which the schema is registered will follow the conventions defined below. It is configured as an attribute on the owning app.yml specificiation. As follows:
+```yaml
+        bindings:
+          kafka:
+            schemaIdLocation: "header"
+            schemaLookupStrategy: "RecordNameStrategy"
+            key:
+              type: string
+        payload:
+          $ref: "/schema/com.example.shared.Currency.avsc"
+```
+
+More detail is provided below.
 
 ### **Confluent Schema Registry** conventions
 
@@ -163,7 +175,7 @@ https://www.apicur.io/registry/docs/apicurio-registry/2.2.x/getting-started/asse
 
 ### Worked example
 
-See code: kafka/src/test/resources/schema-ref
+See code: kafka/src/test/resources/schema-ref (specs + schemas)
 
 Note - the developers of the _com.example.trading-api.yml_ will be required to download a copy of the Currency avsc for the
 development purposes, their spec is dependent upon the common (Currency) schema being available (published) in the
