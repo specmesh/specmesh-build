@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.specmesh.kafka;
+package io.specmesh.kafka.provision;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -25,19 +25,18 @@ import static org.hamcrest.Matchers.is;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
-import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
-import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
+import io.confluent.kafka.schemaregistry.avro.AvroSchema;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
-import io.confluent.kafka.schemaregistry.json.JsonSchemaProvider;
-import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
-import io.specmesh.kafka.provision.SchemaProvisioner;
-import io.specmesh.kafka.provision.SchemaProvisioner.Schema;
+import io.specmesh.kafka.DockerKafkaEnvironment;
+import io.specmesh.kafka.KafkaApiSpec;
+import io.specmesh.kafka.KafkaEnvironment;
 import io.specmesh.kafka.provision.Status.STATE;
+import io.specmesh.kafka.provision.schema.SchemaProvisioner;
+import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
 import io.specmesh.test.TestSpecLoader;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -53,7 +52,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
         value = "IC_INIT_CIRCULARITY",
         justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positive")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class SchemaProvisionerUpdateFunctionalTest {
+class SchemaProvisionerFunctionalTest {
 
     private static final KafkaApiSpec API_SPEC =
             TestSpecLoader.loadFromClassPath("provisioner-functional-test-api.yaml");
@@ -92,14 +91,15 @@ class SchemaProvisionerUpdateFunctionalTest {
     @Test
     @Order(1)
     void shouldProvisionExistingSpec() {
-        SchemaProvisioner.provision(false, false, API_SPEC, "./build/resources/test", srClient());
+        SchemaProvisioner.provision(
+                false, false, API_SPEC, "./build/resources/test", KAFKA_ENV.srClient());
     }
 
     @Test
     @Order(2)
     void shouldPublishUpdatedSchemas() throws RestClientException, IOException {
 
-        final var srClient = srClient();
+        final var srClient = KAFKA_ENV.srClient();
         final var dryRunChangeset =
                 SchemaProvisioner.provision(
                         true, false, API_UPDATE_SPEC, "./build/resources/test", srClient);
@@ -158,11 +158,11 @@ class SchemaProvisionerUpdateFunctionalTest {
                 Schema.builder()
                         .subject(subject)
                         .type("/schema/simple.provision_demo._public.user_signed_up.avsc")
-                        .payload(schemaContent)
+                        .schemas(List.of(new AvroSchema(schemaContent)))
                         .state(STATE.READ)
                         .build();
 
-        try (SchemaRegistryClient srClient = srClient()) {
+        try (SchemaRegistryClient srClient = KAFKA_ENV.srClient()) {
 
             // insert the bad schema
             srClient.register(subject, schema.getSchema());
@@ -176,7 +176,11 @@ class SchemaProvisionerUpdateFunctionalTest {
             throws IOException, RestClientException {
         final var cleanerSet2 =
                 SchemaProvisioner.provision(
-                        false, true, API_UPDATE_SPEC, "./build/resources/test", srClient());
+                        false,
+                        true,
+                        API_UPDATE_SPEC,
+                        "./build/resources/test",
+                        KAFKA_ENV.srClient());
 
         // verify it was removed
         assertThat(cleanerSet2.iterator().next().state(), is(STATE.DELETED));
@@ -192,7 +196,11 @@ class SchemaProvisionerUpdateFunctionalTest {
         // test dry run
         final var cleanerSet =
                 SchemaProvisioner.provision(
-                        true, true, API_UPDATE_SPEC, "./build/resources/test", srClient());
+                        true,
+                        true,
+                        API_UPDATE_SPEC,
+                        "./build/resources/test",
+                        KAFKA_ENV.srClient());
 
         // verify dry run
         assertThat(cleanerSet, is(hasSize(1)));
@@ -204,16 +212,5 @@ class SchemaProvisionerUpdateFunctionalTest {
 
         final var allSchemasforId = srClient.getAllSubjectsByPrefix(API_SPEC.id());
         assertThat(allSchemasforId, is(hasSize(3)));
-    }
-
-    private static SchemaRegistryClient srClient() {
-        return new CachedSchemaRegistryClient(
-                KAFKA_ENV.schemeRegistryServer(),
-                5,
-                List.of(
-                        new ProtobufSchemaProvider(),
-                        new AvroSchemaProvider(),
-                        new JsonSchemaProvider()),
-                Map.of());
     }
 }

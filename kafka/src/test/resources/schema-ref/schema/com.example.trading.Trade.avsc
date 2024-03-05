@@ -1,0 +1,23 @@
+{
+  "metadata": {
+    "author": "John Doe",
+    "description": "Schema for Trade data"
+  },
+  "type": "record",
+  "name": "Trade",
+  "namespace": "com.example.trading",
+  "fields": [
+    {
+      "name": "id",  "type": "string",  "doc": "The unique identifier of the trade."
+    },
+    {
+      "name": "detail", "type": "string",  "doc": "Trade details."
+    },
+    {
+      "name": "currency",
+      "type": "com.example.shared.Currency",
+      "subject": "com.example.shared.Currency",
+      "doc": "Currency is from another 'domain'."
+    }
+  ]
+}

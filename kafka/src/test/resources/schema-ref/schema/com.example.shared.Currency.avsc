@@ -1,0 +1,13 @@
+{
+  "metadata": {
+    "author": "John Doe",
+    "description": "Schema for centrally controlled currency data"
+  },
+  "type": "record",
+  "name": "Currency",
+  "namespace": "com.example.shared",
+  "fields": [
+    { "name": "symbol", "type": "string" },
+    { "name": "amount", "type": "double" }
+  ]
+}

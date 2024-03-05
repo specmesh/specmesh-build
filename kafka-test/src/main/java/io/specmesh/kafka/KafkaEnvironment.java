@@ -16,6 +16,7 @@
 
 package io.specmesh.kafka;
 
+import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import org.apache.kafka.clients.admin.Admin;
 import org.junit.jupiter.api.extension.Extension;
 
@@ -40,4 +41,11 @@ public interface KafkaEnvironment extends Extension {
      * @return Returns an admin client for the Kafka cluster. Caller is responsible for closing.
      */
     Admin adminClient();
+
+    /**
+     * schema registry client
+     *
+     * @return srClient
+     */
+    SchemaRegistryClient srClient();
 }

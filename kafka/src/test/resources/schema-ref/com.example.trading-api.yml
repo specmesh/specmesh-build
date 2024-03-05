@@ -1,0 +1,63 @@
+asyncapi: '2.4.0'
+id: 'urn:com.example.trading'
+info:
+  title: Trading App - schema reference example
+  version: '1.0.0'
+  description: |
+    The Trading app module does trading things
+  license:
+    name: Apache 2.0
+    url: 'https://www.apache.org/licenses/LICENSE-2.0'
+servers:
+  mosquitto:
+    url: mqtt://test.mosquitto.org
+    protocol: kafka
+channels:
+  _public.trade:
+    bindings:
+      kafka:
+        envs:
+          - staging
+          - prod
+        partitions: 3
+        replicas: 1
+        configs:
+          cleanup.policy: delete
+          retention.ms: 999000
+
+    publish:
+      summary: Trade feed
+      description: Doing clever things
+      operationId: onTrade received
+      message:
+        bindings:
+          kafka:
+            schemaIdLocation: "header"
+            key:
+              type: string
+
+        schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
+        contentType: "application/octet-stream"
+        payload:
+          $ref: "/schema/com.example.trading.Trade.avsc"
+
+
+  # schema reference to - referenced here for topology reasons - schema also referenced from Trade.avsc
+  com.example.shared._public.currency:
+    subscribe:
+      summary: currency values
+      operationId: onCurrency
+      bindings:
+        kafka:
+          groupId: 'aCurrencyGroupId'
+      message:
+        schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
+        contentType: "application/octet-stream"
+        bindings:
+          kafka:
+            schemaIdLocation: "header"
+            key:
+              type: string
+        payload:
+          $ref: "/schema/com.example.shared.Currency.avsc"
+

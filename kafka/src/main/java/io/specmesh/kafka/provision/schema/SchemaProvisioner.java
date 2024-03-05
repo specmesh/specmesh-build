@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.specmesh.kafka.provision;
+package io.specmesh.kafka.provision.schema;
 
 import static io.specmesh.kafka.provision.Status.STATE.CREATE;
 import static io.specmesh.kafka.provision.Status.STATE.FAILED;
@@ -23,15 +23,12 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
 import io.confluent.kafka.schemaregistry.avro.AvroSchema;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
-import io.confluent.kafka.schemaregistry.json.JsonSchema;
-import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchema;
+import io.specmesh.apiparser.model.SchemaInfo;
 import io.specmesh.kafka.KafkaApiSpec;
-import io.specmesh.kafka.provision.SchemaReaders.SchemaReader;
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import io.specmesh.kafka.provision.ExceptionWrapper;
+import io.specmesh.kafka.provision.Provisioner;
+import io.specmesh.kafka.provision.Status;
+import io.specmesh.kafka.provision.schema.SchemaReaders.SchemaReader;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
@@ -72,8 +69,7 @@ public final class SchemaProvisioner {
         final var required = requiredSchemas(apiSpec, baseResourcePath);
 
         if (required.stream().anyMatch(schema -> schema.state.equals(FAILED))) {
-            throw new Provisioner.ProvisioningException(
-                    "Required Schemas Failed to load:" + required);
+            throw new SchemaProvisioningException("Required Schemas Failed to load:" + required);
         }
 
         final var schemas = calculator(client, cleanUnspecified).calculate(existing, required);
@@ -114,7 +110,7 @@ public final class SchemaProvisioner {
      *
      * @param apiSpec - spec
      * @param baseResourcePath file path
-     * @return set of schemas
+     * @return list of schemas
      */
     private static List<Schema> requiredSchemas(
             final KafkaApiSpec apiSpec, final String baseResourcePath) {
@@ -130,13 +126,17 @@ public final class SchemaProvisioner {
                         (topic -> {
                             final var schema = Schema.builder();
                             try {
-                                final var schemaSubject = topic.name() + "-value";
                                 final var schemaInfo = apiSpec.schemaInfoForTopic(topic.name());
                                 final var schemaRef = schemaInfo.schemaRef();
                                 final var schemaPath = Paths.get(baseResourcePath, schemaRef);
-                                schema.type(schemaInfo.schemaRef())
-                                        .subject(schemaSubject)
-                                        .payload(readSchemaContent(schemaPath));
+                                final var schemas =
+                                        new SchemaReaders.FileSystemSchemaReader()
+                                                .readLocal(schemaPath.toString());
+                                schema.schemas(schemas)
+                                        .type(schemaInfo.schemaRef())
+                                        .subject(
+                                                resolveSubjectName(
+                                                        topic.name(), schemas, schemaInfo));
                                 schema.state(CREATE);
 
                             } catch (Provisioner.ProvisioningException ex) {
@@ -149,6 +149,65 @@ public final class SchemaProvisioner {
     }
 
     /**
+     * Follow these guidelines for Confluent SR and APICurio
+     * https://docs.confluent.io/platform/6.2/schema-registry/serdes-develop/index.html#referenced-schemas
+     * https://docs.confluent.io/platform/6.2/schema-registry/serdes-develop/index.html#subject-name-strategy
+     *
+     * <p>APICurio SimpleTopicIdStrategy - Simple strategy that only uses the topic name.
+     * RecordIdStrategy - Avro-specific strategy that uses the full name of the schema.
+     * TopicRecordIdStrategy - Avro-specific strategy that uses the topic name and the full name of
+     * the schema. TopicIdStrategy - Default strategy that uses the topic name and key or value
+     * suffix.
+     *
+     * <p>Confluent SR TopicNameStrategy - Derives subject name from topic name. (This is the
+     * default.) RecordNameStrategy - Derives subject name from record name, and provides a way to
+     * group logically related events that may have different data structures under a subject.
+     * TopicRecordNameStrategy - Derives the subject name from topic and record name, as a way to
+     * group logically related events that may have different data structures under a subject.
+     *
+     * @param topicName
+     * @param schemas
+     * @param schemaInfo
+     * @return
+     */
+    @SuppressWarnings("checkstyle:CyclomaticComplexity")
+    private static String resolveSubjectName(
+            final String topicName,
+            final Collection<ParsedSchema> schemas,
+            final SchemaInfo schemaInfo) {
+        final var lookup = schemaInfo.schemaLookupStrategy();
+        if (lookup == null || lookup.equalsIgnoreCase("TopicIdStrategy")) {
+            return topicName + "-value";
+        }
+        if (lookup.equalsIgnoreCase("TopicNameStrategy")
+                || lookup.equalsIgnoreCase("SimpleTopicIdStrategy")) {
+            return topicName;
+        }
+        if (lookup.equalsIgnoreCase("RecordNameStrategy")
+                || lookup.equalsIgnoreCase("RecordIdStrategy")) {
+
+            final var next = schemas.iterator().next();
+            if (isAvro(next)) {
+                return ((AvroSchema) next).rawSchema().getFullName();
+            }
+            return topicName + "-value";
+        }
+        if (lookup.equalsIgnoreCase("TopicRecordIdStrategy")
+                || lookup.equalsIgnoreCase("TopicRecordNameStrategy")) {
+
+            final var next = schemas.iterator().next();
+            if (isAvro(next)) {
+                return topicName + "-" + ((AvroSchema) next).rawSchema().getFullName();
+            }
+        }
+        return topicName + "-value";
+    }
+
+    private static boolean isAvro(final ParsedSchema schema) {
+        return schema.schemaType().equals("AVRO") && schema instanceof AvroSchema;
+    }
+
+    /**
      * get the reader
      *
      * @param schemaRegistryClient - sr connection
@@ -156,19 +215,6 @@ public final class SchemaProvisioner {
      */
     private static SchemaReader reader(final SchemaRegistryClient schemaRegistryClient) {
         return SchemaReaders.builder().schemaRegistryClient(schemaRegistryClient).build();
-    }
-
-    static String readSchemaContent(final Path schemaPath) {
-        try {
-            return Files.readString(schemaPath, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new Provisioner.ProvisioningException(
-                    "Failed to readSchemaContent from:"
-                            + schemaPath
-                            + " cwd: "
-                            + new File(".").getAbsolutePath(),
-                    e);
-        }
     }
 
     /** Schema provisioning status */
@@ -183,10 +229,10 @@ public final class SchemaProvisioner {
         @EqualsAndHashCode.Include private String subject;
         private Status.STATE state;
         private String type;
-
-        private String payload;
         private Exception exception;
         @Builder.Default private String messages = "";
+
+        Collection<ParsedSchema> schemas;
 
         public Schema exception(final Exception exception) {
             this.exception = new ExceptionWrapper(exception);
@@ -194,17 +240,18 @@ public final class SchemaProvisioner {
         }
 
         public ParsedSchema getSchema() {
+            return this.schemas.iterator().next();
+        }
+    }
 
-            if (type.endsWith(".avsc") || type.equals("AVRO")) {
-                return new AvroSchema(payload);
-            }
-            if (type.endsWith(".yml") || type.equals("JSON")) {
-                return new JsonSchema(payload);
-            }
-            if (type.endsWith(".proto") || type.equals("PROTOBUF")) {
-                return new ProtobufSchema(payload);
-            }
-            throw new Provisioner.ProvisioningException("Unsupported schema type");
+    public static class SchemaProvisioningException extends RuntimeException {
+
+        public SchemaProvisioningException(final String msg) {
+            super(msg);
+        }
+
+        public SchemaProvisioningException(final String msg, final Throwable cause) {
+            super(msg, cause);
         }
     }
 }

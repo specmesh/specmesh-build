@@ -132,6 +132,149 @@ channels:
         name: "grant-access:_public"
       ]
 ```
+
+## Schema References (AVRO)
+
+To use schema references note the following conventions:
+
+### **Confluent Schema Registry** conventions
+
+https://docs.confluent.io/platform/6.2/schema-registry/serdes-develop/index.html#subject-name-strategy
+
+**TopicNameStrategy** - Derives subject name from topic name. (This is the default.)
+
+**RecordNameStrategy** - Derives subject name from record name, and provides a way to group logically related events that may have different data structures under a subject.
+
+**TopicRecordNameStrategy** -	Derives the subject name from topic and record name, as a way to group logically related events that may have different data structures under a subject.
+
+
+### **APICurio** conventions
+
+https://github.com/asyncapi/bindings/blob/master/kafka/README.md
+https://www.apicur.io/registry/docs/apicurio-registry/2.2.x/getting-started/assembly-using-kafka-client-serdes.html#registry-serdes-concepts-strategy_registry
+
+**RecordIdStrategy** - Avro-specific strategy that uses the full name of the schema.
+
+**TopicRecordIdStrategy** - Avro-specific strategy that uses the topic name and the full name of the schema.
+
+**TopicIdStrategy** - Default strategy that uses the topic name and key or value suffix.
+
+**SimpleTopicIdStrategy** - Simple strategy that only uses the topic name.
+
+### Worked example
+
+See code: kafka/src/test/resources/schema-ref
+
+Note - the developers of the _com.example.trading-api.yml_ will be required to download a copy of the Currency avsc for the
+development purposes, their spec is dependent upon the common (Currency) schema being available (published) in the
+environment, otherwise the schema.provisioning process will fail because SchemaRegistry cannot resolve references upon being uploaded.
+
+
+Source: com.example.trading-api.yml  (spec)
+
+```yaml
+  _public.trade:
+    bindings:
+      kafka:
+        envs:
+          - staging
+          - prod
+        partitions: 3
+        replicas: 1
+        configs:
+          cleanup.policy: delete
+          retention.ms: 999000
+
+    publish:
+      summary: Trade feed
+      description: Doing clever things
+      operationId: onTrade received
+      message:
+        bindings:
+          kafka:
+            schemaIdLocation: "header"
+            key:
+              type: string
+
+        schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
+        contentType: "application/octet-stream"
+        payload:
+          $ref: "/schema/com.example.trading.Trade.avsc"
+```
+
+Trade.avsc references the _Currency_ .avsc schema (the shared schema type)
+```avro schema
+{
+  "metadata": {
+    "author": "John Doe",
+    "description": "Schema for Trade data"
+  },
+  "type": "record",
+  "name": "Trade",
+  "namespace": "com.example.trading",
+  "fields": [
+    {
+      "name": "id",  "type": "string",  "doc": "The unique identifier of the trade."
+    },
+    {
+      "name": "detail", "type": "string",  "doc": "Trade details."
+    },
+    {
+      "name": "currency",
+      "type": "com.example.shared.Currency",
+      "subject": "com.example.shared.Currency",
+      "doc": "Currency is from another 'domain'."
+    }
+  ]
+}
+```
+
+Share schemas are published by the owner. The spec: com.example.shared-api.yml will
+- reference the 'owned' schemas for publishing
+- specify the _schemaLookupStrategy_: "RecordNameStrategy"
+
+**RecordNameStrategy** sets the _schema-subject_ as the full record name: _com.example.shared.Currency_. 
+If not used then the default rules apply above (i.e. topic-name '-' - value) and it cannot be shared
+
+Below: com.example.shared-api.yml (api spec) 
+```yaml
+asyncapi: '2.4.0'
+id: 'urn:com.example.shared'
+info:
+  title: Common Data Set
+  version: '1.0.0'
+  description: |
+    Common data set - schema reference example
+servers:
+  mosquitto:
+    url: mqtt://test.mosquitto.org
+    protocol: kafka
+channels:
+  _public.currency:
+    bindings:
+      kafka:
+        partitions: 3
+        replicas: 1
+        configs:
+          cleanup.policy: delete
+          retention.ms: 999000
+    publish:
+      summary: Currency things
+      operationId: onCurrencyUpdate
+      message:
+        schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
+        contentType: "application/octet-stream"
+        bindings:
+          kafka:
+            schemaIdLocation: "header"
+            schemaLookupStrategy: "RecordNameStrategy"
+            key:
+              type: string
+        payload:
+          $ref: "/schema/com.example.shared.Currency.avsc"
+```
+
+
 # Developer Notes
 
 1. Install the intellij checkstyle plugin and load the config from config/checkstyle.xml

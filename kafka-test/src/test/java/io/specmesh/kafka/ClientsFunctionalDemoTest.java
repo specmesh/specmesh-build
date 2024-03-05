@@ -27,6 +27,7 @@ import static org.apache.kafka.common.resource.ResourceType.GROUP;
 import static org.apache.kafka.streams.kstream.Produced.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThrows;
@@ -229,7 +230,9 @@ class ClientsFunctionalDemoTest {
                     .get(60, TimeUnit.SECONDS);
 
             // Then:
-            assertThat(values(consumer), contains(sentRecord));
+            final var values = values(consumer);
+            assertThat("Should have received a record but got nothing", values, hasSize(1));
+            assertThat(values, contains(sentRecord));
         }
     }
 

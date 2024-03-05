@@ -1,0 +1,35 @@
+asyncapi: '2.4.0'
+id: 'urn:com.example.shared'
+info:
+  title: Common Data Set
+  version: '1.0.0'
+  description: |
+    Common data set - schema reference example
+servers:
+  mosquitto:
+    url: mqtt://test.mosquitto.org
+    protocol: kafka
+channels:
+  _public.currency:
+    bindings:
+      kafka:
+        partitions: 3
+        replicas: 1
+        configs:
+          cleanup.policy: delete
+          retention.ms: 999000
+    publish:
+      summary: Currency things
+      operationId: onCurrencyUpdate
+      message:
+        schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
+        contentType: "application/octet-stream"
+        bindings:
+          kafka:
+            schemaIdLocation: "header"
+            schemaLookupStrategy: "RecordNameStrategy"
+            key:
+              type: string
+        payload:
+          $ref: "/schema/com.example.shared.Currency.avsc"
+
