@@ -21,7 +21,9 @@ import static io.specmesh.kafka.provision.Status.STATE.FAILED;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
+import io.confluent.kafka.schemaregistry.avro.AvroSchema;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
+import io.specmesh.apiparser.model.SchemaInfo;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.provision.ExceptionWrapper;
 import io.specmesh.kafka.provision.Provisioner;
@@ -124,15 +126,17 @@ public final class SchemaProvisioner {
                         (topic -> {
                             final var schema = Schema.builder();
                             try {
-                                final var schemaSubject = topic.name() + "-value";
                                 final var schemaInfo = apiSpec.schemaInfoForTopic(topic.name());
                                 final var schemaRef = schemaInfo.schemaRef();
                                 final var schemaPath = Paths.get(baseResourcePath, schemaRef);
-                                schema.schemas(
-                                                new SchemaReaders.FileSystemSchemaReader()
-                                                        .readLocal(schemaPath.toString()))
+                                final var schemas =
+                                        new SchemaReaders.FileSystemSchemaReader()
+                                                .readLocal(schemaPath.toString());
+                                schema.schemas(schemas)
                                         .type(schemaInfo.schemaRef())
-                                        .subject(schemaSubject);
+                                        .subject(
+                                                resolveSubjectName(
+                                                        topic.name(), schemas, schemaInfo));
                                 schema.state(CREATE);
 
                             } catch (Provisioner.ProvisioningException ex) {
@@ -142,6 +146,65 @@ public final class SchemaProvisioner {
                             return schema.build();
                         }))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Follow these guidelines for Confluent SR and APICurio
+     * https://docs.confluent.io/platform/6.2/schema-registry/serdes-develop/index.html#referenced-schemas
+     * https://docs.confluent.io/platform/6.2/schema-registry/serdes-develop/index.html#subject-name-strategy
+     *
+     * <p>APICurio SimpleTopicIdStrategy - Simple strategy that only uses the topic name.
+     * RecordIdStrategy - Avro-specific strategy that uses the full name of the schema.
+     * TopicRecordIdStrategy - Avro-specific strategy that uses the topic name and the full name of
+     * the schema. TopicIdStrategy - Default strategy that uses the topic name and key or value
+     * suffix.
+     *
+     * <p>Confluent SR TopicNameStrategy - Derives subject name from topic name. (This is the
+     * default.) RecordNameStrategy - Derives subject name from record name, and provides a way to
+     * group logically related events that may have different data structures under a subject.
+     * TopicRecordNameStrategy - Derives the subject name from topic and record name, as a way to
+     * group logically related events that may have different data structures under a subject.
+     *
+     * @param topicName
+     * @param schemas
+     * @param schemaInfo
+     * @return
+     */
+    @SuppressWarnings("checkstyle:CyclomaticComplexity")
+    private static String resolveSubjectName(
+            final String topicName,
+            final Collection<ParsedSchema> schemas,
+            final SchemaInfo schemaInfo) {
+        final var lookup = schemaInfo.schemaLookupStrategy();
+        if (lookup == null || lookup.equalsIgnoreCase("TopicIdStrategy")) {
+            return topicName + "-value";
+        }
+        if (lookup.equalsIgnoreCase("TopicNameStrategy")
+                || lookup.equalsIgnoreCase("SimpleTopicIdStrategy")) {
+            return topicName;
+        }
+        if (lookup.equalsIgnoreCase("RecordNameStrategy")
+                || lookup.equalsIgnoreCase("RecordIdStrategy")) {
+
+            final var next = schemas.iterator().next();
+            if (isAvro(next)) {
+                return ((AvroSchema) next).rawSchema().getFullName();
+            }
+            return topicName + "-value";
+        }
+        if (lookup.equalsIgnoreCase("TopicRecordIdStrategy")
+                || lookup.equalsIgnoreCase("TopicRecordNameStrategy")) {
+
+            final var next = schemas.iterator().next();
+            if (isAvro(next)) {
+                return topicName + "-" + ((AvroSchema) next).rawSchema().getFullName();
+            }
+        }
+        return topicName + "-value";
+    }
+
+    private static boolean isAvro(final ParsedSchema schema) {
+        return schema.schemaType().equals("AVRO") && schema instanceof AvroSchema;
     }
 
     /**

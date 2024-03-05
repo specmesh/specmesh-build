@@ -16,12 +16,16 @@
 
 package io.specmesh.kafka.provision;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
+@SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "exception copy")
 public class ExceptionWrapper extends RuntimeException {
     private final Exception wrappedException;
 
     public ExceptionWrapper(final Exception exception) {
-        this.wrappedException = new Exception(exception.getMessage());
-        this.wrappedException.setStackTrace(exception.getStackTrace());
+        this.wrappedException = exception;
     }
 
     @Override
@@ -31,9 +35,11 @@ public class ExceptionWrapper extends RuntimeException {
                 .append(": ")
                 .append(wrappedException.getMessage())
                 .append("\n");
-        for (StackTraceElement stackTraceElement : wrappedException.getStackTrace()) {
-            sb.append("\tat ").append(stackTraceElement).append("\n");
-        }
+
+        final var sw = new StringWriter();
+        final var pw = new PrintWriter(sw);
+        wrappedException.printStackTrace(pw);
+        sb.append(sw);
         return sb.toString();
     }
 }

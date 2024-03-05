@@ -27,6 +27,7 @@ channels:
         bindings:
           kafka:
             schemaIdLocation: "header"
+            schemaLookupStrategy: "RecordNameStrategy"
             key:
               type: string
         payload:

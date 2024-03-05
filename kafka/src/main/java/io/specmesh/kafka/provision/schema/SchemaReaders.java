@@ -37,6 +37,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -100,7 +101,8 @@ public final class SchemaReaders {
                 final SchemaReferences results = new SchemaReferences();
                 final var refs =
                         findJsonNodes(new ObjectMapper().readTree(schemaContent), "subject");
-                refs.forEach(results::add);
+                final var parent = new File(filePath).getParent();
+                refs.forEach(ref -> results.add(parent, ref));
                 return results;
             } catch (JsonProcessingException e) {
                 throw new SchemaProvisioningException(
@@ -229,9 +231,7 @@ public final class SchemaReaders {
     }
 
     /** builder */
-    @SuppressFBWarnings(
-            value = "EI_EXPOSE_REP2",
-            justification = "adminClient() passed as param to prevent API pollution")
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "schema refs")
     public static final class SchemaReaderBuilder {
 
         private SchemaRegistryClient srClient;
@@ -265,15 +265,15 @@ public final class SchemaReaders {
     }
 
     @SuppressFBWarnings(
-            value = "EI_EXPOSE_REP2",
-            justification = "client passed as param to prevent API pollution")
+            value = "EI_EXPOSE_REP",
+            justification = "refs passed as param to prevent API pollution")
     @Data
     @Accessors(fluent = true)
     public static class SchemaReferences {
-        final List<SchemaReference> references = List.of();
-        final Map<String, String> resolvedReferences = Map.of();
+        final List<SchemaReference> references = new ArrayList<>();
+        final Map<String, String> resolvedReferences = new HashMap<>();
 
-        public void add(final JsonNode ref) {
+        public void add(final String path, final JsonNode ref) {
             try {
                 references.add(
                         new SchemaReference(
@@ -281,7 +281,7 @@ public final class SchemaReaders {
 
                 resolvedReferences.put(
                         ref.get("subject").asText(),
-                        Files.readString(Path.of(ref.get("subject").asText() + ".avsc")));
+                        Files.readString(Path.of(path, ref.get("subject").asText() + ".avsc")));
             } catch (IOException e) {
                 throw new SchemaProvisioningException(
                         "Cannot construct AVRO SchemaReference from:" + ref, e);

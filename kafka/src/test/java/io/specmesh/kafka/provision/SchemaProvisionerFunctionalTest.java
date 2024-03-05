@@ -48,11 +48,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
  * Tests execution DryRuns and UPDATES where the provisioner-functional-test-api.yml is already
  * provisioned
  */
-@SuppressFBWarnings(
-        value = "IC_INIT_CIRCULARITY",
-        justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positive")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class SchemaProvisionerUpdateFunctionalTest {
+class SchemaProvisionerFunctionalTest {
 
     private static final KafkaApiSpec API_SPEC =
             TestSpecLoader.loadFromClassPath("provisioner-functional-test-api.yaml");
