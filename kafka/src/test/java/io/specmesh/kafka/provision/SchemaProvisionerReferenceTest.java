@@ -31,9 +31,8 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
- * Provision schemas with references - missing refs will fail.
- * For common schema set the schemaLookupStrategy: "RecordNameStrategy"
- * so Trade can reference the subject like that
+ * Provision schemas with references - missing refs will fail. For common schema set the
+ * schemaLookupStrategy: "RecordNameStrategy" so Trade can reference the subject like that
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class SchemaProvisionerReferenceTest {
@@ -55,7 +54,6 @@ class SchemaProvisionerReferenceTest {
                             API_SPEC.id(),
                             API_SPEC.id() + "-secret")
                     .build();
-
 
     @Test
     @Order(1)
