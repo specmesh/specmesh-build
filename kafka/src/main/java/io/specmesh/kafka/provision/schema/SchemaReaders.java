@@ -16,6 +16,7 @@
 
 package io.specmesh.kafka.provision.schema;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,6 +48,11 @@ import lombok.experimental.Accessors;
 
 /** Readers for reading Schemas */
 public final class SchemaReaders {
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    static {
+        objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+    }
 
     /** defensive */
     private SchemaReaders() {}
@@ -99,8 +105,7 @@ public final class SchemaReaders {
                 final String filePath, final String schemaContent) {
             try {
                 final SchemaReferences results = new SchemaReferences();
-                final var refs =
-                        findJsonNodes(new ObjectMapper().readTree(schemaContent), "subject");
+                final var refs = findJsonNodes(objectMapper.readTree(schemaContent), "subject");
                 final var parent = new File(filePath).getParent();
                 refs.forEach(ref -> results.add(parent, ref));
                 return results;
