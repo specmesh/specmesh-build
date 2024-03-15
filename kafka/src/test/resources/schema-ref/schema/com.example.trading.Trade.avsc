@@ -13,6 +13,7 @@
     {
       "name": "detail", "type": "string",  "doc": "Trade details."
     },
+// some comment - works
     {
       "name": "currency",
       "type": "com.example.shared.Currency",
