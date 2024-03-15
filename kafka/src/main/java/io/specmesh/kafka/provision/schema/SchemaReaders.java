@@ -105,8 +105,7 @@ public final class SchemaReaders {
                 final String filePath, final String schemaContent) {
             try {
                 final SchemaReferences results = new SchemaReferences();
-                final var refs =
-                        findJsonNodes(objectMapper.readTree(schemaContent), "subject");
+                final var refs = findJsonNodes(objectMapper.readTree(schemaContent), "subject");
                 final var parent = new File(filePath).getParent();
                 refs.forEach(ref -> results.add(parent, ref));
                 return results;
