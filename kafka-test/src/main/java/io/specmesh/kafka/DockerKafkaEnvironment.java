@@ -169,7 +169,21 @@ public final class DockerKafkaEnvironment
         return AdminClient.create(properties);
     }
 
+    /**
+     * @return the Docker network Kafka and SR are running on, allowing additional containers to use the same network, if needed.
+     */
+    public Network network() {
+        if (network == null) {
+            throw new IllegalStateException("Environment not running");
+        }
+        return network;
+    }
+
     private void setUp() {
+        if (network != null) {
+            return;
+        }
+
         network = Network.newNetwork();
 
         kafkaBroker =
