@@ -75,6 +75,7 @@ import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import simple.schema_demo._public.user_signed_up_value.UserSignedUp;
@@ -215,24 +216,30 @@ class ClientsFunctionalDemoTest {
         }
     }
 
-    @Test
-    void shouldConsumeWithDifferentUser() throws Exception {
-        // Given:
-        final var userSignedUpTopic = topicName("_public.user_signed_up");
-        final var sentRecord = new UserSignedUp("joe blogs", "blogy@twasmail.com", 100);
+    @Nested
+    class NestedTest {
 
-        try (Consumer<Long, UserSignedUp> consumer =
-                        avroConsumer(userSignedUpTopic, DIFFERENT_USER);
-                Producer<Long, UserSignedUp> producer = avroProducer(OWNER_USER)) {
+        // Run one test in a nested class to test env works with such nesting...
 
-            // When:
-            producer.send(new ProducerRecord<>(userSignedUpTopic, 1000L, sentRecord))
-                    .get(60, TimeUnit.SECONDS);
+        @Test
+        void shouldConsumeWithDifferentUser() throws Exception {
+            // Given:
+            final var userSignedUpTopic = topicName("_public.user_signed_up");
+            final var sentRecord = new UserSignedUp("joe blogs", "blogy@twasmail.com", 100);
 
-            // Then:
-            final var values = values(consumer);
-            assertThat("Should have received a record but got nothing", values, hasSize(1));
-            assertThat(values, contains(sentRecord));
+            try (Consumer<Long, UserSignedUp> consumer =
+                            avroConsumer(userSignedUpTopic, DIFFERENT_USER);
+                    Producer<Long, UserSignedUp> producer = avroProducer(OWNER_USER)) {
+
+                // When:
+                producer.send(new ProducerRecord<>(userSignedUpTopic, 1000L, sentRecord))
+                        .get(60, TimeUnit.SECONDS);
+
+                // Then:
+                final var values = values(consumer);
+                assertThat("Should have received a record but got nothing", values, hasSize(1));
+                assertThat(values, contains(sentRecord));
+            }
         }
     }
 

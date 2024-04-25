@@ -36,6 +36,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -89,6 +90,7 @@ public final class DockerKafkaEnvironment
     private KafkaContainer kafkaBroker;
     private SchemaRegistryContainer schemaRegistry;
     private boolean invokedStatically = false;
+    private AtomicInteger setUpCount = new AtomicInteger(1);
 
     /**
      * @return returns a {@link Builder} instance to allow customisation of the environment.
@@ -169,7 +171,22 @@ public final class DockerKafkaEnvironment
         return AdminClient.create(properties);
     }
 
+    /**
+     * @return the Docker network Kafka and SR are running on, allowing additional containers to use
+     *     the same network, if needed.
+     */
+    public Network network() {
+        if (network == null) {
+            throw new IllegalStateException("Environment not running");
+        }
+        return network;
+    }
+
     private void setUp() {
+        if (setUpCount.incrementAndGet() != 1) {
+            return;
+        }
+
         network = Network.newNetwork();
 
         kafkaBroker =
@@ -200,6 +217,10 @@ public final class DockerKafkaEnvironment
     }
 
     private void tearDown() {
+        if (setUpCount.decrementAndGet() != 0) {
+            return;
+        }
+
         if (schemaRegistry != null) {
             schemaRegistry.close();
             schemaRegistry = null;
