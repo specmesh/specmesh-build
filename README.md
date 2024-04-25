@@ -56,15 +56,13 @@ channels:
   _protected.purchased:
     publish:
       summary: Humans purchasing food - note - restricting access to other domain principals
-      tags: [
-        name: "grant-access:acme.finance.accounting"
-      ]
+      tags:
+        - name: "grant-access:acme.finance.accounting"
       message:
         name: Food Item
-        tags: [
-          name: "human",
-          name: "purchase"
-        ]
+        tags: 
+          - name: "human",
+          - name: "purchase"
 ```
 
 
