@@ -1,0 +1,65 @@
+asyncapi: '2.4.0'
+id: 'urn:simple.schema-demo'
+info:
+  title: Streetlights API
+  version: '1.0.0'
+  description: things
+  license:
+    name: Apache 2.0
+    url: 'https://www.apache.org/licenses/LICENSE-2.0'
+servers:
+  kafka:
+    url: mqtt://test.mosquitto.org
+    protocol: kafka
+channels:
+  _public.example_old:
+    bindings:
+      kafka:
+    publish:
+      operationId: exampleOld
+      message:
+        payload:
+          $ref: "simple_schema_demo_user-signedup.avsc"
+  _public.example_primitive:
+    bindings:
+      kafka:
+    publish:
+      operationId: examplePrimitive
+      message:
+        payload:
+          properties:
+            key:
+              type:
+                string  # in build kafka-type - one of UUID, long, int, short, float, double, string, bytes
+            value:
+              type:
+                double
+  _public.example_kv_schema:
+    bindings:
+      kafka:
+    publish:
+      operationId: exampleKvSchemas
+      message:
+        payload:
+          properties:
+            key:
+              type:
+                $ref: "KeyValue.json"
+            value:
+              type:
+                # Reference a separate Avro schema for the value structure
+                $ref: "MessageValue.avsc"
+  _public.example_unsupported:
+    bindings:
+      kafka:
+    publish:
+      operationId: exampleUnsupported
+      message:
+        payload:
+          properties:
+            key:
+              type:
+                unsupported-type-thing  # in build kafka-type - one of UUID, long, int, short, float, double, string, bytes
+            value:
+              type:
+                double
