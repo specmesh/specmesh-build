@@ -172,7 +172,8 @@ public final class DockerKafkaEnvironment
     }
 
     /**
-     * @return the Docker network Kafka and SR are running on, allowing additional containers to use the same network, if needed.
+     * @return the Docker network Kafka and SR are running on, allowing additional containers to use
+     *     the same network, if needed.
      */
     public Network network() {
         if (network == null) {
@@ -219,7 +220,7 @@ public final class DockerKafkaEnvironment
         if (setUpCount.decrementAndGet() != 0) {
             return;
         }
-        
+
         if (schemaRegistry != null) {
             schemaRegistry.close();
             schemaRegistry = null;

@@ -228,8 +228,8 @@ class ClientsFunctionalDemoTest {
             final var sentRecord = new UserSignedUp("joe blogs", "blogy@twasmail.com", 100);
 
             try (Consumer<Long, UserSignedUp> consumer =
-                         avroConsumer(userSignedUpTopic, DIFFERENT_USER);
-                 Producer<Long, UserSignedUp> producer = avroProducer(OWNER_USER)) {
+                            avroConsumer(userSignedUpTopic, DIFFERENT_USER);
+                    Producer<Long, UserSignedUp> producer = avroProducer(OWNER_USER)) {
 
                 // When:
                 producer.send(new ProducerRecord<>(userSignedUpTopic, 1000L, sentRecord))
