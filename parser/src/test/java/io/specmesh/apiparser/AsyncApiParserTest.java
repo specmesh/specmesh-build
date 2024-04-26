@@ -147,7 +147,7 @@ public class AsyncApiParserTest {
     public void shouldSupportPrimitiveKeyAndValue() {
         final var channels = API_SPEC_KEY_VALUE.channels();
 
-        final var oldStyleChannel = channels.get("simple.schema-demo._public.example_primitive");
+        final var newStyleChannel = channels.get("simple.schema-demo._public.example_primitive");
 
         try {
             oldStyleChannel.publish().message().schemaRef();
