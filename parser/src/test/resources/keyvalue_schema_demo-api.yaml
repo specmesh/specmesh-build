@@ -29,11 +29,9 @@ channels:
         payload:
           properties:
             key:
-              type:
-                string  # in build kafka-type - one of UUID, long, int, short, float, double, string, bytes
+              type: string  # in build kafka-type - one of UUID, long, int, short, float, double, string, bytes
             value:
-              type:
-                double
+              type: double
   _public.example_kv_schema:
     bindings:
       kafka:
@@ -43,12 +41,9 @@ channels:
         payload:
           properties:
             key:
-              type:
-                $ref: "KeyValue.json"
+              $ref: "KeyValue.json"
             value:
-              type:
-                # Reference a separate Avro schema for the value structure
-                $ref: "MessageValue.avsc"
+              $ref: "MessageValue.avsc"
   _public.example_unsupported:
     bindings:
       kafka:
@@ -58,8 +53,23 @@ channels:
         payload:
           properties:
             key:
-              type:
-                unsupported-type-thing  # in build kafka-type - one of UUID, long, int, short, float, double, string, bytes
+              type: unsupported-type-thing  # in build kafka-type - one of UUID, long, int, short, float, double, string, bytes
             value:
-              type:
-                double
+              type: double
+  _public.example_object:
+    bindings:
+      kafka:
+    publish:
+      operationId: exampleUnsupported
+      message:
+        payload:
+          type: object
+          properties:
+            id:
+              type: integer
+              minimum: 0
+              description: Id of the human
+            age:
+              type: integer
+              minimum: 0
+              description: Age of the human

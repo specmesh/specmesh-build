@@ -23,7 +23,6 @@ import io.specmesh.apiparser.AsyncApiParser.APIParserException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.Value;
@@ -42,16 +41,12 @@ import lombok.experimental.Accessors;
 @SuppressFBWarnings
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class Message {
-    static final Set<String> SUPPORTED_TYPES =
-            Set.of("UUID", "long", "int", "short", "float", "double", "string", "bytes");
 
     @JsonProperty private String messageId;
 
     @JsonProperty private Map headers = Collections.EMPTY_MAP;
 
-    @JsonProperty private Map payload = Collections.EMPTY_MAP;
-
-    @JsonProperty private Map key = Collections.EMPTY_MAP;
+    @JsonProperty private Payload payload;
 
     @JsonProperty private Map correlationId = Collections.EMPTY_MAP;
 
@@ -77,9 +72,9 @@ public class Message {
      * @return the location of the schema
      */
     public String schemaRef() {
-        final Object o = payload.get("$ref");
+        final Object o = payload.ref();
         if (o == null) {
-            throw new APIParserException("$ref lookup not supported on this spec format");
+            throw new APIParserException("$ref lookup not available on this spec format");
         }
         return (String) o;
     }
@@ -90,37 +85,7 @@ public class Message {
      *
      * @return long or schema ref
      */
-    public String valueType() {
-        return getType("value");
-    }
-
-    /**
-     * message: payload: properties: key: type: string # in build kafka-type - one of UUID, long,
-     * int, short, float, double, string, bytes value: type: double
-     *
-     * @return 'string'
-     */
-    public String keyType() {
-        return getType("key");
-    }
-
-    private String getType(final String lookup) {
-        final var typeMaybe = ((Map) ((Map) payload.get("properties")).get(lookup)).get("type");
-        if (typeMaybe instanceof String) {
-            final String typeString = (String) typeMaybe;
-            if (!SUPPORTED_TYPES.contains(typeString)) {
-                throw new APIParserException(
-                        "Unsupported type: '"
-                                + typeString
-                                + "' expecting one of: "
-                                + SUPPORTED_TYPES);
-            }
-            return (String) typeMaybe;
-        }
-        if (typeMaybe instanceof Map) {
-            final Map typeMap = (Map) typeMaybe;
-            return (String) typeMap.get("$ref");
-        }
-        throw new APIParserException("Spec doesnt support this lookup:" + lookup);
+    public Payload.PayloadType payload() {
+        return this.payload.payload();
     }
 }

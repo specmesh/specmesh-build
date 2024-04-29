@@ -54,10 +54,7 @@ public class Operation {
 
     @JsonProperty private String description;
 
-    @SuppressWarnings("rawtypes")
-    @JsonProperty
-    @Builder.Default
-    private List<Tag> tags = List.of();
+    @JsonProperty @Builder.Default private List<Tag> tags = List.of();
 
     @JsonProperty private Bindings bindings;
 
@@ -75,11 +72,20 @@ public class Operation {
                     "Bindings not found for (publish|subscribe) operation: " + operationId);
         }
         return new SchemaInfo(
-                message().schemaRef(),
+                getSchemaRef(),
                 message().schemaFormat(),
                 message.bindings().kafka().schemaIdLocation(),
                 message().contentType(),
                 message.bindings().kafka().schemaLookupStrategy());
+    }
+
+    @Deprecated
+    private String getSchemaRef() {
+        try {
+            return message().schemaRef();
+        } catch (Exception ex) {
+            return "";
+        }
     }
 
     public void validate() {
@@ -91,6 +97,6 @@ public class Operation {
     public boolean isSchemaRequired() {
         return this.message() != null
                 && this.message().schemaRef() != null
-                && this.message().schemaRef().length() > 0;
+                && !this.message().schemaRef().isEmpty();
     }
 }

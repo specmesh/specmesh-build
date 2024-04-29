@@ -20,12 +20,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.apiparser.model.Bindings;
 import io.specmesh.apiparser.model.Channel;
+import io.specmesh.apiparser.model.Payload;
 import java.util.Map;
 import java.util.Set;
 import org.apache.kafka.common.config.TopicConfig;
@@ -125,40 +127,25 @@ public class AsyncApiParserTest {
     @Test
     public void shouldSupportOldSchemaRefLookup() {
         final var channels = API_SPEC_KEY_VALUE.channels();
-
         final var oldStyleChannel = channels.get("simple.schema-demo._public.example_old");
-        oldStyleChannel.publish().message().schemaRef();
-
-        try {
-            oldStyleChannel.publish().message().keyType();
-            fail("should have failed on KeyLookup");
-        } catch (Exception ex) {
-
-        }
-        // throw not supports
-        try {
-            oldStyleChannel.publish().message().valueType();
-            fail("should have failed on ValueLookup");
-        } catch (Exception ex) {
-        }
+        assertThat(
+                oldStyleChannel.publish().message().schemaRef(),
+                is("simple_schema_demo_user-signedup.avsc"));
     }
 
     @Test
     public void shouldSupportPrimitiveKeyAndValue() {
         final var channels = API_SPEC_KEY_VALUE.channels();
 
-        final var newStyleChannel = channels.get("simple.schema-demo._public.example_primitive");
+        final var channel = channels.get("simple.schema-demo._public.example_primitive");
 
-        try {
-            oldStyleChannel.publish().message().schemaRef();
-            fail("should have failed on SchemaRefLookup");
-        } catch (Exception ex) {
-        }
+        final var payload = channel.publish().message().payload();
 
-        final var primitiveKeyType = oldStyleChannel.publish().message().keyType();
-        assertThat(primitiveKeyType, is("string"));
-        final var primitiveValueType = oldStyleChannel.publish().message().valueType();
-        assertThat(primitiveValueType, is("double"));
+        assertThat(payload, instanceOf(Payload.KeyValue.class));
+
+        final Payload.KeyValue kv = (Payload.KeyValue) payload;
+        assertThat(kv.key().value(), is("string"));
+        assertThat(kv.value().value(), is("double"));
     }
 
     @Test
@@ -167,16 +154,14 @@ public class AsyncApiParserTest {
 
         final var channel = channels.get("simple.schema-demo._public.example_kv_schema");
 
-        try {
-            channel.publish().message().schemaRef();
-            fail("should have failed on SchemaRefLookup");
-        } catch (Exception ex) {
-        }
+        final var payload = channel.publish().message().payload();
 
-        final var primitiveKeyType = channel.publish().message().keyType();
-        assertThat(primitiveKeyType, is("KeyValue.json"));
-        final var primitiveValueType = channel.publish().message().valueType();
-        assertThat(primitiveValueType, is("MessageValue.avsc"));
+        assertThat(payload, instanceOf(Payload.KeyValue.class));
+
+        final Payload.KeyValue kv = (Payload.KeyValue) payload;
+
+        assertThat(kv.key().value(), is("KeyValue.json"));
+        assertThat(kv.value().value(), is("MessageValue.avsc"));
     }
 
     @Test
@@ -185,11 +170,11 @@ public class AsyncApiParserTest {
         final var channel = channels.get("simple.schema-demo._public.example_unsupported");
 
         try {
-            channel.publish().message().keyType();
+            channel.publish().message().payload();
             fail("should have failed on unsupported type");
         } catch (Exception ex) {
-            assertThat(ex.getMessage(), containsString("unsupported-type-thing"));
-            assertThat(ex.getMessage(), containsString("Unsupported type"));
+            assertThat(
+                    ex.getMessage(), containsString("Invalid type name: unsupported-type-thing"));
         }
     }
 }
