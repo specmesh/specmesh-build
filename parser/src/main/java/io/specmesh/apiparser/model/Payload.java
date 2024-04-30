@@ -37,7 +37,7 @@ public class Payload {
     private String ref;
 
     @JsonProperty("type")
-    private String typeT;
+    private String type;
 
     @JsonProperty private PayloadProperties properties;
 
