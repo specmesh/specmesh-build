@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 public class AsyncApiSchemaParserTest {
     private static final ApiSpec API_SPEC =
-            TestSpecLoader.loadFromClassPath("simple_schema_demo-api.yaml");
+            TestSpecLoader.loadFromClassPath("parser_simple_schema_demo-api.yaml");
 
     @Test
     public void shouldReturnProducerMessageSchema() {

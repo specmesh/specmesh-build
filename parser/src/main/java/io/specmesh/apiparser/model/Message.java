@@ -19,11 +19,8 @@ package io.specmesh.apiparser.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
@@ -36,17 +33,16 @@ import lombok.experimental.Accessors;
 @Value
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 @SuppressFBWarnings
 @SuppressWarnings({"unchecked", "rawtypes"})
-public class Message {
+public final class Message {
     @JsonProperty private String messageId;
 
-    @JsonProperty private Map headers = Collections.EMPTY_MAP;
+    @JsonProperty private Map headers;
 
-    @JsonProperty private Map payload = Collections.EMPTY_MAP;
+    @JsonProperty private Map payload;
 
-    @JsonProperty private Map correlationId = Collections.EMPTY_MAP;
+    @JsonProperty private Map correlationId;
 
     @JsonProperty private String schemaFormat;
 
@@ -60,11 +56,27 @@ public class Message {
 
     @JsonProperty private String description;
 
-    @JsonProperty private List<Tag> tags = Collections.EMPTY_LIST;
+    @JsonProperty private List<Tag> tags;
 
     @JsonProperty private Bindings bindings;
 
-    @JsonProperty private Map traits = Collections.EMPTY_MAP;
+    @JsonProperty private Map traits;
+
+    private Message() {
+        this.headers = Map.of();
+        this.correlationId = Map.of();
+        this.schemaFormat = "";
+        this.contentType = "";
+        this.tags = List.of();
+        this.traits = Map.of();
+        this.messageId = null;
+        this.payload = Map.of();
+        this.name = null;
+        this.title = null;
+        this.summary = null;
+        this.description = null;
+        this.bindings = null;
+    }
 
     /**
      * @return the location of the schema

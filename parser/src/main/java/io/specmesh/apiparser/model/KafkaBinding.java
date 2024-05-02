@@ -19,7 +19,6 @@ package io.specmesh.apiparser.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -50,19 +49,19 @@ import lombok.experimental.Accessors;
 public class KafkaBinding {
     private static final int DAYS_TO_MS = 24 * 60 * 60 * 1000;
 
-    @JsonProperty private List<String> envs;
+    @Builder.Default @JsonProperty private List<String> envs = List.of();
 
-    @JsonProperty private int partitions;
+    @Builder.Default @JsonProperty private int partitions = 1;
 
-    @JsonProperty private int replicas;
+    @Builder.Default @JsonProperty private int replicas = 3;
 
-    @JsonProperty private Map<String, String> configs;
+    @Builder.Default @JsonProperty private Map<String, String> configs = Map.of();
 
     @JsonProperty private String groupId;
 
-    @JsonProperty private String schemaIdLocation;
+    @Builder.Default @JsonProperty private String schemaIdLocation = "payload";
 
-    @JsonProperty private String schemaLookupStrategy;
+    @Builder.Default @JsonProperty private String schemaLookupStrategy = "TopicNameStrategy";
 
     @JsonProperty private String bindingVersion;
 
@@ -77,21 +76,7 @@ public class KafkaBinding {
      * @return envs
      */
     public List<String> envs() {
-        return new ArrayList<>(envs == null ? Collections.EMPTY_LIST : envs);
-    }
-
-    /**
-     * @return number of topic partitions
-     */
-    public int partitions() {
-        return partitions == 0 ? 1 : partitions;
-    }
-
-    /**
-     * @return number of topic replicas
-     */
-    public int replicas() {
-        return replicas == 0 ? 1 : replicas;
+        return List.copyOf(envs);
     }
 
     public void validate() {}

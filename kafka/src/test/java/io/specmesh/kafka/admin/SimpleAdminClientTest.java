@@ -44,7 +44,6 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.LongSerializer;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import simple.schema_demo._public.user_signed_up_value.UserSignedUp;
@@ -65,7 +64,6 @@ class SimpleAdminClientTest {
             TestSpecLoader.loadFromClassPath("clientapi-functional-test-api.yaml");
 
     @Test
-    @Order(1)
     void shouldRecordStats() throws ExecutionException, InterruptedException, TimeoutException {
 
         final var userSignedUpTopic = topicName("_public.user_signed_up");
@@ -74,13 +72,14 @@ class SimpleAdminClientTest {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
             final var client = SmAdminClient.create(adminClient);
             Provisioner.provision(
-                    true,
-                    false,
-                    false,
-                    API_SPEC,
-                    "./build/resources/test",
-                    adminClient,
-                    Optional.of(KAFKA_ENV.srClient()));
+                            true,
+                            false,
+                            false,
+                            API_SPEC,
+                            "./build/resources/test",
+                            adminClient,
+                            Optional.of(KAFKA_ENV.srClient()))
+                    .check();
 
             // write seed info
             try (var producer = avroProducer(OWNER_USER)) {

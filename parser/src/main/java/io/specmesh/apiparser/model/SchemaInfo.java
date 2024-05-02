@@ -16,6 +16,8 @@
 
 package io.specmesh.apiparser.model;
 
+import static java.util.Objects.requireNonNull;
+
 import lombok.Value;
 import lombok.experimental.Accessors;
 
@@ -43,9 +45,9 @@ public class SchemaInfo {
             final String contentType,
             final String schemaLookupStrategy) {
         this.schemaRef = schemaRef;
-        this.schemaFormat = schemaFormat;
-        this.schemaIdLocation = schemaIdLocation;
-        this.contentType = contentType;
-        this.schemaLookupStrategy = schemaLookupStrategy;
+        this.schemaFormat = requireNonNull(schemaFormat, "schemaFormat");
+        this.schemaIdLocation = requireNonNull(schemaIdLocation, "schemaIdLocation");
+        this.contentType = requireNonNull(contentType, "contentType");
+        this.schemaLookupStrategy = requireNonNull(schemaLookupStrategy, "schemaLookupStrategy");
     }
 }

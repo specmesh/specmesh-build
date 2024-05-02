@@ -176,7 +176,7 @@ public class Provision implements Callable<Integer> {
     }
 
     @Override
-    public Integer call() throws Exception {
+    public Integer call() {
         final var status =
                 Provisioner.provision(
                         !aclDisabled,
@@ -190,7 +190,7 @@ public class Provision implements Callable<Integer> {
 
         System.out.println(status.toString());
         this.state = status;
-        return 0;
+        return status.failed() ? 1 : 0;
     }
 
     private KafkaApiSpec specMeshSpec() {

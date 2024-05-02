@@ -34,12 +34,12 @@ import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.apiparser.model.Bindings;
 import io.specmesh.apiparser.model.Channel;
 import io.specmesh.apiparser.model.KafkaBinding;
-import io.specmesh.kafka.provision.AclProvisioner;
-import io.specmesh.kafka.provision.TopicProvisioner;
+import io.specmesh.kafka.provision.Provisioner;
 import io.specmesh.test.TestSpecLoader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.common.acl.AccessControlEntry;
@@ -96,8 +96,15 @@ class ExporterFunctionalTest {
     @BeforeAll
     static void setUp() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
-            TopicProvisioner.provision(false, false, API_SPEC, adminClient);
-            AclProvisioner.provision(false, false, API_SPEC, adminClient);
+            Provisioner.provision(
+                            true,
+                            false,
+                            false,
+                            API_SPEC,
+                            "./build/resources/test",
+                            adminClient,
+                            Optional.empty())
+                    .check();
         }
     }
 

@@ -7,13 +7,13 @@ channels:
     description: "one-topic-channel-description"
     bindings:
       kafka:
-        envs: null
-        partitions: 0
-        replicas: 0
-        configs: null
+        envs: []
+        partitions: 1
+        replicas: 3
+        configs: {}
         groupId: "kafka-binding-group-id"
-        schemaIdLocation: null
-        schemaLookupStrategy: null
+        schemaIdLocation: "payload"
+        schemaLookupStrategy: "TopicNameStrategy"
         bindingVersion: null
     publish: null
     subscribe: null
