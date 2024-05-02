@@ -34,13 +34,13 @@ channels:
         bindings:
           kafka:
             schemaIdLocation: "payload"
+            schemaLookupStrategy: "RecordNameStrategy"
         schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
         contentType: "application/octet-stream"
         payload:
           $ref: "/schema/simple.schema_demo._public.user_signed_up.avsc"
 
-  # PRODUCER/OWNER build pipe will publish schema to SR
-  _public.user_checkout:
+  _public.user_signed_up_2:
     # publish bindings to instruct topic configuration per environment
     bindings:
       kafka:
@@ -53,17 +53,17 @@ channels:
           cleanup.policy: delete
 
     publish:
-      summary: User purchase confirmation
-      operationId: onUserCheckout
+      summary: Inform about environmental lighting conditions for a particular streetlight.
+      operationId: onLightMeasured
       message:
         bindings:
           kafka:
-            schemaIdLocation: "payload"
-        schemaFormat: "application/json;version=1.9.0"
-        contentType: "application/json"
+            schemaIdLocation: payload
+            schemaLookupStrategy: TopicRecordNameStrategy
+        schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
+        contentType: "application/octet-stream"
         payload:
-          $ref: "/schema/simple.schema_demo._public.user_checkout.yml"
-
+          $ref: "/schema/simple.schema_demo._public.user_signed_up_2.avsc"
 
   # PRODUCER/OWNER build pipe will publish schema to SR
   _public.user_info:
@@ -110,6 +110,7 @@ channels:
         bindings:
           kafka:
             schemaIdLocation: "payload"
+            schemaLookupStrategy: "TopicNameStrategy"
         schemaFormat: "application/json;version=1.9.0"
         contentType: "application/json"
         payload:

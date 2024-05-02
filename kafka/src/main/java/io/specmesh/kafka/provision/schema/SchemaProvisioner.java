@@ -28,6 +28,7 @@ import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.provision.ExceptionWrapper;
 import io.specmesh.kafka.provision.Provisioner;
 import io.specmesh.kafka.provision.Status;
+import io.specmesh.kafka.provision.WithState;
 import io.specmesh.kafka.provision.schema.SchemaReaders.SchemaReader;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -176,29 +177,30 @@ public final class SchemaProvisioner {
             final Collection<ParsedSchema> schemas,
             final SchemaInfo schemaInfo) {
         final var lookup = schemaInfo.schemaLookupStrategy();
-        if (lookup == null || lookup.equalsIgnoreCase("TopicIdStrategy")) {
-            return topicName + "-value";
-        }
-        if (lookup.equalsIgnoreCase("TopicNameStrategy")
-                || lookup.equalsIgnoreCase("SimpleTopicIdStrategy")) {
+        if (lookup.equalsIgnoreCase("SimpleTopicIdStrategy")) {
             return topicName;
         }
         if (lookup.equalsIgnoreCase("RecordNameStrategy")
                 || lookup.equalsIgnoreCase("RecordIdStrategy")) {
-
             final var next = schemas.iterator().next();
-            if (isAvro(next)) {
-                return ((AvroSchema) next).rawSchema().getFullName();
+            if (!isAvro(next)) {
+                throw new UnsupportedOperationException(
+                        "Currently, only avro schemas support RecordNameStrategy and"
+                                + " RecordIdStrategy");
             }
-            return topicName + "-value";
+            return ((AvroSchema) next).rawSchema().getFullName();
         }
         if (lookup.equalsIgnoreCase("TopicRecordIdStrategy")
                 || lookup.equalsIgnoreCase("TopicRecordNameStrategy")) {
 
             final var next = schemas.iterator().next();
-            if (isAvro(next)) {
-                return topicName + "-" + ((AvroSchema) next).rawSchema().getFullName();
+            if (!isAvro(next)) {
+                throw new UnsupportedOperationException(
+                        "Currently, only avro schemas support TopicRecordNameStrategy and"
+                                + " TopicRecordIdStrategy");
             }
+
+            return topicName + "-" + ((AvroSchema) next).rawSchema().getFullName();
         }
         return topicName + "-value";
     }
@@ -225,7 +227,7 @@ public final class SchemaProvisioner {
     @Accessors(fluent = true)
     @EqualsAndHashCode(onlyExplicitlyIncluded = true)
     @SuppressFBWarnings
-    public static class Schema {
+    public static final class Schema implements WithState {
         @EqualsAndHashCode.Include private String subject;
         private Status.STATE state;
         private String type;

@@ -123,7 +123,7 @@ public final class TopicProvisioner {
     @Accessors(fluent = true)
     @SuppressFBWarnings
     @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-    public static class Topic {
+    public static final class Topic implements WithState {
         @EqualsAndHashCode.Include private String name;
         private Status.STATE state;
         private int partitions;

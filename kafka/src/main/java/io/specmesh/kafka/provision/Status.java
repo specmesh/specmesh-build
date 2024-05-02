@@ -18,7 +18,13 @@ package io.specmesh.kafka.provision;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,9 +41,9 @@ import lombok.experimental.Accessors;
 @SuppressFBWarnings
 public class Status {
 
-    private Collection<TopicProvisioner.Topic> topics;
-    private Collection<SchemaProvisioner.Schema> schemas;
-    private Collection<AclProvisioner.Acl> acls;
+    @Builder.Default private Collection<TopicProvisioner.Topic> topics = List.of();
+    @Builder.Default private Collection<SchemaProvisioner.Schema> schemas = List.of();
+    @Builder.Default private Collection<AclProvisioner.Acl> acls = List.of();
 
     /** Operation result */
     public enum STATE {
@@ -59,5 +65,43 @@ public class Status {
         IGNORED,
         /** operation failed */
         FAILED
+    }
+
+    /**
+     * @return true if any operation failed.
+     */
+    public boolean failed() {
+        return all().anyMatch(e -> e.state() == STATE.FAILED);
+    }
+
+    /** Throws exception if any errors occurred. */
+    public void check() {
+        final List<Exception> exceptions =
+                all().flatMap(e -> Optional.ofNullable(e.exception()).stream())
+                        .collect(Collectors.toList());
+
+        if (!exceptions.isEmpty()) {
+            throw new CompositeException(exceptions);
+        }
+    }
+
+    private Stream<WithState> all() {
+        return Stream.concat(Stream.concat(topics.stream(), schemas.stream()), acls.stream());
+    }
+
+    private static final class CompositeException extends RuntimeException {
+        CompositeException(final List<Exception> exceptions) {
+            super(
+                    exceptions.stream()
+                            .map(CompositeException::fullMessage)
+                            .collect(Collectors.joining(System.lineSeparator())));
+        }
+
+        private static String fullMessage(final Exception e) {
+            final StringWriter sw = new StringWriter();
+            final PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            return e.getMessage() + System.lineSeparator() + sw;
+        }
     }
 }
