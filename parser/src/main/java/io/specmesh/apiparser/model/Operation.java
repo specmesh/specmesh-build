@@ -84,7 +84,7 @@ public class Operation {
 
     public void validate() {
         if (operationId == null) {
-            throw new APIParserException("(publish|subscribe) operation.id  is null");
+            throw new APIParserException("(publish|subscribe) operationId  is null");
         }
     }
 

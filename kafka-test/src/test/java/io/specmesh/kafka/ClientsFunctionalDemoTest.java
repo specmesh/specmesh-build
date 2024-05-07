@@ -16,6 +16,7 @@
 
 package io.specmesh.kafka;
 
+import static io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig.VALUE_SUBJECT_NAME_STRATEGY;
 import static io.specmesh.kafka.Clients.producerProperties;
 import static java.util.stream.Collectors.toList;
 import static org.apache.kafka.common.acl.AclOperation.ALL;
@@ -39,6 +40,9 @@ import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializerConfig;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
+import io.confluent.kafka.serializers.subject.RecordNameStrategy;
+import io.confluent.kafka.serializers.subject.TopicRecordNameStrategy;
+import io.confluent.kafka.serializers.subject.strategy.SubjectNameStrategy;
 import io.confluent.kafka.streams.serdes.protobuf.KafkaProtobufSerde;
 import io.specmesh.kafka.provision.Provisioner;
 import io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfo.UserInfo;
@@ -83,7 +87,7 @@ import simple.schema_demo._public.user_signed_up_value.UserSignedUp;
 class ClientsFunctionalDemoTest {
 
     private static final KafkaApiSpec API_SPEC =
-            TestSpecLoader.loadFromClassPath("simple_schema_demo-api.yaml");
+            TestSpecLoader.loadFromClassPath("kafka_test-simple_schema_demo-api.yaml");
 
     private static final String OWNER_USER = "simple.schema_demo";
     private static final String DIFFERENT_USER = "different-user";
@@ -109,13 +113,14 @@ class ClientsFunctionalDemoTest {
             final SchemaRegistryClient schemaRegistryClient =
                     new CachedSchemaRegistryClient(KAFKA_ENV.schemeRegistryServer(), 5);
             Provisioner.provision(
-                    true,
-                    false,
-                    false,
-                    API_SPEC,
-                    "./build/resources/test",
-                    adminClient,
-                    Optional.of(schemaRegistryClient));
+                            true,
+                            false,
+                            false,
+                            API_SPEC,
+                            "./build/resources/test",
+                            adminClient,
+                            Optional.of(schemaRegistryClient))
+                    .check();
         }
     }
 
@@ -130,8 +135,10 @@ class ClientsFunctionalDemoTest {
         final var userSignedUpTopic = topicName("_public.user_signed_up");
         final var sentRecord = new UserSignedUp("joe blogs", "blogy@twasmail.com", 100);
 
-        try (Consumer<Long, UserSignedUp> consumer = avroConsumer(userSignedUpTopic, OWNER_USER);
-                Producer<Long, UserSignedUp> producer = avroProducer(OWNER_USER)) {
+        try (Consumer<Long, UserSignedUp> consumer =
+                        avroConsumer(userSignedUpTopic, OWNER_USER, RecordNameStrategy.class);
+                Producer<Long, UserSignedUp> producer =
+                        avroProducer(OWNER_USER, RecordNameStrategy.class)) {
 
             // When:
             producer.send(new ProducerRecord<>(userSignedUpTopic, 1000L, sentRecord))
@@ -204,7 +211,8 @@ class ClientsFunctionalDemoTest {
         final var userSignedUpTopic = topicName("_public.user_signed_up");
         final var sentRecord = new UserSignedUp("joe blogs", "blogy@twasmail.com", 100);
 
-        try (Producer<Long, UserSignedUp> producer = avroProducer(DIFFERENT_USER)) {
+        try (Producer<Long, UserSignedUp> producer =
+                avroProducer(DIFFERENT_USER, RecordNameStrategy.class)) {
 
             // When:
             final Future<RecordMetadata> f =
@@ -228,8 +236,10 @@ class ClientsFunctionalDemoTest {
             final var sentRecord = new UserSignedUp("joe blogs", "blogy@twasmail.com", 100);
 
             try (Consumer<Long, UserSignedUp> consumer =
-                            avroConsumer(userSignedUpTopic, DIFFERENT_USER);
-                    Producer<Long, UserSignedUp> producer = avroProducer(OWNER_USER)) {
+                            avroConsumer(
+                                    userSignedUpTopic, DIFFERENT_USER, RecordNameStrategy.class);
+                    Producer<Long, UserSignedUp> producer =
+                            avroProducer(OWNER_USER, RecordNameStrategy.class)) {
 
                 // When:
                 producer.send(new ProducerRecord<>(userSignedUpTopic, 1000L, sentRecord))
@@ -240,6 +250,26 @@ class ClientsFunctionalDemoTest {
                 assertThat("Should have received a record but got nothing", values, hasSize(1));
                 assertThat(values, contains(sentRecord));
             }
+        }
+    }
+
+    @Test
+    void shouldProduceAndConsumeUsingAvroTopicRecordNameStrategy() throws Exception {
+        // Given:
+        final String topicName = topicName("_public.user_signed_up_2");
+        final var sentRecord = new UserSignedUp("joe blogs", "blogy@twasmail.com", 100);
+
+        try (Consumer<Long, UserSignedUp> consumer =
+                        avroConsumer(topicName, OWNER_USER, TopicRecordNameStrategy.class);
+                Producer<Long, UserSignedUp> producer =
+                        avroProducer(OWNER_USER, TopicRecordNameStrategy.class)) {
+
+            // When:
+            producer.send(new ProducerRecord<>(topicName, 1000L, sentRecord))
+                    .get(60, TimeUnit.SECONDS);
+
+            // Then:
+            assertThat(values(consumer), contains(sentRecord));
         }
     }
 
@@ -281,17 +311,19 @@ class ClientsFunctionalDemoTest {
     }
 
     private Consumer<Long, UserSignedUp> avroConsumer(
-            final String topicName, final String userName) {
+            final String topicName,
+            final String userName,
+            final Class<? extends SubjectNameStrategy> namingStrategy) {
         return consumer(
                 UserSignedUp.class,
                 topicName,
                 KafkaAvroDeserializer.class,
                 userName,
                 Map.of(
-                        // change for common data types
-                        // "value.subject.name.strategy",
-                        // "io.confluent.kafka.serializers.subject.RecordNameStrategy",
-                        "schema.reflection", "true"));
+                        VALUE_SUBJECT_NAME_STRATEGY,
+                        namingStrategy.getName(),
+                        "schema.reflection",
+                        "true"));
     }
 
     private static <V> Producer<Long, V> producer(
@@ -319,16 +351,17 @@ class ClientsFunctionalDemoTest {
         return producer(UserInfo.class, KafkaProtobufSerializer.class, OWNER_USER, Map.of());
     }
 
-    private static Producer<Long, UserSignedUp> avroProducer(final String user) {
+    private static Producer<Long, UserSignedUp> avroProducer(
+            final String user, final Class<? extends SubjectNameStrategy> namingStrategy) {
         return producer(
                 UserSignedUp.class,
                 KafkaAvroSerializer.class,
                 user,
                 Map.of(
-                        // change for common data types
-                        // "value.subject.name.strategy",
-                        // "io.confluent.kafka.serializers.subject.RecordNameStrategy",
-                        "schema.reflection", "true"));
+                        VALUE_SUBJECT_NAME_STRATEGY,
+                        namingStrategy.getName(),
+                        "schema.reflection",
+                        "true"));
     }
 
     private static <V> List<V> values(final Consumer<Long, V> consumer) {

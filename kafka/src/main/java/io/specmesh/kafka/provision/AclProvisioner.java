@@ -122,7 +122,7 @@ public final class AclProvisioner {
     @Accessors(fluent = true)
     @SuppressFBWarnings
     @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-    public static class Acl {
+    public static final class Acl implements WithState {
         @EqualsAndHashCode.Include private String name;
         private Status.STATE state;
         private AclBinding aclBinding;

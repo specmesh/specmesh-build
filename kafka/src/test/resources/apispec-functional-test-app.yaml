@@ -60,9 +60,11 @@ channels:
     bindings:
       kafka:
         partitions: 3
+        replicas: 1
 
     publish:
       summary: Humans purchasing food
+      operationId: whatEva
       tags: [
         name: "grant-access:some.other.domain.root"
       ]
@@ -92,9 +94,11 @@ channels:
     bindings:
       kafka:
         partitions: 3
+        replicas: 1
 
     publish:
       summary: Humans customers
+      operationId: whatEva
       message:
         name: Food Item
         tags: [
@@ -121,6 +125,7 @@ channels:
   london.hammersmith.transport._public.tube:
     subscribe:
       summary: Humans arriving in the borough
+      operationId: whatEva
       message:
         name: Human
         payload:

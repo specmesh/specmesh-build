@@ -28,8 +28,14 @@ import io.specmesh.kafka.provision.Status;
 import io.specmesh.kafka.provision.TopicProvisioner.Topic;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.Config;
 import org.apache.kafka.clients.admin.ListTopicsResult;
+import org.apache.kafka.common.config.ConfigResource;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import picocli.CommandLine;
@@ -46,15 +52,27 @@ class ProvisionFunctionalTest {
                     .withKafkaAcls()
                     .build();
 
+    private Admin admin;
+
+    @BeforeEach
+    void setUp() {
+        admin = KAFKA_ENV.adminClient();
+    }
+
+    @AfterEach
+    void tearDown() {
+        admin.close();
+    }
+
     @Test
-    void shouldProvisionCmdWithLombock() throws Exception {
+    void shouldProvisionCmdWithLombock() {
         final var provision = Provision.builder().brokerUrl("borker").aclDisabled(false).build();
         assertThat(provision.aclDisabled(), is(false));
         assertThat(provision.brokerUrl(), is("borker"));
     }
 
     @Test
-    void shouldNotSwallowExceptions() throws Exception {
+    void shouldNotSwallowExceptions() {
         final var topic = Topic.builder().build();
         final var swallowed =
                 Status.builder()
@@ -122,7 +140,7 @@ class ProvisionFunctionalTest {
          */
 
         // Then: check topic resources were created
-        final ListTopicsResult topicsResult = KAFKA_ENV.adminClient().listTopics();
+        final ListTopicsResult topicsResult = admin.listTopics();
         final Set<String> topicNames = topicsResult.names().get();
         assertThat(
                 topicNames,
@@ -133,6 +151,25 @@ class ProvisionFunctionalTest {
                                 "simple.schema_demo._public.user_info",
                                 "_schemas")));
 
+        assertThat(cleanupPolicy("simple.schema_demo._public.user_signed_up"), is("delete"));
+        assertThat(cleanupPolicy("simple.schema_demo._public.user_checkout"), is("compact,delete"));
+
         assertThat(status.schemas(), hasSize(3));
+    }
+
+    private String cleanupPolicy(final String topicName) {
+        try {
+            final ConfigResource checkoutTopic =
+                    new ConfigResource(ConfigResource.Type.TOPIC, topicName);
+            final Config config =
+                    admin.describeConfigs(List.of(checkoutTopic))
+                            .values()
+                            .get(checkoutTopic)
+                            .get(30, TimeUnit.SECONDS);
+
+            return config.get("cleanup.policy").value();
+        } catch (Exception e) {
+            throw new AssertionError("failed to get topic cleanup.policy for: " + topicName, e);
+        }
     }
 }

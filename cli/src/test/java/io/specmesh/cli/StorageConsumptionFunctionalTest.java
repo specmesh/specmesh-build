@@ -71,13 +71,14 @@ class StorageConsumptionFunctionalTest {
     void shouldGetStorageAndConsumptionMetrics() throws Exception {
 
         Provisioner.provision(
-                true,
-                false,
-                false,
-                API_SPEC,
-                "./build/resources/test",
-                KAFKA_ENV.adminClient(),
-                Optional.of(KAFKA_ENV.srClient()));
+                        true,
+                        false,
+                        false,
+                        API_SPEC,
+                        "./build/resources/test",
+                        KAFKA_ENV.adminClient(),
+                        Optional.of(KAFKA_ENV.srClient()))
+                .check();
 
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
             final var client = SmAdminClient.create(adminClient);
