@@ -40,6 +40,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -63,7 +65,9 @@ public final class SchemaReaders {
                 final var results = new ArrayList<ParsedSchema>();
 
                 final String filename =
-                        filePath.getFileName() == null ? "" : filePath.getFileName().toString();
+                        Optional.ofNullable(filePath.getFileName())
+                                .map(Objects::toString)
+                                .orElse("");
                 if (filename.endsWith(".avsc")) {
                     final var refs = resolveReferencesFor(filePath, schemaContent);
                     results.add(
