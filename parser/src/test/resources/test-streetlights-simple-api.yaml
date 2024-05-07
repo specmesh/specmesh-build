@@ -114,21 +114,18 @@ channels:
           key:
             type: object
             properties:
-              key:
+              id:
+                type: integer
+                minimum: 0
+                description: Id of the streetlight.
+              lumens:
+                type: integer
+                minimum: 0
+                description: Light intensity measured in lumens.
+              sentAt:
                 type: string
-              value:
-                id:
-                  type: integer
-                  minimum: 0
-                  description: Id of the streetlight.
-                lumens:
-                  type: integer
-                  minimum: 0
-                  description: Light intensity measured in lumens.
-                sentAt:
-                  type: string
-                  format: date-time
-                  description: Date and time when the message was sent.
+                format: date-time
+                description: Date and time when the message was sent.
           value:
             $ref: "/schema/com.example.shared.Currency.avsc"
 

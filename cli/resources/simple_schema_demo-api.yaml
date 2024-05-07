@@ -37,13 +37,12 @@ channels:
           kafka:
             schemaIdLocation: "payload"
         payload:
-          properties:
-            key:
-              type: long
-            value:
-              schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
-              contentType: "application/octet-stream"
-              $ref: "/schema/simple.schema_demo._public.user_signed_up.avsc"
+          key:
+            type: long
+          value:
+            schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
+            contentType: "application/octet-stream"
+            $ref: "/schema/simple.schema_demo._public.user_signed_up.avsc"
 
   # PRODUCER/OWNER build pipe will publish schema to SR
   _public.user_checkout:
@@ -68,11 +67,10 @@ channels:
         schemaFormat: "application/json;version=1.9.0"
         contentType: "application/json"
         payload:
-          properties:
-            key:
-              type: long
-            value:
-              $ref: "/schema/simple.schema_demo._public.user_checkout.yml"
+          key:
+            type: long
+          value:
+            $ref: "/schema/simple.schema_demo._public.user_checkout.yml"
 
   # PRODUCER/OWNER build pipe will publish schema to SR
   _public.user_info:
@@ -98,11 +96,10 @@ channels:
         schemaFormat: "application/json;version=1.9.0"
         contentType: "application/json"
         payload:
-          properties:
-            key:
-              type: long
-            value:
-              $ref: "/schema/simple.schema_demo._public.user_info.proto"
+          key:
+            type: long
+          value:
+            $ref: "/schema/simple.schema_demo._public.user_info.proto"
   # SUBSCRIBER WILL REQUEST SCHEMA from SR and CodeGen required classes. Header will be used for Id
   london.hammersmith.transport._public.tube:
     subscribe:
@@ -119,7 +116,6 @@ channels:
             key:
               type: string
         payload:
-          properties:
           key:
             type: long
           value:

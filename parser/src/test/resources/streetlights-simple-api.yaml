@@ -21,33 +21,39 @@ channels:
       message:
         name: LightMeasured
         payload:
-          type: object
-          properties:
-            id:
-              type: integer
-              minimum: 0
-              description: Id of the streetlight.
-            lumens:
-              type: integer
-              minimum: 0
-              description: Light intensity measured in lumens.
-            sentAt:
-              type: string
-              format: date-time
-              description: Date and time when the message was sent.
+          key:
+            type: long
+          value:
+            type: object
+            properties:
+              id:
+                type: integer
+                minimum: 0
+                description: Id of the streetlight.
+              lumens:
+                type: integer
+                minimum: 0
+                description: Light intensity measured in lumens.
+              sentAt:
+                type: string
+                format: date-time
+                description: Date and time when the message was sent.
   london.hammersmith.transport.public.tube:
     subscribe:
       summary: Humans arriving in the borough
       message:
         name: Human
         payload:
-          type: object
-          properties:
-            id:
-              type: integer
-              minimum: 0
-              description: Id of the human
-            age:
-              type: integer
-              minimum: 0
-              description: Age of the human
+          key:
+            type: long
+          value:
+            type: object
+            properties:
+              id:
+                type: integer
+                minimum: 0
+                description: Id of the human
+              age:
+                type: integer
+                minimum: 0
+                description: Age of the human

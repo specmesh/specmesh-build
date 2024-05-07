@@ -62,26 +62,23 @@ public class Payload {
     }
 
     /**
+     * @param schemaLookupStrategy the schema lookup strategy
      * @return The schemas in use
      */
-    public Stream<TopicSchema> schemas(final String defaultSchemaLookupStrategy) {
+    public Stream<TopicSchema> schemas(final String schemaLookupStrategy) {
         final Optional<TopicSchema> keySchema =
                 key.schemaRef()
                         .map(
                                 ref ->
                                         new TopicSchema(
-                                                TopicSchema.Part.key,
-                                                ref,
-                                                defaultSchemaLookupStrategy));
+                                                TopicSchema.Part.key, ref, schemaLookupStrategy));
 
         final Optional<TopicSchema> valSchema =
                 value.schemaRef()
                         .map(
                                 ref ->
                                         new TopicSchema(
-                                                TopicSchema.Part.value,
-                                                ref,
-                                                defaultSchemaLookupStrategy));
+                                                TopicSchema.Part.value, ref, schemaLookupStrategy));
 
         return Stream.of(keySchema, valSchema).flatMap(Optional::stream);
     }

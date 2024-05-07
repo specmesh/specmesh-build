@@ -23,7 +23,7 @@ public final class TopicSchema {
     public enum Part {
         key,
         value
-    };
+    }
 
     private final Part part;
     private final String schemaRef;
