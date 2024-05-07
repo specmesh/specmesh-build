@@ -22,6 +22,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.apiparser.AsyncApiParser.APIParserException;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -54,10 +55,7 @@ public class Operation {
 
     @JsonProperty private String description;
 
-    @SuppressWarnings("rawtypes")
-    @JsonProperty
-    @Builder.Default
-    private List<Tag> tags = List.of();
+    @JsonProperty @Builder.Default private List<Tag> tags = List.of();
 
     @JsonProperty private Bindings bindings;
 
@@ -67,30 +65,19 @@ public class Operation {
     @JsonProperty private Message message;
 
     /**
-     * @return schema info
+     * @return The schemas in use
      */
-    public SchemaInfo schemaInfo() {
-        if (message.bindings() == null) {
-            throw new APIParserException(
-                    "Bindings not found for (publish|subscribe) operation: " + operationId);
+    public Stream<TopicSchema> schemas() {
+        if (message == null) {
+            return Stream.empty();
         }
-        return new SchemaInfo(
-                message().schemaRef(),
-                message().schemaFormat(),
-                message.bindings().kafka().schemaIdLocation(),
-                message().contentType(),
-                message.bindings().kafka().schemaLookupStrategy());
+
+        return message.schemas();
     }
 
     public void validate() {
         if (operationId == null) {
             throw new APIParserException("(publish|subscribe) operationId  is null");
         }
-    }
-
-    public boolean isSchemaRequired() {
-        return this.message() != null
-                && this.message().schemaRef() != null
-                && this.message().schemaRef().length() > 0;
     }
 }

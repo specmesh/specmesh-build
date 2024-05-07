@@ -31,5 +31,8 @@ channels:
             key:
               type: string
         payload:
-          $ref: "/schema/com.example.shared.Currency.avsc"
+          key:
+            type: uuid
+          value:
+            $ref: "/schema/com.example.shared.Currency.avsc"
 

@@ -22,7 +22,7 @@ import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
-import io.specmesh.apiparser.model.SchemaInfo;
+import io.specmesh.apiparser.model.TopicSchema;
 import io.specmesh.test.TestSpecLoader;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -199,8 +199,12 @@ public class KafkaAPISpecWithGrantAccessAclsTest {
 
     @Test
     public void shouldGetSchemaInfoForOwnedTopics() {
-        final List<NewTopic> newTopics = API_SPEC.listDomainOwnedTopics();
-        final SchemaInfo schemaInfo = API_SPEC.schemaInfoForTopic(newTopics.get(0).name());
-        assertThat(schemaInfo.schemaIdLocation(), is("header"));
+        final List<TopicSchema> topicSchemas =
+                API_SPEC.schemasForTopic("london.hammersmith.olympia.bigdatalondon.attendee")
+                        .collect(Collectors.toList());
+        assertThat(topicSchemas, hasSize(1));
+        assertThat(topicSchemas.get(0).part(), is(TopicSchema.Part.key));
+        assertThat(topicSchemas.get(0).schemaRef(), is("/some/path"));
+        assertThat(topicSchemas.get(0).schemaLookupStrategy(), is("TopicNameStrategy"));
     }
 }

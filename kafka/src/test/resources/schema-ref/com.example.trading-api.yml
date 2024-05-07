@@ -33,13 +33,14 @@ channels:
         bindings:
           kafka:
             schemaIdLocation: "header"
-            key:
-              type: string
 
         schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
         contentType: "application/octet-stream"
         payload:
-          $ref: "/schema/com.example.trading.Trade.avsc"
+          key:
+            type: uuid
+          value:
+            $ref: "/schema/com.example.trading.Trade.avsc"
 
 
   # schema reference to - referenced here for topology reasons - schema also referenced from Trade.avsc
@@ -56,8 +57,9 @@ channels:
         bindings:
           kafka:
             schemaIdLocation: "header"
-            key:
-              type: string
         payload:
-          $ref: "/schema/com.example.shared.Currency.avsc"
+          key:
+            type: string
+          value:
+            $ref: "/schema/com.example.shared.Currency.avsc"
 

@@ -25,6 +25,7 @@ import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.apiparser.model.Channel;
 import io.specmesh.apiparser.model.Operation;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 public class AsyncApiSchemaParserTest {
@@ -42,14 +43,15 @@ public class AsyncApiSchemaParserTest {
 
         final Operation publish =
                 channelsMap.get(".simple.schema-demo._public.user.signed").publish();
-        assertThat(publish.message().schemaRef(), is("simple_schema_demo_user-signedup.avsc"));
+        assertThat(
+                publish.message().payload().value().schemaRef(),
+                is(Optional.of("simple_schema_demo_user-signedup.avsc")));
 
         assertThat(
                 publish.message().schemaFormat(),
                 is("application/vnd.apache.avro+json;version=1.9.0"));
         assertThat(publish.message().contentType(), is("application/octet-stream"));
         assertThat(publish.message().bindings().kafka().schemaIdLocation(), is("payload"));
-        assertThat(publish.schemaInfo().schemaIdLocation(), is("payload"));
     }
 
     @Test
@@ -64,8 +66,8 @@ public class AsyncApiSchemaParserTest {
         final Operation subscribe =
                 channelsMap.get("london.hammersmith.transport._public.tube").subscribe();
         assertThat(
-                subscribe.message().schemaRef(),
-                is("london_hammersmith_transport_public_passenger.avsc"));
+                subscribe.message().payload().value().schemaRef(),
+                is(Optional.of("london_hammersmith_transport_public_passenger.avsc")));
         assertThat(
                 subscribe.message().schemaFormat(),
                 is("application/vnd.apache.avro+json;version=1.9.0"));

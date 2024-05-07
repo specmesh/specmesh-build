@@ -17,17 +17,20 @@
 package io.specmesh.apiparser;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.apiparser.model.Bindings;
 import io.specmesh.apiparser.model.Channel;
-import java.util.Map;
+import io.specmesh.apiparser.model.Payload;
+import io.specmesh.apiparser.model.Payload.KafkaPart;
+import io.specmesh.apiparser.model.Payload.KafkaPart.KafkaType;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.kafka.common.config.TopicConfig;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 public class AsyncApiParserTest {
@@ -41,79 +44,84 @@ public class AsyncApiParserTest {
 
     @Test
     public void shouldReturnCanonicalChannelNames() {
-        final Map<String, Channel> channelsMap = API_SPEC.channels();
-        assertThat(channelsMap.entrySet(), hasSize(2));
         assertThat(
-                "Should have assembled id + channelname",
-                channelsMap.keySet(),
-                hasItem(".simple.streetlights._public.light.measured"));
-        assertThat(
-                "Should use absolute path",
-                channelsMap.keySet(),
-                hasItem("london.hammersmith.transport._public.tube"));
+                API_SPEC.channels().keySet(),
+                containsInAnyOrder(
+                        ".simple.streetlights._public.light.measured",
+                        "london.hammersmith.transport._public.tube",
+                        ".simple.streetlights._public.avro.key",
+                        ".simple.streetlights._public.avro.value"));
     }
 
     @Test
     public void shouldReturnKafkaBindingsForCreation() {
-        final Map<String, Channel> channelsMap = API_SPEC.channels();
-        assertThat(channelsMap.entrySet(), hasSize(2));
-        assertThat(
-                "Should have assembled id + channelname",
-                channelsMap.keySet(),
-                hasItem(".simple.streetlights._public.light.measured"));
-
         final Bindings producerBindings =
-                channelsMap.get(".simple.streetlights._public.light.measured").bindings();
+                API_SPEC.channels().get(".simple.streetlights._public.light.measured").bindings();
         assertThat(producerBindings.kafka().partitions(), is(3));
         assertThat(producerBindings.kafka().replicas(), is(1));
-
-        assertThat(
-                "Should use absolute path",
-                channelsMap.keySet(),
-                hasItem("london.hammersmith.transport._public.tube"));
     }
 
     @Test
     public void shouldReturnOperationTags() {
-        final Map<String, Channel> channelsMap = API_SPEC.channels();
-        assertThat(channelsMap.entrySet(), hasSize(2));
-        assertThat(
-                "Should have assembled 'id + channelname'",
-                channelsMap.keySet(),
-                hasItem(".simple.streetlights._public.light.measured"));
-
         final Bindings producerBindings =
-                channelsMap.get(".simple.streetlights._public.light.measured").bindings();
-        assertThat(producerBindings.kafka().configs().entrySet(), hasSize(1));
-        assertThat(
-                producerBindings.kafka().configs().keySet(),
-                is(Set.of(TopicConfig.CLEANUP_POLICY_CONFIG)));
-        assertThat(producerBindings.kafka().envs(), hasSize(2));
+                API_SPEC.channels().get(".simple.streetlights._public.light.measured").bindings();
 
         assertThat(
-                channelsMap.values().iterator().next().publish().message().tags(),
-                Matchers.hasSize(2));
+                producerBindings.kafka().configs(),
+                hasEntry(TopicConfig.CLEANUP_POLICY_CONFIG, TopicConfig.CLEANUP_POLICY_DELETE));
+        assertThat(producerBindings.kafka().envs(), hasSize(2));
     }
 
     @Test
     public void shouldReturnProducerMessageSchema() {
-        final Map<String, Channel> channelsMap = API_SPEC.channels();
-        assertThat(channelsMap.entrySet(), hasSize(2));
-        assertThat(
-                "Should have assembled 'id + channelname'",
-                channelsMap.keySet(),
-                hasItem(".simple.streetlights._public.light.measured"));
-
         final Bindings producerBindings =
-                channelsMap.get(".simple.streetlights._public.light.measured").bindings();
+                API_SPEC.channels().get(".simple.streetlights._public.light.measured").bindings();
+
         assertThat(producerBindings.kafka().configs().entrySet(), hasSize(1));
         assertThat(
                 producerBindings.kafka().configs().keySet(),
                 is(Set.of(TopicConfig.CLEANUP_POLICY_CONFIG)));
         assertThat(producerBindings.kafka().envs(), hasSize(2));
+    }
+
+    @Test
+    public void shouldSupportSimpleKey() {
+        final Channel channel =
+                API_SPEC.channels().get(".simple.streetlights._public.light.measured");
+
+        final Payload payload = channel.publish().message().payload();
+
+        assertThat(payload.key(), is(new KafkaPart(KafkaType.String)));
+    }
+
+    @Test
+    public void shouldSupportSchemaRefKey() {
+        final Channel channel = API_SPEC.channels().get(".simple.streetlights._public.avro.key");
+
+        final Payload payload = channel.publish().message().payload();
 
         assertThat(
-                channelsMap.values().iterator().next().publish().message().tags(),
-                Matchers.hasSize(2));
+                payload.key().schemaRef(),
+                is(Optional.of("/schema/com.example.shared.Currency.avsc")));
+    }
+
+    @Test
+    public void shouldSupportSimpleValue() {
+        final Channel channel = API_SPEC.channels().get(".simple.streetlights._public.avro.key");
+
+        final Payload payload = channel.publish().message().payload();
+
+        assertThat(payload.value(), is(new KafkaPart(KafkaType.Int)));
+    }
+
+    @Test
+    public void shouldSupportSchemaRefValue() {
+        final Channel channel = API_SPEC.channels().get(".simple.streetlights._public.avro.value");
+
+        final Payload payload = channel.publish().message().payload();
+
+        assertThat(
+                payload.value().schemaRef(),
+                is(Optional.of("/schema/com.example.shared.Currency.avsc")));
     }
 }

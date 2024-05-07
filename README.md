@@ -44,13 +44,19 @@ channels:
     publish:
       message:
         payload:
-          $ref: "/schema/simple.schema_demo._public.user_signed_up.avsc"
+          key:
+            type: long
+          value:
+            $ref: "/schema/simple.schema_demo._public.user_signed_up.avsc"
 
   _private.user_checkout:
     publish:
       message:
         payload:
-          $ref: "/schema/simple.schema_demo._public.user_checkout.yml"
+          key:
+            type: long
+          value:
+             $ref: "/schema/simple.schema_demo._public.user_checkout.yml"
 
 
   _protected.purchased:
@@ -142,7 +148,10 @@ Schema References are supported only by the Confluent Avro Serde. Common/Shared 
             key:
               type: string
         payload:
-          $ref: "/schema/com.example.shared.Currency.avsc"
+          key:
+            type: long
+          value:
+            $ref: "/schema/com.example.shared.Currency.avsc"
 ```
 
 More detail is provided below.
@@ -209,7 +218,10 @@ Source: com.example.trading-api.yml  (spec)
         schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
         contentType: "application/octet-stream"
         payload:
-          $ref: "/schema/com.example.trading.Trade.avsc"
+          key:
+            type: long
+          value:
+            $ref: "/schema/com.example.trading.Trade.avsc"
 ```
 
 Trade.avsc references the _Currency_ .avsc schema (the shared schema type)
@@ -281,7 +293,10 @@ channels:
             key:
               type: string
         payload:
-          $ref: "/schema/com.example.shared.Currency.avsc"
+          key:
+            type: long
+          value:
+            $ref: "/schema/com.example.shared.Currency.avsc"
 ```
 
 

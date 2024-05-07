@@ -37,7 +37,10 @@ channels:
         schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
         contentType: "application/octet-stream"
         payload:
-          $ref: "simple_schema_demo_user-signedup.avsc"
+          key:
+            type: string
+          value:
+            $ref: "simple_schema_demo_user-signedup.avsc"
 
 # SUBSCRIBER WILL REQUEST SCHEMA from SR and CodeGen required classes. Header will be used for Id
   london.hammersmith.transport._public.tube:
@@ -52,9 +55,10 @@ channels:
         bindings:
           kafka:
             schemaIdLocation: "header"
-            key:
-              type: string
         payload:
-          # client should lookup this schema remotely from the schema registry - it is owned by the publisher
-          $ref: "london_hammersmith_transport_public_passenger.avsc"
+          key:
+            type: string
+          value:
+            # client should lookup this schema remotely from the schema registry - it is owned by the publisher
+            $ref: "london_hammersmith_transport_public_passenger.avsc"
 

@@ -46,16 +46,19 @@ channels:
             schemaIdLocation: 'header'
             bindingVersion: '0.3.0'
         payload:
-          type: object
-          properties:
-            id:
-              type: integer
-              minimum: 0
-              description: Id of the human
-            age:
-              type: integer
-              minimum: 0
-              description: Age of the human
+          key:
+            type: long
+          value:
+            type: object
+            properties:
+              id:
+                type: integer
+                minimum: 0
+                description: Id of the human
+              age:
+                type: integer
+                minimum: 0
+                description: Age of the human
   _protected.retail.subway.food.purchase:
     bindings:
       kafka:
@@ -75,20 +78,23 @@ channels:
           name: "purchase"
         ]
         payload:
-          type: object
-          properties:
-            id:
-              type: integer
-              minimum: 0
-              description: Id of the food
-            cost:
-              type: number
-              minimum: 0
-              description: GBP cost of the food item
-            human_id:
-              type: integer
-              minimum: 0
-              description: Id of the human purchasing the food
+          key:
+            type: long
+          value:
+            type: object
+            properties:
+              id:
+                type: integer
+                minimum: 0
+                description: Id of the food
+              cost:
+                type: number
+                minimum: 0
+                description: GBP cost of the food item
+              human_id:
+                type: integer
+                minimum: 0
+                description: Id of the human purchasing the food
 
   _private.retail.subway.customers:
     bindings:
@@ -106,20 +112,23 @@ channels:
           name: "customer"
         ]
         payload:
-          type: object
-          properties:
-            id:
-              type: integer
-              minimum: 0
-              description: Id of the food
-            cost:
-              type: number
-              minimum: 0
-              description: GBP cost of the food item
-            human_id:
-              type: integer
-              minimum: 0
-              description: Id of the human purchasing the food
+          key:
+            type: long
+          value:
+            type: object
+            properties:
+              id:
+                type: integer
+                minimum: 0
+                description: Id of the food
+              cost:
+                type: number
+                minimum: 0
+                description: GBP cost of the food item
+              human_id:
+                type: integer
+                minimum: 0
+                description: Id of the human purchasing the food
 
 
   london.hammersmith.transport._public.tube:
@@ -129,13 +138,16 @@ channels:
       message:
         name: Human
         payload:
-          type: object
-          properties:
-            id:
-              type: integer
-              minimum: 0
-              description: Id of the human
-            age:
-              type: integer
-              minimum: 0
-              description: Age of the human
+          key:
+            type: long
+          value:
+            type: object
+            properties:
+              id:
+                type: integer
+                minimum: 0
+                description: Id of the human
+              age:
+                type: integer
+                minimum: 0
+                description: Age of the human

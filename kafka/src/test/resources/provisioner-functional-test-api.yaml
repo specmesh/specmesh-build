@@ -39,7 +39,10 @@ channels:
         schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
         contentType: "application/octet-stream"
         payload:
-          $ref: "/schema/simple.provision_demo._public.user_signed_up.avsc"
+          key:
+            type: long
+          value:
+            $ref: "/schema/simple.provision_demo._public.user_signed_up.avsc"
 
   _protected.user_info:
     bindings:
@@ -66,4 +69,7 @@ channels:
         schemaFormat: "application/json;version=1.9.0"
         contentType: "application/json"
         payload:
-          $ref: "/schema/simple.provision_demo._public.user_info.proto"
+          key:
+            type: long
+          value:
+            $ref: "/schema/simple.provision_demo._public.user_info.proto"

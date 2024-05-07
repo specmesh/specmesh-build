@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
@@ -40,7 +41,7 @@ public final class Message {
 
     @JsonProperty private Map headers;
 
-    @JsonProperty private Map payload;
+    @JsonProperty private Payload payload;
 
     @JsonProperty private Map correlationId;
 
@@ -70,7 +71,7 @@ public final class Message {
         this.tags = List.of();
         this.traits = Map.of();
         this.messageId = null;
-        this.payload = Map.of();
+        this.payload = null;
         this.name = null;
         this.title = null;
         this.summary = null;
@@ -79,9 +80,13 @@ public final class Message {
     }
 
     /**
-     * @return the location of the schema
+     * @return The schemas in use
      */
-    public String schemaRef() {
-        return (String) payload.get("$ref");
+    public Stream<TopicSchema> schemas() {
+        if (payload == null) {
+            return Stream.empty();
+        }
+
+        return payload.schemas(bindings.kafka().schemaLookupStrategy());
     }
 }

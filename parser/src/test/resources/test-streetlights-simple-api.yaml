@@ -37,20 +37,23 @@ channels:
           - name: "big data london"
             description: "data mesh thing"
         payload:
-          type: object
-          properties:
-            id:
-              type: integer
-              minimum: 0
-              description: Id of the streetlight.
-            lumens:
-              type: integer
-              minimum: 0
-              description: Light intensity measured in lumens.
-            sentAt:
-              type: string
-              format: date-time
-              description: Date and time when the message was sent.
+          key:
+            type: string
+          value:
+            type: object
+            properties:
+              id:
+                type: integer
+                minimum: 0
+                description: Id of the streetlight.
+              lumens:
+                type: integer
+                minimum: 0
+                description: Light intensity measured in lumens.
+              sentAt:
+                type: string
+                format: date-time
+                description: Date and time when the message was sent.
   london.hammersmith.transport._public.tube:
     subscribe:
       summary: Humans arriving in the borough
@@ -60,13 +63,72 @@ channels:
       message:
         name: Human
         payload:
-          type: object
-          properties:
-            id:
-              type: integer
-              minimum: 0
-              description: Id of the human
-            age:
-              type: integer
-              minimum: 0
-              description: Age of the human
+          key:
+            type: string
+          value:
+            type: object
+            properties:
+              id:
+                type: integer
+                minimum: 0
+                description: Id of the human
+              age:
+                type: integer
+                minimum: 0
+                description: Age of the human
+  _public.avro.key:
+    bindings:
+      kafka:
+        envs:
+          - staging
+          - prod
+        partitions: 3
+        replicas: 1
+        configs:
+          cleanup.policy: delete
+
+    publish:
+      operationId: avroKeyed
+      message:
+        payload:
+          key:
+            $ref: "/schema/com.example.shared.Currency.avsc"
+          value:
+            type: int
+
+  _public.avro.value:
+    bindings:
+      kafka:
+        envs:
+          - staging
+          - prod
+        partitions: 3
+        replicas: 1
+        configs:
+          cleanup.policy: delete
+
+    publish:
+      operationId: avroKeyed
+      message:
+        payload:
+          key:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                id:
+                  type: integer
+                  minimum: 0
+                  description: Id of the streetlight.
+                lumens:
+                  type: integer
+                  minimum: 0
+                  description: Light intensity measured in lumens.
+                sentAt:
+                  type: string
+                  format: date-time
+                  description: Date and time when the message was sent.
+          value:
+            $ref: "/schema/com.example.shared.Currency.avsc"
+
