@@ -204,14 +204,7 @@ public final class SchemaProvisioner {
             final Collection<ParsedSchema> schemas,
             final SchemaInfo schemaInfo,
             final String partName) {
-        final String lookup =
-                schemaInfo
-                        .schemaLookupStrategy()
-                        .orElseThrow(
-                                () ->
-                                        new IllegalArgumentException(
-                                                "no 'schemaLookupStrategy' defined for topic: "
-                                                        + topicName));
+        final String lookup = schemaInfo.schemaLookupStrategy().orElse("");
 
         if (lookup.equalsIgnoreCase("SimpleTopicIdStrategy")) {
             return topicName;
