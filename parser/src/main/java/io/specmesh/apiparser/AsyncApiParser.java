@@ -16,9 +16,8 @@
 
 package io.specmesh.apiparser;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.specmesh.apiparser.model.ApiSpec;
+import io.specmesh.apiparser.parse.SpecMapper;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -36,7 +35,7 @@ public class AsyncApiParser {
         if (inputStream == null || inputStream.available() == 0) {
             throw new RuntimeException("Not found");
         }
-        return new ObjectMapper(new YAMLFactory()).readValue(inputStream, ApiSpec.class);
+        return SpecMapper.mapper().readValue(inputStream, ApiSpec.class);
     }
 
     public static class APIParserException extends RuntimeException {

@@ -19,10 +19,9 @@ package io.specmesh.apiparser.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,16 +37,15 @@ import lombok.experimental.Accessors;
  */
 
 /** Pojo representing a Kafka binding */
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 @Builder
 @Data
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@SuppressWarnings({"unchecked"})
 @SuppressFBWarnings
 public class KafkaBinding {
-    private static final int DAYS_TO_MS = 24 * 60 * 60 * 1000;
 
     @Builder.Default @JsonProperty private List<String> envs = List.of();
 
@@ -57,19 +55,23 @@ public class KafkaBinding {
 
     @Builder.Default @JsonProperty private Map<String, String> configs = Map.of();
 
-    @JsonProperty private String groupId;
+    @Builder.Default @JsonProperty private String groupId = "";
 
     @Builder.Default @JsonProperty private String schemaIdLocation = "payload";
 
+    @Builder.Default @JsonProperty private String schemaIdPayloadEncoding = "";
+
     @Builder.Default @JsonProperty private String schemaLookupStrategy = "TopicNameStrategy";
 
-    @JsonProperty private String bindingVersion;
+    @Builder.Default @JsonProperty private String bindingVersion = "latest";
+
+    @Builder.Default @JsonProperty private Optional<RecordPart> key = Optional.empty();
 
     /**
      * @return configs
      */
     public Map<String, String> configs() {
-        return new LinkedHashMap<>(configs == null ? Collections.emptyMap() : configs);
+        return Map.copyOf(configs);
     }
 
     /**

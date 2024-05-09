@@ -1,19 +1,14 @@
 ---
 id: "urn:asyncapi-id"
 version: "version-123"
-asyncapi: null
 channels:
   one-topic-channel:
     description: "one-topic-channel-description"
     bindings:
       kafka:
-        envs: []
         partitions: 1
         replicas: 3
-        configs: {}
         groupId: "kafka-binding-group-id"
         schemaIdLocation: "payload"
         schemaLookupStrategy: "TopicNameStrategy"
-        bindingVersion: null
-    publish: null
-    subscribe: null
+        bindingVersion: "latest"

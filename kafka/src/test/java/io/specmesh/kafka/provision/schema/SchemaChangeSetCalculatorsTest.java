@@ -28,6 +28,7 @@ import io.specmesh.kafka.KafkaEnvironment;
 import io.specmesh.kafka.provision.Provisioner;
 import io.specmesh.kafka.provision.Status;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
+import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -82,8 +83,8 @@ class SchemaChangeSetCalculatorsTest {
         assertThat(schemas.iterator().next().messages(), is(containsString("borked")));
     }
 
-    private static String filename(final String extra) {
-        return "./build/resources/test/schema/" + SCHEMA_FILENAME + extra;
+    private static Path filename(final String extra) {
+        return Path.of("./build/resources/test/schema/" + SCHEMA_FILENAME + extra);
     }
 
     static ParsedSchema getSchema(final String schemaRefType, final String content) {

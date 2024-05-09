@@ -26,6 +26,7 @@ import io.specmesh.apiparser.model.SchemaInfo;
 import io.specmesh.test.TestSpecLoader;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -190,8 +191,11 @@ public class KafkaAPISpecTest {
 
     @Test
     public void shouldGetSchemaInfoForOwnedTopics() {
-        final List<NewTopic> newTopics = API_SPEC.listDomainOwnedTopics();
-        final SchemaInfo schemaInfo = API_SPEC.schemaInfoForTopic(newTopics.get(0).name());
-        assertThat(schemaInfo.schemaIdLocation(), is("header"));
+        final List<SchemaInfo> schemas =
+                API_SPEC.ownedTopicSchemas(
+                                "london.hammersmith.olympia.bigdatalondon._public.attendee")
+                        .collect(Collectors.toList());
+        assertThat(schemas, hasSize(1));
+        assertThat(schemas.get(0).schemaIdLocation(), is(Optional.of("header")));
     }
 }

@@ -71,6 +71,10 @@ channels:
       tags: [
         name: "grant-access:some.other.domain.root"
       ]
+      bindings:
+        kafka:
+          key:
+            type: long
       message:
         name: Food Item
         tags: [
@@ -107,6 +111,10 @@ channels:
           name: "human",
           name: "customer"
         ]
+        bindings:
+          kafka:
+            key:
+              type: long
         payload:
           type: object
           properties:

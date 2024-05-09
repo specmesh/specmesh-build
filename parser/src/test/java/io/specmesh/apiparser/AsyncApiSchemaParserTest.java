@@ -24,7 +24,11 @@ import static org.hamcrest.Matchers.is;
 import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.apiparser.model.Channel;
 import io.specmesh.apiparser.model.Operation;
+import io.specmesh.apiparser.model.RecordPart.KafkaPart;
+import io.specmesh.apiparser.model.RecordPart.KafkaPart.KafkaType;
+import io.specmesh.apiparser.model.RecordPart.SchemaRefPart;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 public class AsyncApiSchemaParserTest {
@@ -40,36 +44,55 @@ public class AsyncApiSchemaParserTest {
                 channelsMap.keySet(),
                 hasItem(".simple.schema-demo._public.user.signed"));
 
-        final Operation publish =
-                channelsMap.get(".simple.schema-demo._public.user.signed").publish();
-        assertThat(publish.message().schemaRef(), is("simple_schema_demo_user-signedup.avsc"));
+        final Operation op = channelsMap.get(".simple.schema-demo._public.user.signed").publish();
 
         assertThat(
-                publish.message().schemaFormat(),
-                is("application/vnd.apache.avro+json;version=1.9.0"));
-        assertThat(publish.message().contentType(), is("application/octet-stream"));
-        assertThat(publish.message().bindings().kafka().schemaIdLocation(), is("payload"));
-        assertThat(publish.schemaInfo().schemaIdLocation(), is("payload"));
+                op.message().schemaFormat(), is("application/vnd.apache.avro+json;version=1.9.0"));
+        assertThat(op.message().contentType(), is("application/octet-stream"));
+        assertThat(op.message().bindings().kafka().schemaIdLocation(), is("payload"));
+        assertThat(
+                op.message().bindings().kafka().key(),
+                is(Optional.of(new SchemaRefPart("key.avsc"))));
+        assertThat(
+                op.message().payload().schemaRef(),
+                is(Optional.of("simple_schema_demo_user-signedup.avsc")));
+
+        assertThat(op.schemaInfo().schemaFormat(), is(Optional.of(op.message().schemaFormat())));
+        assertThat(op.schemaInfo().contentType(), is(Optional.of(op.message().contentType())));
+        assertThat(
+                op.schemaInfo().schemaIdLocation(),
+                is(Optional.of(op.message().bindings().kafka().schemaIdLocation())));
+        assertThat(op.schemaInfo().key(), is(op.message().bindings().kafka().key()));
+        assertThat(op.schemaInfo().value(), is(op.message().payload()));
     }
 
     @Test
     public void shouldReturnSubscriberMessageSchema() {
+        // Given:
         final Map<String, Channel> channelsMap = API_SPEC.channels();
-        assertThat(channelsMap.entrySet(), hasSize(2));
-        assertThat(
-                "Should have assembled 'id + channelname'",
-                channelsMap.keySet(),
-                hasItem("london.hammersmith.transport._public.tube"));
 
-        final Operation subscribe =
+        // When:
+        final Operation op =
                 channelsMap.get("london.hammersmith.transport._public.tube").subscribe();
+
+        // Then:
         assertThat(
-                subscribe.message().schemaRef(),
-                is("london_hammersmith_transport_public_passenger.avsc"));
+                op.message().schemaFormat(), is("application/vnd.apache.avro+json;version=1.9.0"));
+        assertThat(op.message().contentType(), is("application/octet-stream"));
+        assertThat(op.message().bindings().kafka().schemaIdLocation(), is("header"));
         assertThat(
-                subscribe.message().schemaFormat(),
-                is("application/vnd.apache.avro+json;version=1.9.0"));
-        assertThat(subscribe.message().contentType(), is("application/octet-stream"));
-        assertThat(subscribe.message().bindings().kafka().schemaIdLocation(), is("header"));
+                op.message().bindings().kafka().key(),
+                is(Optional.of(new KafkaPart(KafkaType.String))));
+        assertThat(
+                op.message().payload().schemaRef(),
+                is(Optional.of("london_hammersmith_transport_public_passenger.avsc")));
+
+        assertThat(op.schemaInfo().schemaFormat(), is(Optional.of(op.message().schemaFormat())));
+        assertThat(op.schemaInfo().contentType(), is(Optional.of(op.message().contentType())));
+        assertThat(
+                op.schemaInfo().schemaIdLocation(),
+                is(Optional.of(op.message().bindings().kafka().schemaIdLocation())));
+        assertThat(op.schemaInfo().key(), is(op.message().bindings().kafka().key()));
+        assertThat(op.schemaInfo().value(), is(op.message().payload()));
     }
 }

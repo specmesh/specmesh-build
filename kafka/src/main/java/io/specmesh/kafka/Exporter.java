@@ -78,7 +78,7 @@ public final class Exporter {
     }
 
     /**
-     * Extract the Channel - todo Produce/Consume info
+     * Extract the Channel
      *
      * @param topic - kafka topic config map
      * @return decorated channel

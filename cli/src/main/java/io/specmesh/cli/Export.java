@@ -20,10 +20,10 @@ import static picocli.CommandLine.Command;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.apiparser.model.ApiSpec;
+import io.specmesh.apiparser.parse.SpecMapper;
 import io.specmesh.kafka.Clients;
 import io.specmesh.kafka.Exporter;
 import java.util.Map;
@@ -92,7 +92,7 @@ public class Export implements Callable<Integer> {
         try (Admin adminClient = Clients.adminClient(brokerUrl, username, secret)) {
             final var apiSpec = Exporter.export(aggid, adminClient);
             final var mapper =
-                    new ObjectMapper()
+                    SpecMapper.mapper()
                             .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
                             .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
             System.out.println(mapper.writeValueAsString(apiSpec));

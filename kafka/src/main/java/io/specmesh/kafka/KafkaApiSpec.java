@@ -34,6 +34,8 @@ import static org.apache.kafka.common.resource.ResourceType.TRANSACTIONAL_ID;
 
 import io.specmesh.apiparser.AsyncApiParser;
 import io.specmesh.apiparser.model.ApiSpec;
+import io.specmesh.apiparser.model.Channel;
+import io.specmesh.apiparser.model.Operation;
 import io.specmesh.apiparser.model.SchemaInfo;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -42,8 +44,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.acl.AccessControlEntry;
 import org.apache.kafka.common.acl.AclBinding;
@@ -149,15 +153,54 @@ public final class KafkaApiSpec {
      *
      * @param topicName the name of the topic
      * @return the schema info.
+     * @deprecated use {@link #ownedTopicSchemas}
      */
+    @Deprecated
     public SchemaInfo schemaInfoForTopic(final String topicName) {
-        final List<NewTopic> myTopics = listDomainOwnedTopics();
-        myTopics.stream()
-                .filter(topic -> topic.name().equals(topicName))
-                .findFirst()
-                .orElseThrow(() -> new APIException("Not a domain topic:" + topicName));
+        final List<SchemaInfo> schemas = ownedTopicSchemas(topicName).collect(Collectors.toList());
+        if (schemas.size() != 1) {
+            throw new APIException(
+                    "Unexpected number of topic schemas. Expected 1, got " + schemas);
+        }
+        return schemas.get(0);
+    }
 
-        return apiSpec.channels().get(topicName).publish().schemaInfo();
+    /**
+     * Get info about schemas that are conceptually owned by the supplied {@code topicName}.
+     *
+     * <p>This differs from {@link #topicSchemas} in that it only returned schemas that should be
+     * registered when provisioning the topic.
+     *
+     * @param topicName the name of the topic
+     * @return stream of the schema info.
+     */
+    public Stream<SchemaInfo> ownedTopicSchemas(final String topicName) {
+        final Channel channel = apiSpec.channels().get(topicName);
+        if (channel == null) {
+            throw new APIException("Unknown topic:" + topicName);
+        }
+
+        return Stream.of(channel.publish()).filter(Objects::nonNull).map(Operation::schemaInfo);
+    }
+
+    /**
+     * Get schema info for the supplied {@code topicName}
+     *
+     * <p>This differs from {@link #ownedTopicSchemas} in that it returned all known schemas
+     * associated with the topic.
+     *
+     * @param topicName the name of the topic
+     * @return stream of the schema info.
+     */
+    public Stream<SchemaInfo> topicSchemas(final String topicName) {
+        final Channel channel = apiSpec.channels().get(topicName);
+        if (channel == null) {
+            throw new APIException("Unknown topic:" + topicName);
+        }
+
+        return Stream.of(channel.publish(), channel.subscribe())
+                .filter(Objects::nonNull)
+                .map(Operation::schemaInfo);
     }
 
     /**

@@ -35,6 +35,8 @@ channels:
       message:
         bindings:
           kafka:
+            key:
+              type: long
             schemaIdLocation: "payload"
         schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
         contentType: "application/octet-stream"
@@ -60,6 +62,8 @@ channels:
       message:
         bindings:
           kafka:
+            key:
+              type: long
             schemaIdLocation: "payload"
         schemaFormat: "application/json;version=1.9.0"
         contentType: "application/json"
@@ -87,6 +91,8 @@ channels:
       message:
         bindings:
           kafka:
+            key:
+              type: long
             schemaIdLocation: "payload"
         schemaFormat: "application/json;version=1.9.0"
         contentType: "application/json"

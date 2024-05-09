@@ -43,12 +43,20 @@ channels:
 
     publish:
       message:
+        bindings:
+          kafka:
+            key:
+              type: long
         payload:
           $ref: "/schema/simple.schema_demo._public.user_signed_up.avsc"
 
   _private.user_checkout:
     publish:
       message:
+        bindings:
+          kafka:
+            key:
+              $ref: "/schema/simple.schema_demo._public.user_checkout_key.yml"
         payload:
           $ref: "/schema/simple.schema_demo._public.user_checkout.yml"
 
@@ -76,6 +84,8 @@ channels:
 
 2.2. Schema published:
 - /schema/simple.schema_demo._public.user_signed_up.avsc
+- /schema/simple.schema_demo._public.user_checkout_key.yml
+- /schema/simple.schema_demo._public.user_checkout.yml
 
 2.3. ACLs created:
 - "name" : "(pattern=ResourcePattern(resourceType=TOPIC, name=simple.spec_demo._public, patternType=PREFIXED), entry=(principal=User:*, host=*, operation=READ, permissionType=ALLOW))",

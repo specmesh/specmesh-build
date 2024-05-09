@@ -197,7 +197,7 @@ class ProvisionerFreshStartFunctionalTest {
         assertThat(
                 "dry run should leave changeset in 'create' state",
                 changeset.stream().filter(topic -> topic.state() == Status.STATE.CREATE).count(),
-                is(2L));
+                is(3L));
 
         // Verify - should have 2 SR entries
         final var allSubjects = srClient.getAllSubjects();
@@ -341,12 +341,12 @@ class ProvisionerFreshStartFunctionalTest {
         // Verify - 11 created
         assertThat(
                 changeset.stream().filter(topic -> topic.state() == Status.STATE.CREATED).count(),
-                is(2L));
+                is(3L));
 
-        // Verify - should have 2 SR entries
+        // Verify - should have 3 SR entries
         final var allSubjects = srClient.getAllSubjects();
 
-        assertThat(allSubjects, is(hasSize(2)));
+        assertThat(allSubjects, is(hasSize(3)));
 
         final var schemas = srClient.getSchemas("simple", false, false);
 
@@ -358,6 +358,7 @@ class ProvisionerFreshStartFunctionalTest {
                 is(
                         containsInAnyOrder(
                                 "io.specmesh.kafka.schema.UserInfo",
+                                "simple.provision_demo._public.user_signed_up_value.key.UserSignedUpKey",
                                 "simple.provision_demo._public.user_signed_up_value.UserSignedUp")));
     }
 

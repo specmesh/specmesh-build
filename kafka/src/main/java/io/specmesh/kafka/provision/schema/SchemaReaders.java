@@ -31,17 +31,17 @@ import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchema;
 import io.specmesh.kafka.provision.Status;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.SchemaProvisioningException;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -59,38 +59,32 @@ public final class SchemaReaders {
 
     public static final class FileSystemSchemaReader {
 
-        public Collection<ParsedSchema> readLocal(final String filePath) {
+        public Collection<ParsedSchema> readLocal(final Path filePath) {
             try {
-                final var schemaContent = Files.readString(Paths.get(filePath));
+                final var schemaContent = Files.readString(filePath);
                 final var results = new ArrayList<ParsedSchema>();
 
-                if (filePath.endsWith(".avsc")) {
+                final String filename =
+                        Optional.ofNullable(filePath.getFileName())
+                                .map(Objects::toString)
+                                .orElse("");
+                if (filename.endsWith(".avsc")) {
                     final var refs = resolveReferencesFor(filePath, schemaContent);
                     results.add(
                             new AvroSchema(
                                     schemaContent, refs.references, refs.resolvedReferences, -1));
-                }
-                if (filePath.endsWith(".yml")) {
+                } else if (filename.endsWith(".yml")) {
                     results.add(new JsonSchema(schemaContent));
-                }
-                if (filePath.endsWith(".proto")) {
+                } else if (filename.endsWith(".proto")) {
                     results.add(new ProtobufSchema(schemaContent));
+                } else {
+                    throw new UnsupportedOperationException("Unsupported schema file: " + filePath);
                 }
 
                 return results;
-            } catch (Throwable ex) {
-                try {
-                    throw new SchemaProvisioningException(
-                            "Failed to load: "
-                                    + filePath
-                                    + " from: "
-                                    + new File(".").getCanonicalFile().getAbsolutePath(),
-                            ex);
-                } catch (IOException e) {
-                    throw new RuntimeException(
-                            "Failed to read canonical path for file system:"
-                                    + new File(".").getAbsolutePath());
-                }
+            } catch (Exception ex) {
+                throw new SchemaProvisioningException(
+                        "Failed to load: " + filePath + " from: " + filePath.toAbsolutePath(), ex);
             }
         }
 
@@ -102,11 +96,11 @@ public final class SchemaReaders {
          * @return
          */
         private SchemaReferences resolveReferencesFor(
-                final String filePath, final String schemaContent) {
+                final Path filePath, final String schemaContent) {
             try {
                 final SchemaReferences results = new SchemaReferences();
                 final var refs = findJsonNodes(objectMapper.readTree(schemaContent), "subject");
-                final var parent = new File(filePath).getParent();
+                final var parent = filePath.toFile().getParent();
                 refs.forEach(ref -> results.add(parent, ref));
                 return results;
             } catch (JsonProcessingException e) {
@@ -203,7 +197,7 @@ public final class SchemaReaders {
 
         private ParsedSchema parsedSchema(final String type, final String payload) {
             if (type.endsWith(".avsc") || type.equals("AVRO")) {
-                return new AvroSchema(payload);
+                return new AvroSchema(payload, List.of(), Map.of(), -1);
             }
             if (type.endsWith(".yml") || type.equals("JSON")) {
                 return new JsonSchema(payload);
