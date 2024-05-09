@@ -48,60 +48,71 @@ public interface RecordPart {
         return Optional.empty();
     }
 
+    default Optional<KafkaType> kafkaType() {
+        return Optional.empty();
+    }
+
+    // Types supported by for standard Kafka serializers:
+    enum KafkaType {
+        UUID("uuid"),
+        Long("long"),
+        Int("int"),
+        Short("short"),
+        Float("float"),
+        Double("double"),
+        String("string"),
+        Bytes("bytes"),
+        Void("void");
+
+        private static final String VALID_VALUES =
+                Arrays.stream(values())
+                        .map(RecordPart.KafkaType::toString)
+                        .collect(Collectors.joining(", ", "[", "]"));
+
+        private final String text;
+
+        KafkaType(final String text) {
+            this.text = requireNonNull(text, "text");
+        }
+
+        @JsonValue
+        @Override
+        public String toString() {
+            return text;
+        }
+
+        public static KafkaPart.KafkaType fromText(final String text) {
+            return Arrays.stream(values())
+                    .filter(t -> t.text.equals(text))
+                    .findFirst()
+                    .orElseThrow(
+                            () ->
+                                    new IllegalArgumentException(
+                                            "Unknown KafkaType: "
+                                                    + text
+                                                    + ". Valid values are: "
+                                                    + VALID_VALUES));
+        }
+    }
+
     @Value
     final class KafkaPart implements RecordPart {
-        // Types supported by for standard Kafka serializers:
-        public enum KafkaType {
-            UUID("uuid"),
-            Long("long"),
-            Int("int"),
-            Short("short"),
-            Float("float"),
-            Double("double"),
-            String("string"),
-            Bytes("bytes"),
-            Void("void");
-
-            private static final String VALID_VALUES =
-                    Arrays.stream(values())
-                            .map(KafkaPart.KafkaType::toString)
-                            .collect(Collectors.joining(", ", "[", "]"));
-
-            private final String text;
-
-            KafkaType(final String text) {
-                this.text = requireNonNull(text, "text");
-            }
-
-            @JsonValue
-            @Override
-            public String toString() {
-                return text;
-            }
-
-            public static KafkaPart.KafkaType fromText(final String text) {
-                return Arrays.stream(values())
-                        .filter(t -> t.text.equals(text))
-                        .findFirst()
-                        .orElseThrow(
-                                () ->
-                                        new IllegalArgumentException(
-                                                "Unknown KafkaType: "
-                                                        + text
-                                                        + ". Valid values are: "
-                                                        + VALID_VALUES));
-            }
-        }
 
         private final KafkaPart.KafkaType kafkaType;
 
         public KafkaPart(final KafkaPart.KafkaType kafkaType) {
             this.kafkaType = requireNonNull(kafkaType, "kafkaType");
         }
+
+        @Override
+        public Optional<KafkaType> kafkaType() {
+            return Optional.of(kafkaType);
+        }
     }
 
     @Value
     final class SchemaRefPart implements RecordPart {
+
         private final String schemaRef;
 
         public SchemaRefPart(final String schemaRef) {
@@ -115,6 +126,7 @@ public interface RecordPart {
 
     @Value
     final class OtherPart implements RecordPart {
+
         private final JsonNode node;
 
         public OtherPart(final JsonNode node) {
@@ -185,7 +197,7 @@ public interface RecordPart {
             }
 
             if (!"object".equals(type.get())) {
-                return new KafkaPart(KafkaPart.KafkaType.fromText(type.get()));
+                return new KafkaPart(KafkaType.fromText(type.get()));
             }
 
             return new OtherPart(

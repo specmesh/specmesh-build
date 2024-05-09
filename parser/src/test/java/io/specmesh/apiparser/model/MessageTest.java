@@ -25,7 +25,6 @@ import static org.junit.Assert.assertThrows;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.specmesh.apiparser.AsyncApiParser.APIParserException;
 import io.specmesh.apiparser.model.RecordPart.KafkaPart;
-import io.specmesh.apiparser.model.RecordPart.KafkaPart.KafkaType;
 import io.specmesh.apiparser.model.RecordPart.OtherPart;
 import io.specmesh.apiparser.model.RecordPart.SchemaRefPart;
 import io.specmesh.apiparser.parse.SpecMapper;
@@ -109,8 +108,8 @@ class MessageTest {
         final SchemaInfo schemas = message.schemas();
 
         // Then:
-        assertThat(schemas.key(), is(Optional.of(new KafkaPart(KafkaType.Long))));
-        assertThat(schemas.value(), is(new KafkaPart(KafkaType.String)));
+        assertThat(schemas.key(), is(Optional.of(new KafkaPart(RecordPart.KafkaType.Long))));
+        assertThat(schemas.value(), is(new KafkaPart(RecordPart.KafkaType.String)));
     }
 
     @Test

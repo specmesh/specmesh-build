@@ -191,11 +191,9 @@ public class KafkaAPISpecTest {
 
     @Test
     public void shouldGetSchemaInfoForOwnedTopics() {
-        final List<SchemaInfo> schemas =
+        final Optional<SchemaInfo> schema =
                 API_SPEC.ownedTopicSchemas(
-                                "london.hammersmith.olympia.bigdatalondon._public.attendee")
-                        .collect(Collectors.toList());
-        assertThat(schemas, hasSize(1));
-        assertThat(schemas.get(0).schemaIdLocation(), is(Optional.of("header")));
+                        "london.hammersmith.olympia.bigdatalondon._public.attendee");
+        assertThat(schema.flatMap(SchemaInfo::schemaIdLocation), is(Optional.of("header")));
     }
 }

@@ -25,7 +25,7 @@ import static org.junit.Assert.assertThrows;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.specmesh.apiparser.AsyncApiParser.APIParserException;
-import io.specmesh.apiparser.model.RecordPart.KafkaPart.KafkaType;
+import io.specmesh.apiparser.model.RecordPart.KafkaType;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

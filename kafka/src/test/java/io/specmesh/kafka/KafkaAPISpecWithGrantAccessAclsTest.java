@@ -200,10 +200,8 @@ public class KafkaAPISpecWithGrantAccessAclsTest {
 
     @Test
     public void shouldGetSchemaInfoForOwnedTopics() {
-        final List<SchemaInfo> schemas =
-                API_SPEC.ownedTopicSchemas("london.hammersmith.olympia.bigdatalondon.attendee")
-                        .collect(Collectors.toList());
-        assertThat(schemas, hasSize(1));
-        assertThat(schemas.get(0).schemaIdLocation(), is(Optional.of("header")));
+        final Optional<SchemaInfo> schema =
+                API_SPEC.ownedTopicSchemas("london.hammersmith.olympia.bigdatalondon.attendee");
+        assertThat(schema.flatMap(SchemaInfo::schemaIdLocation), is(Optional.of("header")));
     }
 }

@@ -45,6 +45,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -153,16 +154,10 @@ public final class KafkaApiSpec {
      *
      * @param topicName the name of the topic
      * @return the schema info.
-     * @deprecated use {@link #ownedTopicSchemas}
      */
-    @Deprecated
     public SchemaInfo schemaInfoForTopic(final String topicName) {
-        final List<SchemaInfo> schemas = ownedTopicSchemas(topicName).collect(Collectors.toList());
-        if (schemas.size() != 1) {
-            throw new APIException(
-                    "Unexpected number of topic schemas. Expected 1, got " + schemas);
-        }
-        return schemas.get(0);
+        return ownedTopicSchemas(topicName)
+                .orElseThrow(() -> new APIException("No schema defined for topic: " + topicName));
     }
 
     /**
@@ -174,13 +169,13 @@ public final class KafkaApiSpec {
      * @param topicName the name of the topic
      * @return stream of the schema info.
      */
-    public Stream<SchemaInfo> ownedTopicSchemas(final String topicName) {
+    public Optional<SchemaInfo> ownedTopicSchemas(final String topicName) {
         final Channel channel = apiSpec.channels().get(topicName);
         if (channel == null) {
             throw new APIException("Unknown topic:" + topicName);
         }
 
-        return Stream.of(channel.publish()).filter(Objects::nonNull).map(Operation::schemaInfo);
+        return Optional.ofNullable(channel.publish()).map(Operation::schemaInfo);
     }
 
     /**

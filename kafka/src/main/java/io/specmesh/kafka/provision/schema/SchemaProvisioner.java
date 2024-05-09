@@ -126,7 +126,7 @@ public final class SchemaProvisioner {
 
     private static Stream<Schema> topicSchemas(
             final KafkaApiSpec apiSpec, final String baseResourcePath, final String topicName) {
-        return apiSpec.ownedTopicSchemas(topicName)
+        return apiSpec.ownedTopicSchemas(topicName).stream()
                 .flatMap(
                         si ->
                                 Stream.of(

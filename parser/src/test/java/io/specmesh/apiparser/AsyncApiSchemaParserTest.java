@@ -24,8 +24,8 @@ import static org.hamcrest.Matchers.is;
 import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.apiparser.model.Channel;
 import io.specmesh.apiparser.model.Operation;
+import io.specmesh.apiparser.model.RecordPart;
 import io.specmesh.apiparser.model.RecordPart.KafkaPart;
-import io.specmesh.apiparser.model.RecordPart.KafkaPart.KafkaType;
 import io.specmesh.apiparser.model.RecordPart.SchemaRefPart;
 import java.util.Map;
 import java.util.Optional;
@@ -82,7 +82,7 @@ public class AsyncApiSchemaParserTest {
         assertThat(op.message().bindings().kafka().schemaIdLocation(), is("header"));
         assertThat(
                 op.message().bindings().kafka().key(),
-                is(Optional.of(new KafkaPart(KafkaType.String))));
+                is(Optional.of(new KafkaPart(RecordPart.KafkaType.String))));
         assertThat(
                 op.message().payload().schemaRef(),
                 is(Optional.of("london_hammersmith_transport_public_passenger.avsc")));
