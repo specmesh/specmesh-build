@@ -19,8 +19,10 @@ package io.specmesh.apiparser.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.specmesh.apiparser.AsyncApiParser.APIParserException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
@@ -40,7 +42,7 @@ public final class Message {
 
     @JsonProperty private Map headers;
 
-    @JsonProperty private Map payload;
+    @JsonProperty private RecordPart payload;
 
     @JsonProperty private Map correlationId;
 
@@ -70,7 +72,7 @@ public final class Message {
         this.tags = List.of();
         this.traits = Map.of();
         this.messageId = null;
-        this.payload = Map.of();
+        this.payload = null;
         this.name = null;
         this.title = null;
         this.summary = null;
@@ -79,9 +81,22 @@ public final class Message {
     }
 
     /**
-     * @return the location of the schema
+     * @return The schemas in use
      */
-    public String schemaRef() {
-        return (String) payload.get("$ref");
+    public SchemaInfo schemas() {
+        if (payload == null) {
+            throw new APIParserException("missing 'message.payload' definition");
+        }
+
+        final Optional<KafkaBinding> kafkaBinding =
+                Optional.ofNullable(bindings).map(Bindings::kafka);
+
+        return new SchemaInfo(
+                kafkaBinding.flatMap(KafkaBinding::key),
+                payload,
+                Optional.ofNullable(schemaFormat),
+                kafkaBinding.map(KafkaBinding::schemaIdLocation),
+                Optional.ofNullable(contentType),
+                kafkaBinding.map(KafkaBinding::schemaLookupStrategy));
     }
 }

@@ -27,6 +27,7 @@ dependencies {
     api("com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion")
 
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion")
 
     compileOnly("org.projectlombok:lombok:$lombokVersion")
     annotationProcessor("org.projectlombok:lombok:$lombokVersion")

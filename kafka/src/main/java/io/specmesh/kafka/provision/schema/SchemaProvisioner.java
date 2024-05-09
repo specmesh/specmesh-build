@@ -23,6 +23,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
 import io.confluent.kafka.schemaregistry.avro.AvroSchema;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
+import io.specmesh.apiparser.model.RecordPart;
 import io.specmesh.apiparser.model.SchemaInfo;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.provision.ExceptionWrapper;
@@ -30,10 +31,13 @@ import io.specmesh.kafka.provision.Provisioner;
 import io.specmesh.kafka.provision.Status;
 import io.specmesh.kafka.provision.WithState;
 import io.specmesh.kafka.provision.schema.SchemaReaders.SchemaReader;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -116,37 +120,60 @@ public final class SchemaProvisioner {
     private static List<Schema> requiredSchemas(
             final KafkaApiSpec apiSpec, final String baseResourcePath) {
         return apiSpec.listDomainOwnedTopics().stream()
-                .filter(
-                        topic ->
-                                apiSpec.apiSpec()
-                                        .channels()
-                                        .get(topic.name())
-                                        .publish()
-                                        .isSchemaRequired())
-                .map(
-                        (topic -> {
-                            final var schema = Schema.builder();
-                            try {
-                                final var schemaInfo = apiSpec.schemaInfoForTopic(topic.name());
-                                final var schemaRef = schemaInfo.schemaRef();
-                                final var schemaPath = Paths.get(baseResourcePath, schemaRef);
-                                final var schemas =
-                                        new SchemaReaders.FileSystemSchemaReader()
-                                                .readLocal(schemaPath.toString());
-                                schema.schemas(schemas)
-                                        .type(schemaInfo.schemaRef())
-                                        .subject(
-                                                resolveSubjectName(
-                                                        topic.name(), schemas, schemaInfo));
-                                schema.state(CREATE);
-
-                            } catch (Provisioner.ProvisioningException ex) {
-                                schema.state(FAILED);
-                                schema.exception(ex);
-                            }
-                            return schema.build();
-                        }))
+                .flatMap(topic -> topicSchemas(apiSpec, baseResourcePath, topic.name()))
                 .collect(Collectors.toList());
+    }
+
+    private static Stream<Schema> topicSchemas(
+            final KafkaApiSpec apiSpec, final String baseResourcePath, final String topicName) {
+        return apiSpec.ownedTopicSchemas(topicName).stream()
+                .flatMap(
+                        si ->
+                                Stream.of(
+                                        si.key()
+                                                .flatMap(RecordPart::schemaRef)
+                                                .map(
+                                                        schemaRef ->
+                                                                partSchema(
+                                                                        "key",
+                                                                        schemaRef,
+                                                                        si,
+                                                                        baseResourcePath,
+                                                                        topicName)),
+                                        si.value()
+                                                .schemaRef()
+                                                .map(
+                                                        schemaRef ->
+                                                                partSchema(
+                                                                        "value",
+                                                                        schemaRef,
+                                                                        si,
+                                                                        baseResourcePath,
+                                                                        topicName))))
+                .flatMap(Optional::stream);
+    }
+
+    private static Schema partSchema(
+            final String partName,
+            final String schemaRef,
+            final SchemaInfo si,
+            final String baseResourcePath,
+            final String topicName) {
+        final Schema.SchemaBuilder builder = Schema.builder();
+        try {
+            final Path schemaPath = Paths.get(baseResourcePath, schemaRef);
+            final Collection<ParsedSchema> schemas =
+                    new SchemaReaders.FileSystemSchemaReader().readLocal(schemaPath);
+
+            builder.schemas(schemas)
+                    .type(schemaRef)
+                    .subject(resolveSubjectName(topicName, schemas, si, partName));
+            builder.state(CREATE);
+        } catch (Provisioner.ProvisioningException ex) {
+            builder.state(FAILED);
+            builder.exception(ex);
+        }
+        return builder.build();
     }
 
     /**
@@ -175,8 +202,10 @@ public final class SchemaProvisioner {
     private static String resolveSubjectName(
             final String topicName,
             final Collection<ParsedSchema> schemas,
-            final SchemaInfo schemaInfo) {
-        final var lookup = schemaInfo.schemaLookupStrategy();
+            final SchemaInfo schemaInfo,
+            final String partName) {
+        final String lookup = schemaInfo.schemaLookupStrategy().orElse("");
+
         if (lookup.equalsIgnoreCase("SimpleTopicIdStrategy")) {
             return topicName;
         }
@@ -202,7 +231,7 @@ public final class SchemaProvisioner {
 
             return topicName + "-" + ((AvroSchema) next).rawSchema().getFullName();
         }
-        return topicName + "-value";
+        return topicName + "-" + partName;
     }
 
     private static boolean isAvro(final ParsedSchema schema) {

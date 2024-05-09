@@ -18,33 +18,39 @@ package io.specmesh.apiparser.model;
 
 import static java.util.Objects.requireNonNull;
 
+import java.util.Optional;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
 /** Pojo representing a schmea */
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 @Value
 @Accessors(fluent = true)
 public class SchemaInfo {
-    private final String schemaRef;
-    private final String schemaFormat;
-    private final String schemaIdLocation;
-    private final String contentType;
-    private String schemaLookupStrategy;
+    private final Optional<RecordPart> key;
+    private final RecordPart value;
+    private final Optional<String> schemaFormat;
+    private final Optional<String> schemaIdLocation;
+    private final Optional<String> contentType;
+    private final Optional<String> schemaLookupStrategy;
 
     /**
-     * @param schemaRef location of schema
+     * @param key schema info for the key of the Kafka Record
+     * @param value schema info for the value of the Kafka Record
      * @param schemaFormat format of schema
      * @param schemaIdLocation header || payload
      * @param contentType content type of schema
      * @param schemaLookupStrategy schema lookup strategy
      */
     public SchemaInfo(
-            final String schemaRef,
-            final String schemaFormat,
-            final String schemaIdLocation,
-            final String contentType,
-            final String schemaLookupStrategy) {
-        this.schemaRef = schemaRef;
+            final Optional<RecordPart> key,
+            final RecordPart value,
+            final Optional<String> schemaFormat,
+            final Optional<String> schemaIdLocation,
+            final Optional<String> contentType,
+            final Optional<String> schemaLookupStrategy) {
+        this.key = requireNonNull(key, "key");
+        this.value = requireNonNull(value, "value");
         this.schemaFormat = requireNonNull(schemaFormat, "schemaFormat");
         this.schemaIdLocation = requireNonNull(schemaIdLocation, "schemaIdLocation");
         this.contentType = requireNonNull(contentType, "contentType");

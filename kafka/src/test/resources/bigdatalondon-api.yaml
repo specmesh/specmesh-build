@@ -68,6 +68,10 @@ channels:
       ]
       message:
         name: Food Item
+        bindings:
+          kafka:
+            key:
+              type: long
         tags: [
           name: "human",
           name: "purchase"
@@ -97,6 +101,10 @@ channels:
       summary: Humans customers
       message:
         name: Food Item
+        bindings:
+          kafka:
+            key:
+              type: long
         tags: [
           name: "human",
           name: "customer"
@@ -123,6 +131,10 @@ channels:
       summary: Humans arriving in the borough
       message:
         name: Human
+        bindings:
+          kafka:
+            key:
+              type: long
         payload:
           type: object
           properties:

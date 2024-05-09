@@ -27,6 +27,7 @@ import io.specmesh.test.TestSpecLoader;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -199,8 +200,8 @@ public class KafkaAPISpecWithGrantAccessAclsTest {
 
     @Test
     public void shouldGetSchemaInfoForOwnedTopics() {
-        final List<NewTopic> newTopics = API_SPEC.listDomainOwnedTopics();
-        final SchemaInfo schemaInfo = API_SPEC.schemaInfoForTopic(newTopics.get(0).name());
-        assertThat(schemaInfo.schemaIdLocation(), is("header"));
+        final Optional<SchemaInfo> schema =
+                API_SPEC.ownedTopicSchemas("london.hammersmith.olympia.bigdatalondon.attendee");
+        assertThat(schema.flatMap(SchemaInfo::schemaIdLocation), is(Optional.of("header")));
     }
 }

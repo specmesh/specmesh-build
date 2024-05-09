@@ -36,8 +36,11 @@ import io.specmesh.kafka.provision.schema.SchemaProvisioner;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
 import io.specmesh.test.TestSpecLoader;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -59,6 +62,7 @@ class SchemaProvisionerFunctionalTest {
 
     private static final KafkaApiSpec API_UPDATE_SPEC =
             TestSpecLoader.loadFromClassPath("provisioner-update-functional-test-api.yaml");
+    private SchemaRegistryClient srClient;
 
     private enum Domain {
         /** The domain associated with the spec. */
@@ -87,20 +91,47 @@ class SchemaProvisionerFunctionalTest {
                             Domain.SELF.domainId + "-secret")
                     .build();
 
+    @BeforeEach
+    void setUp() {
+        srClient = KAFKA_ENV.srClient();
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        srClient.close();
+    }
+
     /** setup for following update tests */
     @Test
     @Order(1)
-    void shouldProvisionExistingSpec() {
-        SchemaProvisioner.provision(
-                false, false, API_SPEC, "./build/resources/test", KAFKA_ENV.srClient());
+    void shouldProvisionExistingSpec() throws Exception {
+        // When:
+        final Collection<Schema> provisioned =
+                SchemaProvisioner.provision(
+                        false, false, API_SPEC, "./build/resources/test", srClient);
+
+        // Then: should have provisioned 3 schema:
+        assertThat(
+                provisioned.stream().filter(topic -> topic.state() == STATE.CREATED).count(),
+                is(3L));
+
+        assertThat(
+                srClient.getAllSubjects(),
+                containsInAnyOrder(
+                        "simple.provision_demo._public.user_signed_up-key",
+                        "simple.provision_demo._public.user_signed_up-value",
+                        "simple.provision_demo._protected.user_info-value"));
+
+        assertThat(
+                srClient.getAllSubjectsByPrefix(API_SPEC.id()),
+                hasSize(srClient.getAllSubjects().size()));
     }
 
     @Test
     @Order(2)
-    void shouldPublishUpdatedSchemas() throws RestClientException, IOException {
+    void shouldPublishUpdatedSchemas() throws Exception {
 
-        final var srClient = KAFKA_ENV.srClient();
-        final var dryRunChangeset =
+        final Collection<Schema> dryRunChangeset =
                 SchemaProvisioner.provision(
                         true, false, API_UPDATE_SPEC, "./build/resources/test", srClient);
 
@@ -109,12 +140,15 @@ class SchemaProvisionerFunctionalTest {
                 dryRunChangeset.stream().filter(topic -> topic.state() == STATE.UPDATE).count(),
                 is(1L));
 
-        // Verify - should have 2 SR entries (1 was updated, 1 was from original spec)
-        final var allSubjects = srClient.getAllSubjects();
+        // Verify - should have 3 SR entries (1 was updated, 2 was from original spec)
+        assertThat(
+                srClient.getAllSubjects(),
+                containsInAnyOrder(
+                        "simple.provision_demo._public.user_signed_up-key",
+                        "simple.provision_demo._public.user_signed_up-value",
+                        "simple.provision_demo._protected.user_info-value"));
 
-        assertThat(allSubjects, is(hasSize(2)));
-
-        final var updateChangeset =
+        final Collection<Schema> updateChangeset =
                 SchemaProvisioner.provision(
                         false, false, API_UPDATE_SPEC, "./build/resources/test", srClient);
 
@@ -136,6 +170,7 @@ class SchemaProvisionerFunctionalTest {
                 is(
                         containsInAnyOrder(
                                 "io.specmesh.kafka.schema.UserInfo",
+                                "simple.provision_demo._public.user_signed_up_value.key.UserSignedUpKey",
                                 "simple.provision_demo._public.user_signed_up_value.UserSignedUp")));
     }
 
@@ -162,45 +197,35 @@ class SchemaProvisionerFunctionalTest {
                         .state(STATE.READ)
                         .build();
 
-        try (SchemaRegistryClient srClient = KAFKA_ENV.srClient()) {
+        // insert the bad schema
+        srClient.register(subject, schema.getSchema());
 
-            // insert the bad schema
-            srClient.register(subject, schema.getSchema());
-
-            testDryRun(subject, srClient);
-            testCleanUnSpecSchemas(srClient);
-        }
+        testDryRun(subject);
+        testCleanUnSpecSchemas();
     }
 
-    private static void testCleanUnSpecSchemas(final SchemaRegistryClient srClient)
-            throws IOException, RestClientException {
+    private void testCleanUnSpecSchemas() throws IOException, RestClientException {
         final var cleanerSet2 =
                 SchemaProvisioner.provision(
-                        false,
-                        true,
-                        API_UPDATE_SPEC,
-                        "./build/resources/test",
-                        KAFKA_ENV.srClient());
+                        false, true, API_UPDATE_SPEC, "./build/resources/test", srClient);
 
         // verify it was removed
         assertThat(cleanerSet2.iterator().next().state(), is(STATE.DELETED));
 
-        final var allSchemasforSpec = srClient.getAllSubjectsByPrefix(API_SPEC.id());
-
         // verify removal
-        assertThat(allSchemasforSpec, is(hasSize(2)));
+        assertThat(
+                srClient.getAllSubjectsByPrefix(API_SPEC.id()),
+                containsInAnyOrder(
+                        "simple.provision_demo._public.user_signed_up-key",
+                        "simple.provision_demo._public.user_signed_up-value",
+                        "simple.provision_demo._protected.user_info-value"));
     }
 
-    private static void testDryRun(final String subject, final SchemaRegistryClient srClient)
-            throws IOException, RestClientException {
+    private void testDryRun(final String subject) throws IOException, RestClientException {
         // test dry run
         final var cleanerSet =
                 SchemaProvisioner.provision(
-                        true,
-                        true,
-                        API_UPDATE_SPEC,
-                        "./build/resources/test",
-                        KAFKA_ENV.srClient());
+                        true, true, API_UPDATE_SPEC, "./build/resources/test", srClient);
 
         // verify dry run
         assertThat(cleanerSet, is(hasSize(1)));
@@ -211,6 +236,6 @@ class SchemaProvisionerFunctionalTest {
         assertThat(cleanerSet.iterator().next().state(), is(STATE.DELETE));
 
         final var allSchemasforId = srClient.getAllSubjectsByPrefix(API_SPEC.id());
-        assertThat(allSchemasforId, is(hasSize(3)));
+        assertThat(allSchemasforId, is(hasSize(4)));
     }
 }

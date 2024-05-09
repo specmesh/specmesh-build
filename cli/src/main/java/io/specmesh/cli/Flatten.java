@@ -20,10 +20,9 @@ import static picocli.CommandLine.Command;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.specmesh.apiparser.parse.SpecMapper;
 import io.specmesh.kafka.KafkaApiSpec;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -73,7 +72,7 @@ public class Flatten implements Callable<Integer> {
         final var apiSpec = apiSpec1.apiSpec();
 
         final var mapper =
-                new ObjectMapper(new YAMLFactory())
+                SpecMapper.mapper()
                         .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
                         .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         final var channels = apiSpec.channels();

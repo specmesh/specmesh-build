@@ -17,9 +17,8 @@
 package io.specmesh.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.specmesh.apiparser.model.ApiSpec;
+import io.specmesh.apiparser.parse.SpecMapper;
 
 /** Export the Spec object to its yaml representation */
 public class ExporterYamlWriter implements ExporterWriter {
@@ -34,7 +33,7 @@ public class ExporterYamlWriter implements ExporterWriter {
     @Override
     public String export(final ApiSpec apiSpec) throws Exporter.ExporterException {
         try {
-            return new ObjectMapper(new YAMLFactory()).writeValueAsString(apiSpec);
+            return SpecMapper.mapper().writeValueAsString(apiSpec);
         } catch (JsonProcessingException e) {
             throw new Exporter.ExporterException("Failed to convert to YAML", e);
         }
