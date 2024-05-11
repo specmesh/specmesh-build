@@ -22,6 +22,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.apiparser.AsyncApiParser.APIParserException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -66,9 +67,12 @@ public class Operation {
     /**
      * @return schema info
      */
-    public SchemaInfo schemaInfo() {
+    public Optional<SchemaInfo> schemaInfo() {
+        if (message == null) {
+            return Optional.empty();
+        }
         try {
-            return message.schemas();
+            return Optional.of(message.schemas());
         } catch (Exception e) {
             throw new APIParserException(
                     "Error extracting schemas from (publish|subscribe) operation: " + operationId,

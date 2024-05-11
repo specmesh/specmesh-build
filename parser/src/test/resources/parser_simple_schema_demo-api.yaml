@@ -41,6 +41,11 @@ channels:
         payload:
           $ref: "simple_schema_demo_user-signedup.avsc"
 
+  _public.user.message-less:
+    # channel with no message defined:
+    publish:
+      operationId: opId
+
 # SUBSCRIBER WILL REQUEST SCHEMA from SR and CodeGen required classes. Header will be used for Id
   london.hammersmith.transport._public.tube:
     subscribe:

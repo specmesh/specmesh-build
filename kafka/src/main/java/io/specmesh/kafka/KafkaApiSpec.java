@@ -175,7 +175,7 @@ public final class KafkaApiSpec {
             throw new APIException("Unknown topic:" + topicName);
         }
 
-        return Optional.ofNullable(channel.publish()).map(Operation::schemaInfo);
+        return Optional.ofNullable(channel.publish()).flatMap(Operation::schemaInfo);
     }
 
     /**
@@ -195,7 +195,8 @@ public final class KafkaApiSpec {
 
         return Stream.of(channel.publish(), channel.subscribe())
                 .filter(Objects::nonNull)
-                .map(Operation::schemaInfo);
+                .map(Operation::schemaInfo)
+                .flatMap(Optional::stream);
     }
 
     /**

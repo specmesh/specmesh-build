@@ -46,20 +46,21 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TopicMutatorsTest {
 
     @Mock Admin client;
+    @Mock KafkaFuture<TopicDescription> descriptionFuture;
+    @Mock KafkaFuture<Void> createPartitionsFuture;
 
     @Test
     void shouldWriteUpdatesForRetentionChange() throws Exception {
         final var topicWriter = new UpdateMutator(client);
 
         // Mock hell - crappy admin api
-        final var topicDescriptionFuture = mock(KafkaFuture.class);
-        when(topicDescriptionFuture.get(Provisioner.REQUEST_TIMEOUT, TimeUnit.SECONDS))
+        when(descriptionFuture.get(Provisioner.REQUEST_TIMEOUT, TimeUnit.SECONDS))
                 .thenReturn(getTopicDescription());
 
         final var describeResult = mock(DescribeTopicsResult.class);
 
         // test value of existing topic
-        when(describeResult.topicNameValues()).thenReturn(Map.of("test", topicDescriptionFuture));
+        when(describeResult.topicNameValues()).thenReturn(Map.of("test", descriptionFuture));
 
         when(client.describeTopics(List.of("test"))).thenReturn(describeResult);
 
@@ -86,22 +87,20 @@ class TopicMutatorsTest {
         final var topicWriter = new UpdateMutator(client);
 
         // Mock hell - crappy admin api
-        final var topicDescriptionFuture = mock(KafkaFuture.class);
-        when(topicDescriptionFuture.get(Provisioner.REQUEST_TIMEOUT, TimeUnit.SECONDS))
+        when(descriptionFuture.get(Provisioner.REQUEST_TIMEOUT, TimeUnit.SECONDS))
                 .thenReturn(getTopicDescription());
 
         final var describeResult = mock(DescribeTopicsResult.class);
 
         // test value of existing topic
-        when(describeResult.topicNameValues()).thenReturn(Map.of("test", topicDescriptionFuture));
+        when(describeResult.topicNameValues()).thenReturn(Map.of("test", descriptionFuture));
 
         when(client.describeTopics(List.of("test"))).thenReturn(describeResult);
 
         final var createPartitionsResult = mock(CreatePartitionsResult.class);
-        final var createPartitionFuture = mock(KafkaFuture.class);
-        when(createPartitionsResult.all()).thenReturn(createPartitionFuture);
-        when(createPartitionFuture.get(Provisioner.REQUEST_TIMEOUT, TimeUnit.SECONDS))
-                .thenReturn(Void.class);
+        when(createPartitionsResult.all()).thenReturn(createPartitionsFuture);
+        when(createPartitionsFuture.get(Provisioner.REQUEST_TIMEOUT, TimeUnit.SECONDS))
+                .thenReturn(null);
         when(client.createPartitions(any(), any())).thenReturn(createPartitionsResult);
 
         // test

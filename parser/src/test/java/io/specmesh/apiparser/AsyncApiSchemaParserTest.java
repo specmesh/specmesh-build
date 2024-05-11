@@ -18,7 +18,6 @@ package io.specmesh.apiparser;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import io.specmesh.apiparser.model.ApiSpec;
@@ -27,6 +26,7 @@ import io.specmesh.apiparser.model.Operation;
 import io.specmesh.apiparser.model.RecordPart;
 import io.specmesh.apiparser.model.RecordPart.KafkaPart;
 import io.specmesh.apiparser.model.RecordPart.SchemaRefPart;
+import io.specmesh.apiparser.model.SchemaInfo;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -38,11 +38,7 @@ public class AsyncApiSchemaParserTest {
     @Test
     public void shouldReturnProducerMessageSchema() {
         final Map<String, Channel> channelsMap = API_SPEC.channels();
-        assertThat(channelsMap.entrySet(), hasSize(2));
-        assertThat(
-                "Should have assembled 'id + channelname'",
-                channelsMap.keySet(),
-                hasItem(".simple.schema-demo._public.user.signed"));
+        assertThat(channelsMap.keySet(), hasItem(".simple.schema-demo._public.user.signed"));
 
         final Operation op = channelsMap.get(".simple.schema-demo._public.user.signed").publish();
 
@@ -57,20 +53,26 @@ public class AsyncApiSchemaParserTest {
                 op.message().payload().schemaRef(),
                 is(Optional.of("simple_schema_demo_user-signedup.avsc")));
 
-        assertThat(op.schemaInfo().schemaFormat(), is(Optional.of(op.message().schemaFormat())));
-        assertThat(op.schemaInfo().contentType(), is(Optional.of(op.message().contentType())));
         assertThat(
-                op.schemaInfo().schemaIdLocation(),
+                op.schemaInfo().flatMap(SchemaInfo::schemaFormat),
+                is(Optional.of(op.message().schemaFormat())));
+        assertThat(
+                op.schemaInfo().flatMap(SchemaInfo::contentType),
+                is(Optional.of(op.message().contentType())));
+        assertThat(
+                op.schemaInfo().flatMap(SchemaInfo::schemaIdLocation),
                 is(Optional.of(op.message().bindings().kafka().schemaIdLocation())));
-        assertThat(op.schemaInfo().key(), is(op.message().bindings().kafka().key()));
-        assertThat(op.schemaInfo().value(), is(op.message().payload()));
+        assertThat(
+                op.schemaInfo().flatMap(SchemaInfo::key),
+                is(op.message().bindings().kafka().key()));
+        assertThat(op.schemaInfo().map(SchemaInfo::value), is(Optional.of(op.message().payload())));
     }
 
     @Test
     public void shouldReturnSubscriberMessageSchema() {
         // Given:
         final Map<String, Channel> channelsMap = API_SPEC.channels();
-
+        assertThat(channelsMap.keySet(), hasItem("london.hammersmith.transport._public.tube"));
         // When:
         final Operation op =
                 channelsMap.get("london.hammersmith.transport._public.tube").subscribe();
@@ -87,12 +89,30 @@ public class AsyncApiSchemaParserTest {
                 op.message().payload().schemaRef(),
                 is(Optional.of("london_hammersmith_transport_public_passenger.avsc")));
 
-        assertThat(op.schemaInfo().schemaFormat(), is(Optional.of(op.message().schemaFormat())));
-        assertThat(op.schemaInfo().contentType(), is(Optional.of(op.message().contentType())));
         assertThat(
-                op.schemaInfo().schemaIdLocation(),
+                op.schemaInfo().flatMap(SchemaInfo::schemaFormat),
+                is(Optional.of(op.message().schemaFormat())));
+        assertThat(
+                op.schemaInfo().flatMap(SchemaInfo::contentType),
+                is(Optional.of(op.message().contentType())));
+        assertThat(
+                op.schemaInfo().flatMap(SchemaInfo::schemaIdLocation),
                 is(Optional.of(op.message().bindings().kafka().schemaIdLocation())));
-        assertThat(op.schemaInfo().key(), is(op.message().bindings().kafka().key()));
-        assertThat(op.schemaInfo().value(), is(op.message().payload()));
+        assertThat(
+                op.schemaInfo().flatMap(SchemaInfo::key),
+                is(op.message().bindings().kafka().key()));
+        assertThat(op.schemaInfo().map(SchemaInfo::value), is(Optional.of(op.message().payload())));
+    }
+
+    @Test
+    void shouldNotBlowUpIfNotMessageDefined() {
+        // Given:
+        final Map<String, Channel> channelsMap = API_SPEC.channels();
+        assertThat(channelsMap.keySet(), hasItem(".simple.schema-demo._public.user.message-less"));
+        final Operation op =
+                channelsMap.get(".simple.schema-demo._public.user.message-less").publish();
+
+        // Then:
+        assertThat(op.schemaInfo(), is(Optional.empty()));
     }
 }
