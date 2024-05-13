@@ -375,7 +375,7 @@ public final class KafkaApiSpec {
      * @param spec to load
      * @return loaded spec
      */
-    private static KafkaApiSpec loadFromFileSystem(final String spec) {
+    public static KafkaApiSpec loadFromFileSystem(final String spec) {
         try (InputStream fis = new FileInputStream(spec)) {
             return new KafkaApiSpec(new AsyncApiParser().loadResource(fis));
         } catch (Exception ex) {
