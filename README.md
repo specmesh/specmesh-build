@@ -69,7 +69,7 @@ channels:
       message:
         name: Food Item
         tags: 
-          - name: "human",
+          - name: "human"
           - name: "purchase"
 ```
 
@@ -223,7 +223,7 @@ Source: com.example.trading-api.yml  (spec)
 ```
 
 Trade.avsc references the _Currency_ .avsc schema (the shared schema type)
-```avro schema
+```json
 {
   "metadata": {
     "author": "John Doe",
@@ -298,4 +298,4 @@ channels:
 # Developer Notes
 
 1. Install the intellij checkstyle plugin and load the config from config/checkstyle.xml
-1. build using: ./gradlew spotlessApply build
+1. build using: `./gradlew`
