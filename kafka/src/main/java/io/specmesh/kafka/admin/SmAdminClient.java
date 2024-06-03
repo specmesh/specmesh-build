@@ -85,22 +85,8 @@ public interface SmAdminClient {
         private List<Partition> partitions;
         private long offsetTotal;
 
-        public static ConsumerGroupBuilder builder() {
-            return new Builder();
-        }
-
-        private void calculateTotalOffset() {
+        void calculateTotalOffset() {
             partitions.forEach(p -> offsetTotal += p.offset());
-        }
-
-        public static final class Builder extends ConsumerGroup.ConsumerGroupBuilder {
-
-            @Override
-            public ConsumerGroup build() {
-                final ConsumerGroup cg = super.build();
-                cg.calculateTotalOffset();
-                return cg;
-            }
         }
     }
 

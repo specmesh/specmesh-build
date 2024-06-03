@@ -81,7 +81,9 @@ public class SimpleAdminClient implements SmAdminClient {
                                 groupBuilder.partitions(
                                         groupOffsets.getOrDefault(
                                                 groupDescription.groupId(), List.of()));
-                                return groupBuilder.build();
+                                final var group = groupBuilder.build();
+                                group.calculateTotalOffset();
+                                return group;
                             })
                     .collect(Collectors.toList());
 
