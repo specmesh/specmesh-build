@@ -100,7 +100,7 @@ channels:
 >
 
 ```json
- {"acme.lifestyle.onboarding._public.user_signed_up":{"storage":1590,"offset-total":6},"acme.lifestyle._protected.purchased":{"storage":0,"offset-total":0},"acme.lifestyle._private.user_checkout":{"storage":9185,"offset-total":57}}
+ {"acme.lifestyle.onboarding._public.user_signed_up":{"storage-bytes":1590,"offset-total":6},"acme.lifestyle._protected.purchased":{"storage-bytes":0,"offset-total":0},"acme.lifestyle._private.user_checkout":{"storage-bytes":9185,"offset-total":57}}
 ```
 .
 
