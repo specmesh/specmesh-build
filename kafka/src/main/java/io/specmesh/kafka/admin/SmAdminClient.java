@@ -17,7 +17,6 @@
 package io.specmesh.kafka.admin;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.util.Collection;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -83,13 +82,25 @@ public interface SmAdminClient {
     class ConsumerGroup {
         @EqualsAndHashCode.Include private String id;
         private List<Member> members;
+        private List<Partition> partitions;
         private long offsetTotal;
 
-        public void calculateTotalOffset() {
-            members.forEach(
-                    member ->
-                            member.partitions.forEach(
-                                    partition -> offsetTotal += partition.offset()));
+        public static ConsumerGroupBuilder builder() {
+            return new Builder();
+        }
+
+        private void calculateTotalOffset() {
+            partitions.forEach(p -> offsetTotal += p.offset());
+        }
+
+        public static final class Builder extends ConsumerGroup.ConsumerGroupBuilder {
+
+            @Override
+            public ConsumerGroup build() {
+                final ConsumerGroup cg = super.build();
+                cg.calculateTotalOffset();
+                return cg;
+            }
         }
     }
 
@@ -104,7 +115,6 @@ public interface SmAdminClient {
         @EqualsAndHashCode.Include private String id;
         private String clientId;
         private String host;
-        private Collection<Partition> partitions;
     }
 
     @Builder
@@ -118,6 +128,5 @@ public interface SmAdminClient {
         @EqualsAndHashCode.Include private int id;
         private String topic;
         private long offset;
-        private long timestamp;
     }
 }
