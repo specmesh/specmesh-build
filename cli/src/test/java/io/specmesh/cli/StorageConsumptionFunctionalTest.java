@@ -16,16 +16,22 @@
 
 package io.specmesh.cli;
 
+import static io.specmesh.cli.util.AssertEventually.assertThatEventually;
 import static io.specmesh.kafka.Clients.producerProperties;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.specmesh.kafka.Clients;
@@ -39,8 +45,10 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -51,11 +59,17 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.LongSerializer;
+import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.StreamsBuilder;
+import org.apache.kafka.streams.StreamsConfig;
+import org.apache.kafka.streams.kstream.Consumed;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import picocli.CommandLine;
 import simple.schema_demo._public.user_signed_up_value.UserSignedUp;
 
+@SuppressFBWarnings({"UW_UNCOND_WAIT", "WA_NOT_IN_LOOP"})
 class StorageConsumptionFunctionalTest {
 
     private static final long RECORD_COUNT = 10_000;
@@ -89,6 +103,8 @@ class StorageConsumptionFunctionalTest {
             final var client = SmAdminClient.create(adminClient);
 
             shouldDoConsumptionStats(client);
+
+            shouldDoConsumptionForStreams(client);
 
             shouldDoStorageStats();
 
@@ -161,6 +177,69 @@ class StorageConsumptionFunctionalTest {
         }
     }
 
+    @SuppressFBWarnings("NN_NAKED_NOTIFY")
+    private void shouldDoConsumptionForStreams(final SmAdminClient client) {
+        final Object lock = new Object();
+        final AtomicInteger processedCount = new AtomicInteger();
+        final StreamsBuilder builder = new StreamsBuilder();
+        builder.stream(
+                        "simple.schema_demo._public.user_signed_up",
+                        Consumed.with(Serdes.ByteArray(), Serdes.ByteArray()))
+                .foreach(
+                        (k, v) -> {
+                            if (processedCount.incrementAndGet() == 1_000) {
+                                try {
+                                    synchronized (lock) {
+                                        lock.wait();
+                                    }
+                                } catch (InterruptedException e) {
+                                    // Meh
+                                }
+                            }
+                        });
+
+        final Properties props = new Properties();
+        props.put(StreamsConfig.APPLICATION_ID_CONFIG, API_SPEC.id() + ":streaming-app");
+        props.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 1L);
+        props.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, 1);
+        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_ENV.kafkaBootstrapServers());
+        props.put(
+                AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG,
+                KAFKA_ENV.kafkaBootstrapServers());
+        props.putAll(Clients.clientSaslAuthProperties(OWNER_USER, OWNER_USER + "-secret"));
+
+        try (KafkaStreams streamsApp = new KafkaStreams(builder.build(), props)) {
+            streamsApp.start();
+
+            try {
+                assertThatEventually(streamsApp::state, is(KafkaStreams.State.RUNNING));
+                assertThatEventually(processedCount::get, is(1_000));
+                assertThatEventually(() -> client.groupsForTopicPrefix("simple"), hasSize(1));
+                final List<SmAdminClient.ConsumerGroup> groups =
+                        client.groupsForTopicPrefix("simple");
+                assertThat(groups, hasSize(1));
+                assertThat(groups.get(0).id(), is("simple.schema_demo:streaming-app"));
+                assertThat(groups.get(0).members(), hasSize(1));
+                assertThat(
+                        groups.get(0).members().get(0).clientId(),
+                        startsWith("simple.schema_demo:streaming-app-"));
+                assertThat(
+                        groups.get(0).members().get(0).id(),
+                        startsWith("simple.schema_demo:streaming-app-"));
+                assertThat(groups.get(0).partitions(), hasSize(1));
+                assertThat(
+                        groups.get(0).offsetTotal(),
+                        is(
+                                both(greaterThan(0L))
+                                        .and(lessThanOrEqualTo((long) processedCount.get()))));
+            } finally {
+                synchronized (lock) {
+                    lock.notifyAll();
+                }
+            }
+        }
+    }
+
     private static int consumeOneBatch(final Consumer<Long, UserSignedUp> consumer) {
         int count = 0;
         ConsumerRecords<?, ?> consumerRecords;
@@ -170,6 +249,11 @@ class StorageConsumptionFunctionalTest {
         } while (consumerRecords.isEmpty());
         return count;
     }
+
+    // todo: can we get principal / account into this SpecMesh data?  Ideally we use SoecMesh for
+    // this and NOT ccloud.
+    // todo: does CCloud metrics API require use of RBAC? (Which we hate)
+    // Todo: produce and consume data to CCLoud and check out metrics.
 
     private static void shouldDoStorageStats() throws Exception {
         final var command = Storage.builder().build();
