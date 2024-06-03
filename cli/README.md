@@ -491,7 +491,7 @@ each of its topic in bytes
 Topic data that matches the app-id (prefixed with `simple.spec_demo` within the api.yaml)
 
 ```json
- {"simple.spec_demo._private.user_checkout":{"storage":1590,"offset-total":6},"simple.spec_demo._protected.purchased":{"storage":0,"offset-total":0},"simple.spec_demo._public.user_signed_up":{"storage":9185,"offset-total":57}}
+ {"simple.spec_demo._private.user_checkout":{"storage-bytes":1590,"offset-total":6},"simple.spec_demo._protected.purchased":{"storage-bytes":0,"offset-total":0},"simple.spec_demo._public.user_signed_up":{"storage-bytes":9185,"offset-total":57}}
 ```
 
 ## Command: Consumption (chargeback metrics)
