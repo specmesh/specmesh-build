@@ -152,8 +152,8 @@ class StorageConsumptionFunctionalTest {
         final var volume =
                 (Map<String, Long>) storage.get("simple.schema_demo._public.user_signed_up");
 
-        assertThat(volume.get("storage"), is(1120000L));
         assertThat(volume.get("offset-total"), is(10000L));
+        assertThat(volume.get("storage-bytes"), is(1120000L));
     }
 
     private static void checkConsumptionStats() throws Exception {

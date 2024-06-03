@@ -110,7 +110,7 @@ public class Storage implements Callable<Integer> {
                         results.put(
                                 topic,
                                 Map.of(
-                                        "storage",
+                                        "storage-bytes",
                                         client.topicVolumeUsingLogDirs(topic),
                                         "offset-total",
                                         client.topicVolumeOffsets(topic))));
