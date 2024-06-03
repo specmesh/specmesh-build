@@ -24,12 +24,14 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.ConsumerGroupDescription;
 import org.apache.kafka.clients.admin.ConsumerGroupListing;
-import org.apache.kafka.clients.admin.MemberDescription;
+import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsSpec;
 import org.apache.kafka.clients.admin.OffsetSpec;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.ConsumerGroupState;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicPartition;
@@ -55,9 +57,11 @@ public class SimpleAdminClient implements SmAdminClient {
     @Override
     public List<ConsumerGroup> groupsForTopicPrefix(final String topicPrefix) {
         try {
-            final var consumerGroups =
-                    adminClient.listConsumerGroups().all().get(TIMEOUT, TimeUnit.SECONDS);
-            final var groupDescriptions = groupsFor(topicPrefix, consumerGroups);
+            final List<ConsumerGroupDescription> groupDescriptions =
+                    groupsDescriptions(topicPrefix);
+
+            final Map<String, List<Partition>> groupOffsets =
+                    groupOffsets(groupDescriptions, topicPrefix);
 
             return groupDescriptions.stream()
                     .map(
@@ -70,12 +74,13 @@ public class SimpleAdminClient implements SmAdminClient {
                                                         member ->
                                                                 Member.builder()
                                                                         .id(member.consumerId())
-                                                                        .partitions(
-                                                                                partitions(member))
                                                                         .host(member.host())
                                                                         .clientId(member.clientId())
                                                                         .build())
                                                 .collect(Collectors.toList()));
+                                groupBuilder.partitions(
+                                        groupOffsets.getOrDefault(
+                                                groupDescription.groupId(), List.of()));
                                 final var group = groupBuilder.build();
                                 group.calculateTotalOffset();
                                 return group;
@@ -91,68 +96,70 @@ public class SimpleAdminClient implements SmAdminClient {
      * Set of groups for a prefix
      *
      * @param topicPrefix to match against
-     * @param consumerGroups to filter from
      * @return matched descriptions
      */
-    private List<ConsumerGroupDescription> groupsFor(
-            final String topicPrefix, final Collection<ConsumerGroupListing> consumerGroups) {
-        return consumerGroups.stream()
-                .filter(
-                        listing ->
-                                !listing.isSimpleConsumerGroup()
-                                        && listing.state().isPresent()
-                                        && listing.state().get().equals(ConsumerGroupState.STABLE))
-                .map(
-                        group -> {
-                            try {
-                                return adminClient
-                                        .describeConsumerGroups(List.of(group.groupId()))
-                                        .all()
-                                        .get()
-                                        .values()
-                                        .iterator()
-                                        .next();
-                            } catch (InterruptedException | ExecutionException e) {
-                                throw new RuntimeException(e);
-                            }
-                        })
-                .filter(
-                        description ->
-                                !description.members().isEmpty()
-                                        && isConsumingFromTopicPrefix(description, topicPrefix))
+    private List<ConsumerGroupDescription> groupsDescriptions(final String topicPrefix)
+            throws InterruptedException, ExecutionException, TimeoutException {
+        final Collection<ConsumerGroupListing> allGroups =
+                adminClient.listConsumerGroups().all().get(TIMEOUT, TimeUnit.SECONDS);
+
+        final List<String> allGroupIds =
+                allGroups.stream()
+                        .filter(
+                                listing ->
+                                        !listing.isSimpleConsumerGroup()
+                                                && listing.state().isPresent()
+                                                && listing.state()
+                                                        .get()
+                                                        .equals(ConsumerGroupState.STABLE))
+                        .map(ConsumerGroupListing::groupId)
+                        .collect(Collectors.toList());
+
+        final Map<String, ConsumerGroupDescription> allDescriptions =
+                adminClient
+                        .describeConsumerGroups(allGroupIds)
+                        .all()
+                        .get(TIMEOUT, TimeUnit.SECONDS);
+
+        return allDescriptions.values().stream()
+                .filter(description -> isConsumingFromTopicPrefix(description, topicPrefix))
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Build partition info for this member
-     *
-     * @param member to collect info for
-     * @return set of partition data
-     */
-    private List<Partition> partitions(final MemberDescription member) {
-        try {
-            final var partitions =
-                    adminClient
-                            .listOffsets(
-                                    member.assignment().topicPartitions().stream()
-                                            .collect(
-                                                    Collectors.toMap(
-                                                            tp -> tp, tp -> OffsetSpec.latest())))
-                            .all()
-                            .get(TIMEOUT, TimeUnit.SECONDS);
-            return partitions.entrySet().stream()
-                    .map(
-                            entry ->
-                                    Partition.builder()
-                                            .id(entry.getKey().partition())
-                                            .topic(entry.getKey().topic())
-                                            .offset(entry.getValue().offset())
-                                            .timestamp(entry.getValue().timestamp())
-                                            .build())
-                    .collect(Collectors.toList());
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new ClientException("Failed to list partitions for:" + member, e);
-        }
+    private Map<String, List<Partition>> groupOffsets(
+            final List<ConsumerGroupDescription> groupDescriptions, final String topicPrefix)
+            throws InterruptedException, ExecutionException, TimeoutException {
+        final Map<String, ListConsumerGroupOffsetsSpec> specs =
+                groupDescriptions.stream()
+                        .map(ConsumerGroupDescription::groupId)
+                        .collect(
+                                Collectors.toMap(
+                                        Function.identity(),
+                                        id -> new ListConsumerGroupOffsetsSpec()));
+
+        final Map<String, Map<TopicPartition, OffsetAndMetadata>> offsets =
+                adminClient.listConsumerGroupOffsets(specs).all().get(TIMEOUT, TimeUnit.SECONDS);
+
+        return offsets.entrySet().stream()
+                .filter(
+                        e ->
+                                e.getValue().keySet().stream()
+                                        .anyMatch(tp -> tp.topic().startsWith(topicPrefix)))
+                .collect(
+                        Collectors.toMap(
+                                Map.Entry::getKey,
+                                e ->
+                                        e.getValue().entrySet().stream()
+                                                .map(
+                                                        o ->
+                                                                Partition.builder()
+                                                                        .id(o.getKey().partition())
+                                                                        .topic(o.getKey().topic())
+                                                                        .offset(
+                                                                                o.getValue()
+                                                                                        .offset())
+                                                                        .build())
+                                                .collect(Collectors.toList())));
     }
 
     /**
@@ -164,16 +171,8 @@ public class SimpleAdminClient implements SmAdminClient {
      */
     private boolean isConsumingFromTopicPrefix(
             final ConsumerGroupDescription groupDescription, final String prefix) {
-        return groupDescription
-                .members()
-                .iterator()
-                .next()
-                .assignment()
-                .topicPartitions()
-                .iterator()
-                .next()
-                .topic()
-                .startsWith(prefix);
+        return groupDescription.members().iterator().next().assignment().topicPartitions().stream()
+                .anyMatch(tp -> tp.topic().startsWith(prefix));
     }
 
     /**

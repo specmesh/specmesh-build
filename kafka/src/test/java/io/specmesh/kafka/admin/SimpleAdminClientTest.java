@@ -93,13 +93,13 @@ class SimpleAdminClientTest {
 
             try (Consumer<Long, UserSignedUp> consumer =
                     avroConsumer(userSignedUpTopic, OWNER_USER, "testGroup")) {
-                final var consumerRecords = consumer.poll(Duration.ofSeconds(10));
-                System.out.println("GOT:" + consumerRecords);
+                final int count = consumer.poll(Duration.ofSeconds(1)).count();
+                consumer.commitSync();
 
                 // VERIFY now check the positional info while the consumer is active
                 final var stats = client.groupsForTopicPrefix("simple");
                 System.out.println(stats);
-                assertThat(stats.get(0).offsetTotal(), is(10000L));
+                assertThat(stats.get(0).offsetTotal(), is((long) count));
             }
 
             final var bytesUsingLogDirs = client.topicVolumeUsingLogDirs(userSignedUpTopic);
@@ -143,7 +143,6 @@ class SimpleAdminClientTest {
 
         final KafkaConsumer<Long, V> consumer = Clients.consumer(Long.class, valueClass, props);
         consumer.subscribe(List.of(topicName));
-        consumer.poll(Duration.ofSeconds(1));
         return consumer;
     }
 
