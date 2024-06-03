@@ -21,10 +21,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
@@ -41,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -51,7 +51,6 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.LongSerializer;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import picocli.CommandLine;
@@ -59,8 +58,7 @@ import simple.schema_demo._public.user_signed_up_value.UserSignedUp;
 
 class StorageConsumptionFunctionalTest {
 
-    private static final long INITIAL_RECORD_COUNT = 1_000;
-    private static final long ADDITIONAL_COUNT = 100;
+    private static final long RECORD_COUNT = 10_000;
     private static final String OWNER_USER = "simple.schema_demo";
 
     @RegisterExtension
@@ -123,18 +121,15 @@ class StorageConsumptionFunctionalTest {
     }
 
     private void shouldDoConsumptionStats(final SmAdminClient client) throws Exception {
-        final String userSignedUpTopic = seedTopicData(INITIAL_RECORD_COUNT);
+        final String userSignedUpTopic = seedTopicData();
 
         try (Consumer<Long, UserSignedUp> consumer =
                 avroConsumer(userSignedUpTopic, OWNER_USER, "testGroup")) {
             // Initially should have no consumption:
             assertThat(client.groupsForTopicPrefix("simple"), is(empty()));
 
-            final long count = consumeAllData(consumer);
-            assertThat(count, is(INITIAL_RECORD_COUNT));
-
-            // Seed more data, so consumer has not consumed all data:
-            seedTopicData(ADDITIONAL_COUNT);
+            final long consumedCount = consumeOneBatch(consumer);
+            assertThat(consumedCount, is(not(RECORD_COUNT)));
 
             // Consumer group should not be registered, but not have offsets:
             final List<SmAdminClient.ConsumerGroup> preSync = client.groupsForTopicPrefix("simple");
@@ -160,19 +155,19 @@ class StorageConsumptionFunctionalTest {
                     postSync.get(0).members().get(0).id(),
                     startsWith("simple.schema_demo.unique-service-id.consumer-"));
             assertThat(postSync.get(0).partitions(), hasSize(3));
-            assertThat(postSync.get(0).offsetTotal(), is(INITIAL_RECORD_COUNT));
+            assertThat(postSync.get(0).offsetTotal(), is(consumedCount));
 
-            checkConsumptionStats();
+            checkConsumptionStats(consumedCount);
         }
     }
 
-    private static int consumeAllData(final Consumer<Long, UserSignedUp> consumer) {
+    private static int consumeOneBatch(final Consumer<Long, UserSignedUp> consumer) {
         int count = 0;
         ConsumerRecords<?, ?> consumerRecords;
         do {
             consumerRecords = consumer.poll(Duration.ofSeconds(1));
             count += consumerRecords.count();
-        } while (!consumerRecords.isEmpty());
+        } while (consumerRecords.isEmpty());
         return count;
     }
 
@@ -197,13 +192,11 @@ class StorageConsumptionFunctionalTest {
         final var volume =
                 (Map<String, Long>) storage.get("simple.schema_demo._public.user_signed_up");
 
-        assertThat(volume.get("offset-total"), is(INITIAL_RECORD_COUNT + ADDITIONAL_COUNT));
-        assertThat(
-                volume.get("storage"),
-                is(Matchers.both(greaterThan(50000L)).and(lessThan(60000L))));
+        assertThat(volume.get("offset-total"), is(RECORD_COUNT));
+        assertThat(volume.get("storage"), is(1120000L));
     }
 
-    private static void checkConsumptionStats() throws Exception {
+    private static void checkConsumptionStats(final long consumedCount) throws Exception {
         final var consumptionCommand = Consumption.builder().build();
         // Given:
         final CommandLine.ParseResult parseResult =
@@ -225,21 +218,23 @@ class StorageConsumptionFunctionalTest {
         assertThat(consumptionMap.size(), is(1));
         assertThat(
                 consumptionMap.keySet(), is(contains("simple.schema_demo._public.user_signed_up")));
-        assertThat(
-                consumptionMap.values().iterator().next().offsetTotal(), is(INITIAL_RECORD_COUNT));
+        assertThat(consumptionMap.values().iterator().next().offsetTotal(), is(consumedCount));
     }
 
-    private static String seedTopicData(final long count) {
+    private static String seedTopicData() {
 
         final var sentRecord = new UserSignedUp("joe blogs", "blogy@twasmail.com", 100);
         // write seed info
         final var userSignedUpTopic = "simple.schema_demo._public.user_signed_up";
         try (var producer = avroProducer(OWNER_USER)) {
 
-            for (int i = 0; i < count; i++) {
-                producer.send(new ProducerRecord<>(userSignedUpTopic, 1000L + i, sentRecord));
+            for (int i = 0; i < RECORD_COUNT; i++) {
+                producer.send(new ProducerRecord<>(userSignedUpTopic, 1000L + i, sentRecord))
+                        .get(60, TimeUnit.SECONDS);
             }
             producer.flush();
+        } catch (final Exception e) {
+            throw new RuntimeException(e);
         }
         return userSignedUpTopic;
     }
