@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -30,6 +31,8 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.ConsumerGroupDescription;
 import org.apache.kafka.clients.admin.ConsumerGroupListing;
 import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsSpec;
+import org.apache.kafka.clients.admin.MemberAssignment;
+import org.apache.kafka.clients.admin.MemberDescription;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.ConsumerGroupState;
@@ -166,12 +169,15 @@ public class SimpleAdminClient implements SmAdminClient {
      * Check if a cgroup is consuming from a topic prefix
      *
      * @param groupDescription - group desc
-     * @param prefix to match againt
+     * @param prefix to match against
      * @return true when it is
      */
     private boolean isConsumingFromTopicPrefix(
             final ConsumerGroupDescription groupDescription, final String prefix) {
-        return groupDescription.members().iterator().next().assignment().topicPartitions().stream()
+        return groupDescription.members().stream()
+                .map(MemberDescription::assignment)
+                .map(MemberAssignment::topicPartitions)
+                .flatMap(Set::stream)
                 .anyMatch(tp -> tp.topic().startsWith(prefix));
     }
 
@@ -211,7 +217,7 @@ public class SimpleAdminClient implements SmAdminClient {
     /**
      * List all brokerIds
      *
-     * @return the set of brokerIds
+     * @return the list of brokerIds
      */
     @Override
     public List<Integer> brokerIds() {
