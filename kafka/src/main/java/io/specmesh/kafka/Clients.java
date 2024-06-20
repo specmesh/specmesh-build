@@ -160,9 +160,6 @@ public final class Clients {
                 + "\";";
     }
 
-    /**
-     * @deprecated use {@link #schemaRegistryClient(String, String, String)}
-     */
     @Deprecated(forRemoval = true)
     public static Optional<SchemaRegistryClient> schemaRegistryClient(
             final boolean srEnabled,
