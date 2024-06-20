@@ -64,14 +64,8 @@ public final class Provision implements Callable<Integer> {
                             + "` from:"
                             + new File(propertyFilename).getAbsolutePath());
             properties.load(fis);
-            properties
-                    .entrySet()
-                    .forEach(
-                            entry -> {
-                                properties.put(
-                                        entry.getKey().toString().replace(".", "-"),
-                                        entry.getValue());
-                            });
+            properties.forEach(
+                    (key, value) -> properties.put(key.toString().replace(".", "-"), value));
             System.out.println(
                     "Loaded `properties` from cwd:" + new File(propertyFilename).getAbsolutePath());
         } catch (IOException e) {
@@ -82,7 +76,7 @@ public final class Provision implements Callable<Integer> {
                             + new File(propertyFilename).getAbsolutePath()
                             + "\nERROR:"
                             + e);
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
 
         final var provider = new CommandLine.PropertiesDefaultProvider(properties);

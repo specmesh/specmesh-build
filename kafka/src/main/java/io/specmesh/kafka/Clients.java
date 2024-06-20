@@ -147,7 +147,7 @@ public final class Clients {
      * @return true if principal was set
      */
     private static boolean isPrincipalSpecified(final String principal) {
-        return principal != null && principal.length() > 0;
+        return principal != null && !principal.isEmpty();
     }
 
     private static String buildJaasConfig(final String userName, final String password) {
