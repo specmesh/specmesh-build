@@ -16,7 +16,6 @@
 
 package io.specmesh.kafka.provision;
 
-import io.specmesh.kafka.provision.Provisioner.ProvisioningException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;

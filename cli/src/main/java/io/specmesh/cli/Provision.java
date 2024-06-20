@@ -18,9 +18,7 @@ package io.specmesh.cli;
 
 import static picocli.CommandLine.Command;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.specmesh.kafka.Clients;
-import io.specmesh.kafka.KafkaApiSpec;
+import com.google.common.annotations.VisibleForTesting;
 import io.specmesh.kafka.provision.Provisioner;
 import io.specmesh.kafka.provision.Status;
 import java.io.File;
@@ -29,26 +27,25 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Callable;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.experimental.Accessors;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
 /** SpecMesh Kafka Provisioner */
+@SuppressWarnings("unused")
 @Command(
         name = "provision",
         description =
                 "Apply a specification.yaml to provision kafka resources on a cluster.\n"
                         + "Use 'provision.properties' for common arguments\n"
                         + " Explicit properties file location /app/provision.properties\n\n")
-@Getter
-@Accessors(fluent = true)
-@Builder
-@SuppressFBWarnings
-public class Provision implements Callable<Integer> {
+public final class Provision implements Callable<Integer> {
 
-    private Status state;
+    private final Provisioner.ProvisionerBuilder builder = Provisioner.builder();
+
+    private Status status;
+
+    @VisibleForTesting
+    Provision() {}
 
     /**
      * Main method
@@ -90,61 +87,78 @@ public class Provision implements Callable<Integer> {
 
         final var provider = new CommandLine.PropertiesDefaultProvider(properties);
         System.exit(
-                new CommandLine(Provision.builder().build())
-                        .setDefaultValueProvider(provider)
-                        .execute(args));
+                new CommandLine(new Provision()).setDefaultValueProvider(provider).execute(args));
     }
 
     @Option(
             names = {"-bs", "--bootstrap-server"},
             description = "Kafka bootstrap server url")
-    @Builder.Default
-    private String brokerUrl = "";
+    public void brokerUrl(final String brokerUrl) {
+        builder.brokerUrl(brokerUrl);
+    }
 
     @Option(
             names = {"-srDisabled", "--sr-disabled"},
             description = "Ignore schema related operations")
-    private boolean srDisabled;
+    public void srDisabled(final boolean disable) {
+        builder.srDisabled(disable);
+    }
 
     @Option(
             names = {"-aclDisabled", "--acl-disabled"},
             description = "Ignore ACL related operations")
-    private boolean aclDisabled;
+    public void aclDisabled(final boolean disable) {
+        builder.aclDisabled(disable);
+    }
 
     @Option(
             names = {"-sr", "--schema-registry"},
             description = "schemaRegistryUrl")
-    private String schemaRegistryUrl;
+    public void schemaRegistryUrl(final String url) {
+        builder.schemaRegistryUrl(url);
+    }
 
     @Option(
             names = {"-srKey", "--sr-api-key"},
             description = "srApiKey for schema registry")
-    private String srApiKey;
+    public void srApiKey(final String key) {
+        builder.srApiKey(key);
+    }
 
     @Option(
             names = {"-srSecret", "--sr-api-secret"},
             description = "srApiSecret for schema secret")
-    private String srApiSecret;
+    public void srApiSecret(final String secret) {
+        builder.srApiSecret(secret);
+    }
 
     @Option(
             names = {"-schemaPath", "--schema-path"},
             description = "schemaPath where the set of referenced schemas will be loaded")
-    private String schemaPath;
+    public void schemaPath(final String path) {
+        builder.schemaPath(path);
+    }
 
     @Option(
             names = {"-spec", "--spec"},
             description = "specmesh specification file")
-    private String spec;
+    public void spec(final String path) {
+        builder.specPath(path);
+    }
 
     @Option(
             names = {"-u", "--username"},
-            description = "username or api key for the cluster connection")
-    private String username;
+            description = "username or api key for the Kafka cluster connection")
+    public void username(final String username) {
+        builder.username(username);
+    }
 
     @Option(
             names = {"-s", "--secret"},
-            description = "secret credential for the cluster connection")
-    private String secret;
+            description = "secret credential for the Kafka cluster connection")
+    public void secret(final String secret) {
+        builder.secret(secret);
+    }
 
     @Option(
             names = {"-dry", "--dry-run"},
@@ -155,7 +169,9 @@ public class Provision implements Callable<Integer> {
                             + " fail with a descriptive error message. A return value of '0' ="
                             + " indicates no  changes needed; '1' = changes needed; '-1' not"
                             + " compatible")
-    private boolean dryRun;
+    public void dryRun(final boolean enabled) {
+        builder.dryRun(enabled);
+    }
 
     @Option(
             names = {"-clean", "--clean-unspecified"},
@@ -165,7 +181,9 @@ public class Provision implements Callable<Integer> {
                         + " resources that are unexpected (not specified). Use with '-dry-run' for"
                         + " non-destructive checks. This operation will not create resources, it"
                         + " will only remove unspecified resources")
-    private boolean cleanUnspecified;
+    public void cleanUnspecified(final boolean enabled) {
+        builder.cleanUnspecified(enabled);
+    }
 
     @Option(
             names = {"-D", "--property"},
@@ -175,25 +193,14 @@ public class Provision implements Callable<Integer> {
         props.forEach(System::setProperty);
     }
 
-    @Override
     public Integer call() {
-        final var status =
-                Provisioner.provision(
-                        !aclDisabled,
-                        dryRun,
-                        cleanUnspecified,
-                        specMeshSpec(),
-                        schemaPath,
-                        Clients.adminClient(brokerUrl, username, secret),
-                        Clients.schemaRegistryClient(
-                                !srDisabled, schemaRegistryUrl, srApiKey, srApiSecret));
-
+        this.status = builder.build().provision();
         System.out.println(status.toString());
-        this.state = status;
         return status.failed() ? 1 : 0;
     }
 
-    private KafkaApiSpec specMeshSpec() {
-        return KafkaApiSpec.loadFromClassPath(spec, Provision.class.getClassLoader());
+    @VisibleForTesting
+    Status state() {
+        return status;
     }
 }

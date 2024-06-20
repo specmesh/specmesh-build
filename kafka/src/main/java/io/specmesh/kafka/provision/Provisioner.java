@@ -16,33 +16,141 @@
 
 package io.specmesh.kafka.provision;
 
+import com.google.common.annotations.VisibleForTesting;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
+import io.specmesh.kafka.Clients;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner;
 import java.util.Optional;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import org.apache.kafka.clients.admin.Admin;
 
-/** Provisions Kafka and SR resources */
+/** SpecMesh Kafka Provisioner */
+@Getter
+@Accessors(fluent = true)
+@Builder
+@SuppressFBWarnings
 public final class Provisioner {
 
-    public static final int REQUEST_TIMEOUT = 60;
+    static final int REQUEST_TIMEOUT = 60;
 
-    private Provisioner() {}
+    private Status state;
 
-    /**
-     * Provision Topics, ACLS and schemas
-     *
-     * @param aclEnabled enable or disable ACLs
-     * @param dryRun test or execute
-     * @param cleanUnspecified cleanup
-     * @param apiSpec given spec
-     * @param schemaResources schema path
-     * @param adminClient kafka admin client
-     * @param schemaRegistryClient sr client
-     * @return status of provisioning
-     * @throws ProvisioningException when cant provision resources
-     */
-    public static Status provision(
+    @Builder.Default private String brokerUrl = "";
+    private boolean srDisabled;
+    private boolean aclDisabled;
+    @Builder.Default private String schemaRegistryUrl = "";
+    private String srApiKey;
+    private String srApiSecret;
+    private SchemaRegistryClient schemaRegistryClient;
+    @Builder.Default private boolean closeSchemaClient = false;
+    private String schemaPath;
+    @Builder.Default private String specPath = "";
+    private KafkaApiSpec apiSpec;
+    private String username;
+    private String secret;
+    private Admin adminClient;
+    @Builder.Default private boolean closeAdminClient = false;
+    private boolean dryRun;
+    private boolean cleanUnspecified;
+
+    public Status provision() {
+        return provision(
+                Provisioner::provision,
+                Clients::adminClient,
+                Clients::schemaRegistryClient,
+                KafkaApiSpec::loadFromClassPath);
+    }
+
+    @VisibleForTesting
+    Status provision(
+            final ProvisionerMethod method,
+            final AdminFactory adminFactory,
+            final SrClientFactory srClientFactory,
+            final SpecLoader specLoader) {
+        try {
+            ensureApiSpec(specLoader);
+            ensureAdminClient(adminFactory);
+            ensureSrClient(srClientFactory);
+
+            final var status =
+                    method.provision(
+                            !aclDisabled,
+                            dryRun,
+                            cleanUnspecified,
+                            apiSpec,
+                            schemaPath,
+                            adminClient,
+                            srDisabled ? Optional.empty() : Optional.of(schemaRegistryClient));
+
+            System.out.println(status.toString());
+            this.state = status;
+            return status;
+        } finally {
+            if (closeAdminClient) {
+                try {
+                    adminClient.close();
+                } catch (Exception e) {
+                    e.printStackTrace(System.err);
+                }
+                adminClient = null;
+            }
+
+            if (closeSchemaClient) {
+                try {
+                    schemaRegistryClient.close();
+                } catch (Exception e) {
+                    e.printStackTrace(System.err);
+                }
+                schemaRegistryClient = null;
+            }
+        }
+    }
+
+    private void ensureSrClient(final SrClientFactory srClientFactory) {
+        if (srDisabled || schemaRegistryClient != null) {
+            return;
+        }
+
+        if (schemaRegistryUrl.isBlank()) {
+            throw new IllegalStateException("Please set a schema registry url");
+        }
+
+        schemaRegistryClient =
+                srClientFactory.schemaRegistryClient(schemaRegistryUrl, srApiKey, srApiSecret);
+        closeSchemaClient = true;
+    }
+
+    private void ensureAdminClient(final AdminFactory adminFactory) {
+        if (adminClient != null) {
+            return;
+        }
+
+        if (brokerUrl.isBlank()) {
+            throw new IllegalStateException("Please set a broker url");
+        }
+
+        adminClient = adminFactory.adminClient(brokerUrl, username, secret);
+        closeAdminClient = true;
+    }
+
+    private void ensureApiSpec(final SpecLoader specLoader) {
+        if (apiSpec != null) {
+            return;
+        }
+
+        if (specPath.isBlank()) {
+            throw new IllegalStateException("Please set the path to the specification file");
+        }
+
+        apiSpec = specLoader.loadFromClassPath(specPath, Provisioner.class.getClassLoader());
+    }
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private static Status provision(
             final boolean aclEnabled,
             final boolean dryRun,
             final boolean cleanUnspecified,
@@ -73,14 +181,32 @@ public final class Provisioner {
         return status.build();
     }
 
-    public static class ProvisioningException extends RuntimeException {
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    @VisibleForTesting
+    interface ProvisionerMethod {
+        Status provision(
+                boolean aclEnabled,
+                boolean dryRun,
+                boolean cleanUnspecified,
+                KafkaApiSpec apiSpec,
+                String schemaResources,
+                Admin adminClient,
+                Optional<SchemaRegistryClient> schemaRegistryClient);
+    }
 
-        public ProvisioningException(final String msg) {
-            super(msg);
-        }
+    @VisibleForTesting
+    interface AdminFactory {
+        Admin adminClient(String brokerUrl, String username, String secret);
+    }
 
-        public ProvisioningException(final String msg, final Throwable cause) {
-            super(msg, cause);
-        }
+    @VisibleForTesting
+    interface SrClientFactory {
+        SchemaRegistryClient schemaRegistryClient(
+                String schemaRegistryUrl, String srApiKey, String srApiSecret);
+    }
+
+    @VisibleForTesting
+    interface SpecLoader {
+        KafkaApiSpec loadFromClassPath(String spec, ClassLoader classLoader);
     }
 }

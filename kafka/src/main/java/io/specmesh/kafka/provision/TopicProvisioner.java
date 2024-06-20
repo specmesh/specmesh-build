@@ -43,7 +43,7 @@ public final class TopicProvisioner {
      * @param apiSpec the api spec.
      * @param adminClient admin client for the Kafka cluster.
      * @return number of topics created
-     * @throws Provisioner.ProvisioningException on provision failure
+     * @throws ProvisioningException on provision failure
      */
     public static Collection<Topic> provision(
             final boolean dryRun,

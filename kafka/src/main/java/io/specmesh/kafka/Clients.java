@@ -16,6 +16,8 @@
 
 package io.specmesh.kafka;
 
+import static java.util.Objects.requireNonNull;
+
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientConfig;
@@ -158,23 +160,29 @@ public final class Clients {
                 + "\";";
     }
 
+    @Deprecated(forRemoval = true, since = "0.10.1")
     public static Optional<SchemaRegistryClient> schemaRegistryClient(
             final boolean srEnabled,
             final String schemaRegistryUrl,
             final String srApiKey,
             final String srApiSecret) {
         if (srEnabled && schemaRegistryUrl != null) {
-            final Map<String, Object> properties = new HashMap<>();
-            if (srApiKey != null) {
-                properties.put(
-                        SchemaRegistryClientConfig.BASIC_AUTH_CREDENTIALS_SOURCE, "USER_INFO");
-                properties.put(
-                        SchemaRegistryClientConfig.USER_INFO_CONFIG, srApiKey + ":" + srApiSecret);
-            }
-            return Optional.of(new CachedSchemaRegistryClient(schemaRegistryUrl, 5, properties));
+            return Optional.of(schemaRegistryClient(schemaRegistryUrl, srApiKey, srApiSecret));
         } else {
             return Optional.empty();
         }
+    }
+
+    public static SchemaRegistryClient schemaRegistryClient(
+            final String schemaRegistryUrl, final String srApiKey, final String srApiSecret) {
+        final Map<String, Object> properties = new HashMap<>();
+        if (srApiKey != null && !srApiKey.isBlank()) {
+            properties.put(SchemaRegistryClientConfig.BASIC_AUTH_CREDENTIALS_SOURCE, "USER_INFO");
+            properties.put(
+                    SchemaRegistryClientConfig.USER_INFO_CONFIG, srApiKey + ":" + srApiSecret);
+        }
+        return new CachedSchemaRegistryClient(
+                requireNonNull(schemaRegistryUrl, "schemaRegistryUrl"), 5, properties);
     }
 
     /**

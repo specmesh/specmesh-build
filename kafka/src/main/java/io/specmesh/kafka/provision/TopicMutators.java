@@ -19,7 +19,6 @@ package io.specmesh.kafka.provision;
 import static org.apache.kafka.common.config.TopicConfig.RETENTION_MS_CONFIG;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.specmesh.kafka.provision.Provisioner.ProvisioningException;
 import io.specmesh.kafka.provision.Status.STATE;
 import io.specmesh.kafka.provision.TopicProvisioner.Topic;
 import java.util.Arrays;
