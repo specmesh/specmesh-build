@@ -27,7 +27,7 @@ import io.specmesh.apiparser.model.RecordPart;
 import io.specmesh.apiparser.model.SchemaInfo;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.provision.ExceptionWrapper;
-import io.specmesh.kafka.provision.Provisioner;
+import io.specmesh.kafka.provision.ProvisioningException;
 import io.specmesh.kafka.provision.Status;
 import io.specmesh.kafka.provision.WithState;
 import io.specmesh.kafka.provision.schema.SchemaReaders.SchemaReader;
@@ -169,7 +169,7 @@ public final class SchemaProvisioner {
                     .type(schemaRef)
                     .subject(resolveSubjectName(topicName, schemas, si, partName));
             builder.state(CREATE);
-        } catch (Provisioner.ProvisioningException ex) {
+        } catch (ProvisioningException ex) {
             builder.state(FAILED);
             builder.exception(ex);
         }
