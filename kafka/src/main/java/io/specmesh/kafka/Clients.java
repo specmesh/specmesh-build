@@ -160,7 +160,7 @@ public final class Clients {
                 + "\";";
     }
 
-    @Deprecated(forRemoval = true)
+    @Deprecated(forRemoval = true, since = "0.10.1")
     public static Optional<SchemaRegistryClient> schemaRegistryClient(
             final boolean srEnabled,
             final String schemaRegistryUrl,
