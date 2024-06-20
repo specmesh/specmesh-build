@@ -35,6 +35,7 @@ public final class AclProvisioner {
 
     /** defensive */
     private AclProvisioner() {}
+
     /**
      * Provision acls in the Kafka cluster
      *
@@ -43,15 +44,39 @@ public final class AclProvisioner {
      * @param apiSpec respect the spec
      * @param adminClient cluster connection
      * @return status of provisioning
-     * @throws Provisioner.ProvisioningException on interrupt
+     * @throws ProvisioningException on interrupt
+     * @deprecated use {@link AclProvisioner#provision(boolean, boolean, KafkaApiSpec, String,
+     *     Admin)}
      */
+    @Deprecated(forRemoval = true, since = "0.10.1")
     public static Collection<Acl> provision(
             final boolean dryRun,
             final boolean cleanUnspecified,
             final KafkaApiSpec apiSpec,
             final Admin adminClient) {
 
-        final var requiredAcls = bindingsToAcls(apiSpec.requiredAcls());
+        return provision(dryRun, cleanUnspecified, apiSpec, apiSpec.id(), adminClient);
+    }
+
+    /**
+     * Provision acls in the Kafka cluster
+     *
+     * @param dryRun for mode of operation
+     * @param cleanUnspecified remove unwanted
+     * @param apiSpec respect the spec
+     * @param userName user name
+     * @param adminClient cluster connection
+     * @return status of provisioning
+     * @throws ProvisioningException on interrupt
+     */
+    public static Collection<Acl> provision(
+            final boolean dryRun,
+            final boolean cleanUnspecified,
+            final KafkaApiSpec apiSpec,
+            final String userName,
+            final Admin adminClient) {
+
+        final var requiredAcls = bindingsToAcls(apiSpec.requiredAcls(userName));
         final var existing = reader(adminClient).read(apiSpec.id(), requiredAcls);
 
         final var required = calculator(cleanUnspecified).calculate(existing, requiredAcls);

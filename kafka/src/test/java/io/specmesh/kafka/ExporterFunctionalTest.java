@@ -39,7 +39,6 @@ import io.specmesh.test.TestSpecLoader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.common.acl.AccessControlEntry;
@@ -95,17 +94,15 @@ class ExporterFunctionalTest {
 
     @BeforeAll
     static void setUp() {
-        try (Admin adminClient = KAFKA_ENV.adminClient()) {
-            Provisioner.provision(
-                            true,
-                            false,
-                            false,
-                            API_SPEC,
-                            "./build/resources/test",
-                            adminClient,
-                            Optional.empty())
-                    .check();
-        }
+        Provisioner.builder()
+                .apiSpec(API_SPEC)
+                .schemaPath("./build/resources/test")
+                .adminClient(KAFKA_ENV.adminClient())
+                .closeAdminClient(true)
+                .srDisabled(true)
+                .build()
+                .provision()
+                .check();
     }
 
     @Test

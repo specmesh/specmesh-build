@@ -32,7 +32,7 @@ val log4jVersion : String by extra
 
 
 dependencies {
-    implementation("info.picocli:picocli:4.7.5")
+    implementation("info.picocli:picocli:4.7.6")
     implementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
     runtimeOnly("org.apache.logging.log4j:log4j-slf4j2-impl:$log4jVersion")
 
@@ -46,7 +46,7 @@ dependencies {
 
     testImplementation("org.testcontainers:testcontainers:$testcontainersVersion")
     testImplementation("org.testcontainers:kafka:$testcontainersVersion")
-    testRuntimeOnly("commons-codec:commons-codec:1.16.0")
+    testRuntimeOnly("commons-codec:commons-codec:1.17.0")
 
     compileOnly("org.projectlombok:lombok:$lombokVersion")
     annotationProcessor("org.projectlombok:lombok:$lombokVersion")
