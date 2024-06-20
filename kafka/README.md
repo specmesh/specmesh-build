@@ -104,3 +104,21 @@ The set of ACLs created from the `provisioner-functional-test-api.yaml`
 =(principal=User:simple.provision_demo, host=*, operation=IDEMPOTENT_WRITE, permissionType=ALLOW)), 
 ]
 ```
+
+
+### Custom usernames
+
+The normal SpecMesh convention is for domain users to have the same name as the domain id.
+For example, given a spec with `id: 'urn:.london.hammersmith.olympia.bigdatalondon'`, SpecMesh will create ACLs to for a principle with the name `london.hammersmith.olympia.bigdatalondon`.
+
+Some times the name of the principle is not in your control, e.g. at the time of writing, service accounts in Confluent Cloud have a user-defined name, but the _principle_ that Kafka sees is the service account _id_, not name.  
+The Id is system generated, e.g. `sa-dkg9sfd`.
+
+In Confluent Cloud, it is recommended that a service account is created with the domain id as the name, and the account id is passed to specmesh via:
+
+1. If using the [command line](../cli/README.md), use the `--domain-user` command line parameter. E.g. `--domain-user=sa-dkg9sfd`
+2. If using the [`Provisioner` class](src/main/java/io/specmesh/kafka/provision/Provisioner.java), use the `domainUserAlias` method. E.g
+   ```
+   Provisioner.builder()
+      .domainUserAlias("sa-dkg9sfd")
+   ```   
