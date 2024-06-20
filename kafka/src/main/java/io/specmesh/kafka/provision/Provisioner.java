@@ -33,7 +33,7 @@ import org.apache.kafka.clients.admin.Admin;
 @Accessors(fluent = true)
 @Builder
 @SuppressFBWarnings
-public class Provisioner {
+public final class Provisioner {
 
     static final int REQUEST_TIMEOUT = 60;
 
