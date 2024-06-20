@@ -19,13 +19,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-import io.confluent.kafka.schemaregistry.ParsedSchema;
-import io.confluent.kafka.schemaregistry.avro.AvroSchema;
-import io.confluent.kafka.schemaregistry.json.JsonSchema;
-import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchema;
 import io.specmesh.kafka.DockerKafkaEnvironment;
 import io.specmesh.kafka.KafkaEnvironment;
-import io.specmesh.kafka.provision.Provisioner;
 import io.specmesh.kafka.provision.Status;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
 import java.nio.file.Path;
@@ -85,19 +80,5 @@ class SchemaChangeSetCalculatorsTest {
 
     private static Path filename(final String extra) {
         return Path.of("./build/resources/test/schema/" + SCHEMA_FILENAME + extra);
-    }
-
-    static ParsedSchema getSchema(final String schemaRefType, final String content) {
-
-        if (schemaRefType.endsWith(".avsc")) {
-            return new AvroSchema(content);
-        }
-        if (schemaRefType.endsWith(".yml")) {
-            return new JsonSchema(content);
-        }
-        if (schemaRefType.endsWith(".proto")) {
-            return new ProtobufSchema(content);
-        }
-        throw new Provisioner.ProvisioningException("Unsupported schema type");
     }
 }

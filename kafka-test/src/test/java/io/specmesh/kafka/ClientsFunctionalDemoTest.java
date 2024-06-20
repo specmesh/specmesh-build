@@ -33,7 +33,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThrows;
 
-import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
@@ -51,7 +50,6 @@ import io.specmesh.test.TestSpecLoader;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -60,7 +58,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.StreamSupport;
 import org.apache.commons.collections.MapUtils;
 import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -109,24 +106,21 @@ class ClientsFunctionalDemoTest {
 
     @BeforeAll
     public static void provision() {
-        try (Admin adminClient = KAFKA_ENV.adminClient()) {
-            final SchemaRegistryClient schemaRegistryClient =
-                    new CachedSchemaRegistryClient(KAFKA_ENV.schemeRegistryServer(), 5);
-            Provisioner.provision(
-                            true,
-                            false,
-                            false,
-                            API_SPEC,
-                            "./build/resources/test",
-                            adminClient,
-                            Optional.of(schemaRegistryClient))
-                    .check();
-        }
+        Provisioner.builder()
+                .apiSpec(API_SPEC)
+                .schemaPath("./build/resources/test")
+                .adminClient(KAFKA_ENV.adminClient())
+                .closeAdminClient(true)
+                .schemaRegistryClient(KAFKA_ENV.srClient())
+                .closeSchemaClient(true)
+                .build()
+                .provision()
+                .check();
     }
 
     @BeforeEach
     public void setUp() {
-        schemaRegistryClient = new CachedSchemaRegistryClient(KAFKA_ENV.schemeRegistryServer(), 5);
+        schemaRegistryClient = KAFKA_ENV.srClient();
     }
 
     @Test

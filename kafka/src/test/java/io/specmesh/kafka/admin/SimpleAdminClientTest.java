@@ -31,7 +31,6 @@ import io.specmesh.test.TestSpecLoader;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -71,14 +70,15 @@ class SimpleAdminClientTest {
 
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
             final var client = SmAdminClient.create(adminClient);
-            Provisioner.provision(
-                            true,
-                            false,
-                            false,
-                            API_SPEC,
-                            "./build/resources/test",
-                            adminClient,
-                            Optional.of(KAFKA_ENV.srClient()))
+
+            Provisioner.builder()
+                    .apiSpec(API_SPEC)
+                    .schemaPath("./build/resources/test")
+                    .adminClient(adminClient)
+                    .schemaRegistryClient(KAFKA_ENV.srClient())
+                    .closeSchemaClient(true)
+                    .build()
+                    .provision()
                     .check();
 
             // write seed info

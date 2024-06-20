@@ -18,7 +18,6 @@ package io.specmesh.kafka.provision;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.kafka.provision.AclProvisioner.Acl;
-import io.specmesh.kafka.provision.Provisioner.ProvisioningException;
 import io.specmesh.kafka.provision.Status.STATE;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;

@@ -43,7 +43,7 @@ public final class AclProvisioner {
      * @param apiSpec respect the spec
      * @param adminClient cluster connection
      * @return status of provisioning
-     * @throws Provisioner.ProvisioningException on interrupt
+     * @throws ProvisioningException on interrupt
      */
     public static Collection<Acl> provision(
             final boolean dryRun,

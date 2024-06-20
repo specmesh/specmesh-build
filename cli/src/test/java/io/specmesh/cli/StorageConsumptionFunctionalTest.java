@@ -44,7 +44,6 @@ import io.specmesh.test.TestSpecLoader;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -89,14 +88,15 @@ class StorageConsumptionFunctionalTest {
     @Test
     void shouldGetStorageAndConsumptionMetrics() throws Exception {
 
-        Provisioner.provision(
-                        true,
-                        false,
-                        false,
-                        API_SPEC,
-                        "./build/resources/test",
-                        KAFKA_ENV.adminClient(),
-                        Optional.of(KAFKA_ENV.srClient()))
+        Provisioner.builder()
+                .apiSpec(API_SPEC)
+                .schemaPath("./build/resources/test")
+                .adminClient(KAFKA_ENV.adminClient())
+                .closeAdminClient(true)
+                .schemaRegistryClient(KAFKA_ENV.srClient())
+                .closeSchemaClient(true)
+                .build()
+                .provision()
                 .check();
 
         try (Admin adminClient = KAFKA_ENV.adminClient()) {

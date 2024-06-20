@@ -25,7 +25,7 @@ import static io.specmesh.kafka.provision.Status.STATE.UPDATED;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
-import io.specmesh.kafka.provision.Provisioner.ProvisioningException;
+import io.specmesh.kafka.provision.ProvisioningException;
 import io.specmesh.kafka.provision.Status.STATE;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
 import java.io.IOException;

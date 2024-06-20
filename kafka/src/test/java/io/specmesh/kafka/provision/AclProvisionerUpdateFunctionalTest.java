@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.specmesh.kafka;
+package io.specmesh.kafka.provision;
 
 import static org.apache.kafka.common.acl.AclOperation.ALL;
 import static org.apache.kafka.common.acl.AclOperation.IDEMPOTENT_WRITE;
@@ -30,8 +30,9 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.specmesh.kafka.provision.AclProvisioner;
-import io.specmesh.kafka.provision.Provisioner;
+import io.specmesh.kafka.DockerKafkaEnvironment;
+import io.specmesh.kafka.KafkaApiSpec;
+import io.specmesh.kafka.KafkaEnvironment;
 import io.specmesh.kafka.provision.Status.STATE;
 import io.specmesh.test.TestSpecLoader;
 import java.util.List;
