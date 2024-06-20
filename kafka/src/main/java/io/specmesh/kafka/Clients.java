@@ -16,6 +16,8 @@
 
 package io.specmesh.kafka;
 
+import static java.util.Objects.requireNonNull;
+
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientConfig;
@@ -145,7 +147,7 @@ public final class Clients {
      * @return true if principal was set
      */
     private static boolean isPrincipalSpecified(final String principal) {
-        return principal != null && principal.length() > 0;
+        return principal != null && !principal.isEmpty();
     }
 
     private static String buildJaasConfig(final String userName, final String password) {
@@ -158,23 +160,29 @@ public final class Clients {
                 + "\";";
     }
 
+    @Deprecated(forRemoval = true, since = "0.10.1")
     public static Optional<SchemaRegistryClient> schemaRegistryClient(
             final boolean srEnabled,
             final String schemaRegistryUrl,
             final String srApiKey,
             final String srApiSecret) {
         if (srEnabled && schemaRegistryUrl != null) {
-            final Map<String, Object> properties = new HashMap<>();
-            if (srApiKey != null) {
-                properties.put(
-                        SchemaRegistryClientConfig.BASIC_AUTH_CREDENTIALS_SOURCE, "USER_INFO");
-                properties.put(
-                        SchemaRegistryClientConfig.USER_INFO_CONFIG, srApiKey + ":" + srApiSecret);
-            }
-            return Optional.of(new CachedSchemaRegistryClient(schemaRegistryUrl, 5, properties));
+            return Optional.of(schemaRegistryClient(schemaRegistryUrl, srApiKey, srApiSecret));
         } else {
             return Optional.empty();
         }
+    }
+
+    public static SchemaRegistryClient schemaRegistryClient(
+            final String schemaRegistryUrl, final String srApiKey, final String srApiSecret) {
+        final Map<String, Object> properties = new HashMap<>();
+        if (srApiKey != null && !srApiKey.isBlank()) {
+            properties.put(SchemaRegistryClientConfig.BASIC_AUTH_CREDENTIALS_SOURCE, "USER_INFO");
+            properties.put(
+                    SchemaRegistryClientConfig.USER_INFO_CONFIG, srApiKey + ":" + srApiSecret);
+        }
+        return new CachedSchemaRegistryClient(
+                requireNonNull(schemaRegistryUrl, "schemaRegistryUrl"), 5, properties);
     }
 
     /**
@@ -218,7 +226,7 @@ public final class Clients {
             final Class<?> valueSerializerClass,
             final boolean acksAll,
             final Map<String, Object>... additionalProperties) {
-        final Map<String, Object> props = clientProperties(domainId, bootstrapServers);
+        final Map<String, Object> props = clientProperties(bootstrapServers);
         props.putAll(
                 Map.of(
                         AdminClientConfig.CLIENT_ID_CONFIG,
@@ -271,7 +279,7 @@ public final class Clients {
             final boolean acksAll,
             final Map<String, Object>... additionalProperties) {
 
-        final Map<String, Object> props = clientProperties(domainId, bootstrapServers);
+        final Map<String, Object> props = clientProperties(bootstrapServers);
         props.putAll(
                 Map.of(
                         StreamsConfig.APPLICATION_ID_CONFIG,
@@ -346,7 +354,7 @@ public final class Clients {
             final Class<?> valueDeserializerClass,
             final boolean autoOffsetResetEarliest,
             final Map<String, Object>... additionalProperties) {
-        final Map<String, Object> props = clientProperties(domainId, bootstrapServers);
+        final Map<String, Object> props = clientProperties(bootstrapServers);
         props.putAll(
                 Map.of(
                         ConsumerConfig.CLIENT_ID_CONFIG,
@@ -367,10 +375,8 @@ public final class Clients {
         return props;
     }
 
-    private static Map<String, Object> clientProperties(
-            final String domainId, final String bootstrapServers) {
+    private static Map<String, Object> clientProperties(final String bootstrapServers) {
         final Map<String, Object> basicProps = new HashMap<>();
-        basicProps.put(AdminClientConfig.CLIENT_ID_CONFIG, domainId);
         basicProps.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         return basicProps;
     }

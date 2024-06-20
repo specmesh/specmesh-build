@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.specmesh.kafka;
+package io.specmesh.kafka.provision;
 
 import static org.apache.kafka.common.acl.AclOperation.ALL;
 import static org.apache.kafka.common.acl.AclOperation.IDEMPOTENT_WRITE;
@@ -30,8 +30,9 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.specmesh.kafka.provision.AclProvisioner;
-import io.specmesh.kafka.provision.Provisioner;
+import io.specmesh.kafka.DockerKafkaEnvironment;
+import io.specmesh.kafka.KafkaApiSpec;
+import io.specmesh.kafka.KafkaEnvironment;
 import io.specmesh.kafka.provision.Status.STATE;
 import io.specmesh.test.TestSpecLoader;
 import java.util.List;
@@ -101,7 +102,7 @@ class AclProvisionerUpdateFunctionalTest {
     @Order(1)
     void shouldProvisionExistingSpec() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
-            AclProvisioner.provision(false, false, API_SPEC, adminClient);
+            AclProvisioner.provision(false, false, API_SPEC, API_SPEC.id(), adminClient);
         }
     }
 
@@ -110,14 +111,16 @@ class AclProvisionerUpdateFunctionalTest {
     void shouldPublishUpdatedAcls() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
             final var dryRunAcls =
-                    AclProvisioner.provision(true, false, API_UPDATE_SPEC, adminClient);
+                    AclProvisioner.provision(
+                            true, false, API_UPDATE_SPEC, API_UPDATE_SPEC.id(), adminClient);
             assertThat(dryRunAcls, is(hasSize(2)));
             assertThat(
                     dryRunAcls.stream().filter(acl -> acl.state().equals(STATE.CREATE)).count(),
                     is(2L));
 
             final var createdAcls =
-                    AclProvisioner.provision(false, false, API_UPDATE_SPEC, adminClient);
+                    AclProvisioner.provision(
+                            false, false, API_UPDATE_SPEC, API_UPDATE_SPEC.id(), adminClient);
 
             assertThat(createdAcls, is(hasSize(2)));
             assertThat(
@@ -148,11 +151,13 @@ class AclProvisionerUpdateFunctionalTest {
                     .all()
                     .get(Provisioner.REQUEST_TIMEOUT, TimeUnit.SECONDS);
 
-            final var dryRunAcls = AclProvisioner.provision(true, true, API_SPEC, adminClient);
+            final var dryRunAcls =
+                    AclProvisioner.provision(true, true, API_SPEC, API_SPEC.id(), adminClient);
             assertThat(dryRunAcls, is(hasSize(1)));
             assertThat(dryRunAcls.iterator().next().state(), is(STATE.DELETE));
 
-            final var createdAcls = AclProvisioner.provision(false, true, API_SPEC, adminClient);
+            final var createdAcls =
+                    AclProvisioner.provision(false, true, API_SPEC, API_SPEC.id(), adminClient);
 
             assertThat(createdAcls, is(hasSize(1)));
             assertThat(createdAcls.iterator().next().state(), is(STATE.DELETED));
