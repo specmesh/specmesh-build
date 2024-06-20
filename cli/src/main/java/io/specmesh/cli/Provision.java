@@ -64,14 +64,8 @@ public final class Provision implements Callable<Integer> {
                             + "` from:"
                             + new File(propertyFilename).getAbsolutePath());
             properties.load(fis);
-            properties
-                    .entrySet()
-                    .forEach(
-                            entry -> {
-                                properties.put(
-                                        entry.getKey().toString().replace(".", "-"),
-                                        entry.getValue());
-                            });
+            properties.forEach(
+                    (key, value) -> properties.put(key.toString().replace(".", "-"), value));
             System.out.println(
                     "Loaded `properties` from cwd:" + new File(propertyFilename).getAbsolutePath());
         } catch (IOException e) {
@@ -82,7 +76,7 @@ public final class Provision implements Callable<Integer> {
                             + new File(propertyFilename).getAbsolutePath()
                             + "\nERROR:"
                             + e);
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
 
         final var provider = new CommandLine.PropertiesDefaultProvider(properties);
@@ -144,6 +138,22 @@ public final class Provision implements Callable<Integer> {
             description = "specmesh specification file")
     public void spec(final String path) {
         builder.specPath(path);
+    }
+
+    @Option(
+            names = {"-du", "--domain-user"},
+            description =
+                    "optional custom domain user, to be used when creating ACLs. By default,"
+                        + " specmesh expects the principle used to authenticate with Kafka to have"
+                        + " the same name as the domain id. For example, given a domain id of"
+                        + " 'urn:acme.products', specmesh expects the user to be called"
+                        + " 'acme.products', and creates ACLs accordingly. In some situations, e.g."
+                        + " Confluent Cloud Service Accounts, the username is system generated or"
+                        + " outside control of administrators.  In these situations, use this"
+                        + " option to provide the generated username and specmesh will provision"
+                        + " ACLs accordingly.")
+    public void domainUserAlias(final String alias) {
+        builder.domainUserAlias(alias);
     }
 
     @Option(

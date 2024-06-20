@@ -113,15 +113,19 @@ public final class KafkaApiSpec {
      */
     @Deprecated
     public List<AclBinding> listACLsForDomainOwnedTopics() {
+        return listACLsForDomainOwnedTopics(id());
+    }
+
+    private List<AclBinding> listACLsForDomainOwnedTopics(final String user) {
         validateTopicConfig();
 
         final List<AclBinding> topicAcls = new ArrayList<>();
-        topicAcls.addAll(ownTopicAcls());
-        topicAcls.addAll(ownTransactionIdsAcls());
+        topicAcls.addAll(ownTopicAcls(user));
+        topicAcls.addAll(ownTransactionIdsAcls(user));
         topicAcls.addAll(publicTopicAcls());
         topicAcls.addAll(protectedTopicAcls());
-        topicAcls.addAll(privateTopicAcls());
-        topicAcls.addAll(prefixedAcls(CLUSTER, CLUSTER_NAME, principal(), IDEMPOTENT_WRITE));
+        topicAcls.addAll(privateTopicAcls(user));
+        topicAcls.addAll(prefixedAcls(CLUSTER, CLUSTER_NAME, principal(user), IDEMPOTENT_WRITE));
         return topicAcls;
     }
 
@@ -142,9 +146,33 @@ public final class KafkaApiSpec {
      * @return returns the set of required acls.
      */
     public Set<AclBinding> requiredAcls() {
+        return requiredAcls(id());
+    }
+
+    /**
+     * Get the set of required ACLs for this domain spec, supplying a custom username.
+     *
+     * <p>Standard convention is to use the domain id for the username. Only use an alternative name
+     * if required.
+     *
+     * <p>This includes {@code ALLOW} ACLs for:
+     *
+     * <ul>
+     *   <li>Everyone to consume the spec's public topics
+     *   <li>Specifically configured domains to consume the spec's protected topics
+     *   <li>The spec's domain to be able to create ad-hoc private topics
+     *   <li>The spec's domain to produce and consume its topics
+     *   <li>The spec's domain to use its own consumer groups
+     *   <li>The spec's domain to use its own transaction ids
+     * </ul>
+     *
+     * @param userName the username to use as the principal in the acl bindings.
+     * @return returns the set of required acls.
+     */
+    public Set<AclBinding> requiredAcls(final String userName) {
         final Set<AclBinding> acls = new HashSet<>();
-        acls.addAll(ownGroupAcls());
-        acls.addAll(listACLsForDomainOwnedTopics());
+        acls.addAll(ownGroupAcls(userName));
+        acls.addAll(listACLsForDomainOwnedTopics(userName));
         acls.addAll(grantAccessControlUsingGrantTagOnly());
         return acls;
     }
@@ -199,13 +227,7 @@ public final class KafkaApiSpec {
                 .flatMap(Optional::stream);
     }
 
-    /**
-     * Format the principal
-     *
-     * @param domainIdAsUsername the domain id
-     * @return the principal
-     */
-    public static String formatPrincipal(final String domainIdAsUsername) {
+    private static String formatPrincipal(final String domainIdAsUsername) {
         return domainIdAsUsername.equals(PUBLIC) ? "User:*" : "User:" + domainIdAsUsername;
     }
 
@@ -229,20 +251,20 @@ public final class KafkaApiSpec {
                         });
     }
 
-    private String principal() {
-        return formatPrincipal(id());
+    private String principal(final String user) {
+        return formatPrincipal(user);
     }
 
-    private Set<AclBinding> ownGroupAcls() {
-        return prefixedAcls(GROUP, id(), principal(), READ);
+    private Set<AclBinding> ownGroupAcls(final String user) {
+        return prefixedAcls(GROUP, id(), principal(user), READ);
     }
 
-    private Set<AclBinding> ownTopicAcls() {
-        return prefixedAcls(TOPIC, id(), principal(), DESCRIBE, READ, WRITE);
+    private Set<AclBinding> ownTopicAcls(final String user) {
+        return prefixedAcls(TOPIC, id(), principal(user), DESCRIBE, READ, WRITE);
     }
 
-    private Set<AclBinding> ownTransactionIdsAcls() {
-        return prefixedAcls(TRANSACTIONAL_ID, id(), principal(), DESCRIBE, WRITE);
+    private Set<AclBinding> ownTransactionIdsAcls(final String user) {
+        return prefixedAcls(TRANSACTIONAL_ID, id(), principal(user), DESCRIBE, WRITE);
     }
 
     private Set<AclBinding> publicTopicAcls() {
@@ -310,7 +332,7 @@ public final class KafkaApiSpec {
     /**
      * the path is using public,private explicit based control
      *
-     * @param key
+     * @param key resource name
      * @return true if it is
      */
     private boolean isUsingPathPerms(final String key) {
@@ -319,8 +341,8 @@ public final class KafkaApiSpec {
                 || key.startsWith(id() + DELIMITER + PUBLIC + DELIMITER);
     }
 
-    private Set<AclBinding> privateTopicAcls() {
-        return prefixedAcls(TOPIC, id() + DELIMITER + PRIVATE, principal(), CREATE);
+    private Set<AclBinding> privateTopicAcls(final String user) {
+        return prefixedAcls(TOPIC, id() + DELIMITER + PRIVATE, principal(user), CREATE);
     }
 
     private static Set<AclBinding> literalAcls(

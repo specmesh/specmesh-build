@@ -62,6 +62,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
  * Tests execution DryRuns and UPDATES where the provisioner-functional-test-api.yml is NOT
  * provisioned
  */
+@SuppressWarnings("OptionalGetWithoutIsPresent")
 @SuppressFBWarnings(
         value = "IC_INIT_CIRCULARITY",
         justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positive")
@@ -153,7 +154,8 @@ class ProvisionerFreshStartFunctionalTest {
     void shouldDryRunACLsFromEmptyCluster() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
-            final var changeset = AclProvisioner.provision(true, false, API_SPEC, adminClient);
+            final var changeset =
+                    AclProvisioner.provision(true, false, API_SPEC, API_SPEC.id(), adminClient);
 
             // Verify - 11 created
             assertThat(
@@ -286,7 +288,8 @@ class ProvisionerFreshStartFunctionalTest {
     void shouldDoRealACLsFromEmptyCluster() throws ExecutionException, InterruptedException {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
-            final var changeset = AclProvisioner.provision(false, false, API_SPEC, adminClient);
+            final var changeset =
+                    AclProvisioner.provision(false, false, API_SPEC, API_SPEC.id(), adminClient);
 
             // Verify - 11 created
             assertThat(

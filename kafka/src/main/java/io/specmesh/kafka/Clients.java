@@ -147,7 +147,7 @@ public final class Clients {
      * @return true if principal was set
      */
     private static boolean isPrincipalSpecified(final String principal) {
-        return principal != null && principal.length() > 0;
+        return principal != null && !principal.isEmpty();
     }
 
     private static String buildJaasConfig(final String userName, final String password) {
@@ -226,7 +226,7 @@ public final class Clients {
             final Class<?> valueSerializerClass,
             final boolean acksAll,
             final Map<String, Object>... additionalProperties) {
-        final Map<String, Object> props = clientProperties(domainId, bootstrapServers);
+        final Map<String, Object> props = clientProperties(bootstrapServers);
         props.putAll(
                 Map.of(
                         AdminClientConfig.CLIENT_ID_CONFIG,
@@ -279,7 +279,7 @@ public final class Clients {
             final boolean acksAll,
             final Map<String, Object>... additionalProperties) {
 
-        final Map<String, Object> props = clientProperties(domainId, bootstrapServers);
+        final Map<String, Object> props = clientProperties(bootstrapServers);
         props.putAll(
                 Map.of(
                         StreamsConfig.APPLICATION_ID_CONFIG,
@@ -354,7 +354,7 @@ public final class Clients {
             final Class<?> valueDeserializerClass,
             final boolean autoOffsetResetEarliest,
             final Map<String, Object>... additionalProperties) {
-        final Map<String, Object> props = clientProperties(domainId, bootstrapServers);
+        final Map<String, Object> props = clientProperties(bootstrapServers);
         props.putAll(
                 Map.of(
                         ConsumerConfig.CLIENT_ID_CONFIG,
@@ -375,10 +375,8 @@ public final class Clients {
         return props;
     }
 
-    private static Map<String, Object> clientProperties(
-            final String domainId, final String bootstrapServers) {
+    private static Map<String, Object> clientProperties(final String bootstrapServers) {
         final Map<String, Object> basicProps = new HashMap<>();
-        basicProps.put(AdminClientConfig.CLIENT_ID_CONFIG, domainId);
         basicProps.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         return basicProps;
     }
