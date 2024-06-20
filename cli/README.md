@@ -75,6 +75,20 @@ Use 'provision.properties' for common arguments
                                fail with a descriptive error message. A return
                                value of '0' = indicates no  changes needed; '1'
                                = changes needed; '-1' not compatible
+      -du, --domain-user=<domainUserAlias>
+                             optional custom domain user, to be used when
+                               creating ACLs. By default, specmesh expects the
+                               principle used to authenticate with Kafka to
+                               have the same name as the domain id. For
+                               example, given a domain id of 'urn:acme.
+                               products', specmesh expects the user to be
+                               called 'acme.products', and creates ACLs
+                               accordingly. In some situations, e.g. Confluent
+                               Cloud Service Accounts, the username is system
+                               generated or outside control of administrators.
+                               In these situations, use this option to provide
+                               the generated username and specmesh will
+                               provision ACLs accordingly.
       -s, --secret=<secret>      secret credential for the cluster connection
       -schemaPath, --schema-path=<schemaPath>
                              schemaPath where the set of referenced schemas
