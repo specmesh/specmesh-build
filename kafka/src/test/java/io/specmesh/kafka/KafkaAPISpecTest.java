@@ -17,14 +17,12 @@
 package io.specmesh.kafka;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import io.specmesh.apiparser.model.SchemaInfo;
 import io.specmesh.test.TestSpecLoader;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -32,6 +30,8 @@ import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.acl.AclBinding;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class KafkaAPISpecTest {
 
@@ -118,9 +118,11 @@ public class KafkaAPISpecTest {
         assertThat(newTopics, hasSize(3));
     }
 
-    @Test
-    public void shouldGenerateAclToAllowAnyOneToConsumePublicTopics() {
-        final Set<AclBinding> acls = API_SPEC.requiredAcls();
+    @ParameterizedTest
+    @ValueSource(strings = {"bob", ""})
+    public void shouldGenerateAclToAllowAnyOneToConsumePublicTopics(final String username) {
+        final Set<AclBinding> acls =
+                username.isBlank() ? API_SPEC.requiredAcls() : API_SPEC.requiredAcls(username);
 
         assertThat(
                 acls.stream().map(Object::toString).collect(Collectors.toSet()),
@@ -129,9 +131,12 @@ public class KafkaAPISpecTest {
                         ExpectedAcl.DESCRIBE_PUBLIC_TOPICS.text));
     }
 
-    @Test
-    public void shouldGenerateAclToAllowSpecificUsersToConsumeProtectedTopics() {
-        final Set<AclBinding> acls = API_SPEC.requiredAcls();
+    @ParameterizedTest
+    @ValueSource(strings = {"bob", ""})
+    public void shouldGenerateAclToAllowSpecificUsersToConsumeProtectedTopics(
+            final String username) {
+        final Set<AclBinding> acls =
+                username.isBlank() ? API_SPEC.requiredAcls() : API_SPEC.requiredAcls(username);
 
         assertThat(
                 acls.stream().map(Object::toString).collect(Collectors.toSet()),
@@ -140,53 +145,63 @@ public class KafkaAPISpecTest {
                         ExpectedAcl.DESCRIBE_PROTECTED_TOPICS.text));
     }
 
-    @Test
-    public void shouldGenerateAclToAllowControlOfOwnPrivateTopics() {
-        final Set<AclBinding> acls = API_SPEC.requiredAcls();
+    @ParameterizedTest
+    @ValueSource(strings = {"bob", ""})
+    public void shouldGenerateAclToAllowControlOfOwnPrivateTopics(final String username) {
+        final Set<AclBinding> acls =
+                username.isBlank() ? API_SPEC.requiredAcls() : API_SPEC.requiredAcls(username);
 
         assertThat(
                 acls.stream().map(Object::toString).collect(Collectors.toSet()),
                 hasItems(
-                        ExpectedAcl.DESCRIBE_OWN_TOPICS.text,
-                        ExpectedAcl.READ_OWN_TOPICS.text,
-                        ExpectedAcl.WRITE_OWN_TOPICS.text,
-                        ExpectedAcl.CREATE_OWN_PRIVATE_TOPICS.text));
+                        adjustAcl(ExpectedAcl.DESCRIBE_OWN_TOPICS.text, username),
+                        adjustAcl(ExpectedAcl.READ_OWN_TOPICS.text, username),
+                        adjustAcl(ExpectedAcl.WRITE_OWN_TOPICS.text, username),
+                        adjustAcl(ExpectedAcl.CREATE_OWN_PRIVATE_TOPICS.text, username)));
     }
 
-    @Test
-    public void shouldGenerateAclsToAllowToUseOwnConsumerGroups() {
-        final Set<AclBinding> acls = API_SPEC.requiredAcls();
+    @ParameterizedTest
+    @ValueSource(strings = {"bob", ""})
+    public void shouldGenerateAclsToAllowToUseOwnConsumerGroups(final String username) {
+        final Set<AclBinding> acls =
+                username.isBlank() ? API_SPEC.requiredAcls() : API_SPEC.requiredAcls(username);
 
         assertThat(
                 acls.stream().map(Object::toString).collect(Collectors.toSet()),
-                hasItems(ExpectedAcl.READ_OWN_GROUPS.text));
+                hasItems(adjustAcl(ExpectedAcl.READ_OWN_GROUPS.text, username)));
     }
 
-    @Test
-    public void shouldGenerateAclsToAllowToUseOwnTransactionId() {
-        final Set<AclBinding> acls = API_SPEC.requiredAcls();
+    @ParameterizedTest
+    @ValueSource(strings = {"bob", ""})
+    public void shouldGenerateAclsToAllowToUseOwnTransactionId(final String username) {
+        final Set<AclBinding> acls =
+                username.isBlank() ? API_SPEC.requiredAcls() : API_SPEC.requiredAcls(username);
 
         assertThat(
                 acls.stream().map(Object::toString).collect(Collectors.toSet()),
-                hasItems(ExpectedAcl.WRITE_OWN_TX_IDS.text, ExpectedAcl.DESCRIBE_OWN_TX_IDS.text));
+                hasItems(
+                        adjustAcl(ExpectedAcl.WRITE_OWN_TX_IDS.text, username),
+                        adjustAcl(ExpectedAcl.DESCRIBE_OWN_TX_IDS.text, username)));
     }
 
-    @Test
-    public void shouldGenerateAclsToAllowIdempotentWriteOnOlderClusters() {
-        final Set<AclBinding> acls = API_SPEC.requiredAcls();
+    @ParameterizedTest
+    @ValueSource(strings = {"bob", ""})
+    public void shouldGenerateAclsToAllowIdempotentWriteOnOlderClusters(final String username) {
+        final Set<AclBinding> acls =
+                username.isBlank() ? API_SPEC.requiredAcls() : API_SPEC.requiredAcls(username);
 
         assertThat(
                 acls.stream().map(Object::toString).collect(Collectors.toSet()),
-                hasItems(ExpectedAcl.OWN_IDEMPOTENT_WRITE.text));
+                hasItems(adjustAcl(ExpectedAcl.OWN_IDEMPOTENT_WRITE.text, username)));
     }
 
-    @Test
-    void shouldNotHaveAnyAdditionalAcls() {
-        final Set<AclBinding> acls = API_SPEC.requiredAcls();
+    @ParameterizedTest
+    @ValueSource(strings = {"bob", ""})
+    void shouldNotHaveAnyAdditionalAcls(final String username) {
+        final Set<AclBinding> acls =
+                username.isBlank() ? API_SPEC.requiredAcls() : API_SPEC.requiredAcls(username);
 
-        assertThat(
-                acls.stream().map(Object::toString).collect(Collectors.toSet()),
-                containsInAnyOrder(Arrays.stream(ExpectedAcl.values()).map(e -> e.text).toArray()));
+        assertThat(acls, hasSize(ExpectedAcl.values().length));
     }
 
     @Test
@@ -195,5 +210,11 @@ public class KafkaAPISpecTest {
                 API_SPEC.ownedTopicSchemas(
                         "london.hammersmith.olympia.bigdatalondon._public.attendee");
         assertThat(schema.flatMap(SchemaInfo::schemaIdLocation), is(Optional.of("header")));
+    }
+
+    private String adjustAcl(final String acl, final String username) {
+        return username.isBlank()
+                ? acl
+                : acl.replaceAll("User:" + API_SPEC.id(), "User:" + username);
     }
 }

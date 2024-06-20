@@ -102,7 +102,7 @@ class AclProvisionerUpdateFunctionalTest {
     @Order(1)
     void shouldProvisionExistingSpec() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
-            AclProvisioner.provision(false, false, API_SPEC, adminClient);
+            AclProvisioner.provision(false, false, API_SPEC, API_SPEC.id(), adminClient);
         }
     }
 
@@ -111,14 +111,16 @@ class AclProvisionerUpdateFunctionalTest {
     void shouldPublishUpdatedAcls() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
             final var dryRunAcls =
-                    AclProvisioner.provision(true, false, API_UPDATE_SPEC, adminClient);
+                    AclProvisioner.provision(
+                            true, false, API_UPDATE_SPEC, API_UPDATE_SPEC.id(), adminClient);
             assertThat(dryRunAcls, is(hasSize(2)));
             assertThat(
                     dryRunAcls.stream().filter(acl -> acl.state().equals(STATE.CREATE)).count(),
                     is(2L));
 
             final var createdAcls =
-                    AclProvisioner.provision(false, false, API_UPDATE_SPEC, adminClient);
+                    AclProvisioner.provision(
+                            false, false, API_UPDATE_SPEC, API_UPDATE_SPEC.id(), adminClient);
 
             assertThat(createdAcls, is(hasSize(2)));
             assertThat(
@@ -149,11 +151,13 @@ class AclProvisionerUpdateFunctionalTest {
                     .all()
                     .get(Provisioner.REQUEST_TIMEOUT, TimeUnit.SECONDS);
 
-            final var dryRunAcls = AclProvisioner.provision(true, true, API_SPEC, adminClient);
+            final var dryRunAcls =
+                    AclProvisioner.provision(true, true, API_SPEC, API_SPEC.id(), adminClient);
             assertThat(dryRunAcls, is(hasSize(1)));
             assertThat(dryRunAcls.iterator().next().state(), is(STATE.DELETE));
 
-            final var createdAcls = AclProvisioner.provision(false, true, API_SPEC, adminClient);
+            final var createdAcls =
+                    AclProvisioner.provision(false, true, API_SPEC, API_SPEC.id(), adminClient);
 
             assertThat(createdAcls, is(hasSize(1)));
             assertThat(createdAcls.iterator().next().state(), is(STATE.DELETED));

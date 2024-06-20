@@ -22,7 +22,7 @@ import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.specmesh.kafka.Clients;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner;
-import java.util.Optional;
+import java.util.Collection;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -49,6 +49,7 @@ public final class Provisioner {
     @Builder.Default private boolean closeSchemaClient = false;
     private String schemaPath;
     @Builder.Default private String specPath = "";
+    @Builder.Default private String domainUserAlias = "";
     private KafkaApiSpec apiSpec;
     private String username;
     private String secret;
@@ -59,34 +60,30 @@ public final class Provisioner {
 
     public Status provision() {
         return provision(
-                Provisioner::provision,
                 Clients::adminClient,
                 Clients::schemaRegistryClient,
-                KafkaApiSpec::loadFromClassPath);
+                KafkaApiSpec::loadFromClassPath,
+                TopicProvisioner::provision,
+                SchemaProvisioner::provision,
+                AclProvisioner::provision);
     }
 
     @VisibleForTesting
     Status provision(
-            final ProvisionerMethod method,
             final AdminFactory adminFactory,
             final SrClientFactory srClientFactory,
-            final SpecLoader specLoader) {
+            final SpecLoader specLoader,
+            final TopicProvision topicProvision,
+            final SchemaProvision schemaProvision,
+            final AclProvision aclProvision) {
         try {
             ensureApiSpec(specLoader);
             ensureAdminClient(adminFactory);
             ensureSrClient(srClientFactory);
 
-            final var status =
-                    method.provision(
-                            !aclDisabled,
-                            dryRun,
-                            cleanUnspecified,
-                            apiSpec,
-                            schemaPath,
-                            adminClient,
-                            srDisabled ? Optional.empty() : Optional.of(schemaRegistryClient));
+            final Status status = provision(topicProvision, schemaProvision, aclProvision);
 
-            System.out.println(status.toString());
+            System.out.println(status);
             this.state = status;
             return status;
         } finally {
@@ -108,6 +105,33 @@ public final class Provisioner {
                 schemaRegistryClient = null;
             }
         }
+    }
+
+    private Status provision(
+            final TopicProvision topicProvision,
+            final SchemaProvision schemaProvision,
+            final AclProvision aclProvision) {
+        final String userName = domainUserAlias.isBlank() ? apiSpec.id() : domainUserAlias;
+
+        apiSpec.apiSpec().validate();
+
+        final Status.StatusBuilder status =
+                Status.builder()
+                        .topics(
+                                topicProvision.provision(
+                                        dryRun, cleanUnspecified, apiSpec, adminClient));
+        if (!srDisabled) {
+            status.schemas(
+                    schemaProvision.provision(
+                            dryRun, cleanUnspecified, apiSpec, schemaPath, schemaRegistryClient));
+        }
+
+        if (!aclDisabled) {
+            status.acls(
+                    aclProvision.provision(
+                            dryRun, cleanUnspecified, apiSpec, userName, adminClient));
+        }
+        return status.build();
     }
 
     private void ensureSrClient(final SrClientFactory srClientFactory) {
@@ -149,51 +173,6 @@ public final class Provisioner {
         apiSpec = specLoader.loadFromClassPath(specPath, Provisioner.class.getClassLoader());
     }
 
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private static Status provision(
-            final boolean aclEnabled,
-            final boolean dryRun,
-            final boolean cleanUnspecified,
-            final KafkaApiSpec apiSpec,
-            final String schemaResources,
-            final Admin adminClient,
-            final Optional<SchemaRegistryClient> schemaRegistryClient) {
-
-        apiSpec.apiSpec().validate();
-
-        final var status =
-                Status.builder()
-                        .topics(
-                                TopicProvisioner.provision(
-                                        dryRun, cleanUnspecified, apiSpec, adminClient));
-        schemaRegistryClient.ifPresent(
-                registryClient ->
-                        status.schemas(
-                                SchemaProvisioner.provision(
-                                        dryRun,
-                                        cleanUnspecified,
-                                        apiSpec,
-                                        schemaResources,
-                                        registryClient)));
-        if (aclEnabled) {
-            status.acls(AclProvisioner.provision(dryRun, cleanUnspecified, apiSpec, adminClient));
-        }
-        return status.build();
-    }
-
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    @VisibleForTesting
-    interface ProvisionerMethod {
-        Status provision(
-                boolean aclEnabled,
-                boolean dryRun,
-                boolean cleanUnspecified,
-                KafkaApiSpec apiSpec,
-                String schemaResources,
-                Admin adminClient,
-                Optional<SchemaRegistryClient> schemaRegistryClient);
-    }
-
     @VisibleForTesting
     interface AdminFactory {
         Admin adminClient(String brokerUrl, String username, String secret);
@@ -208,5 +187,31 @@ public final class Provisioner {
     @VisibleForTesting
     interface SpecLoader {
         KafkaApiSpec loadFromClassPath(String spec, ClassLoader classLoader);
+    }
+
+    @VisibleForTesting
+    interface TopicProvision {
+        Collection<TopicProvisioner.Topic> provision(
+                boolean dryRun, boolean cleanUnspecified, KafkaApiSpec apiSpec, Admin adminClient);
+    }
+
+    @VisibleForTesting
+    interface SchemaProvision {
+        Collection<SchemaProvisioner.Schema> provision(
+                boolean dryRun,
+                boolean cleanUnspecified,
+                KafkaApiSpec apiSpec,
+                String baseResourcePath,
+                SchemaRegistryClient client);
+    }
+
+    @VisibleForTesting
+    interface AclProvision {
+        Collection<AclProvisioner.Acl> provision(
+                boolean dryRun,
+                boolean cleanUnspecified,
+                KafkaApiSpec apiSpec,
+                String userName,
+                Admin adminClient);
     }
 }
