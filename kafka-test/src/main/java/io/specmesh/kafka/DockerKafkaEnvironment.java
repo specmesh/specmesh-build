@@ -370,7 +370,7 @@ public final class DockerKafkaEnvironment
          * @return self.
          */
         public Builder withSchemaRegistryEnv(final Map<String, String> env) {
-            this.kafkaEnv.putAll(env);
+            this.srEnv.putAll(env);
             return this;
         }
 
