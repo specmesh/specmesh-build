@@ -37,8 +37,6 @@ public final class Provisioner {
 
     static final int REQUEST_TIMEOUT = 60;
 
-    private Status state;
-
     @Builder.Default private String brokerUrl = "";
     private boolean srDisabled;
     private boolean aclDisabled;
@@ -84,7 +82,6 @@ public final class Provisioner {
             final Status status = provision(topicProvision, schemaProvision, aclProvision);
 
             System.out.println(status);
-            this.state = status;
             return status;
         } finally {
             if (closeAdminClient) {

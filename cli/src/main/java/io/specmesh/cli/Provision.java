@@ -42,8 +42,6 @@ public final class Provision implements Callable<Integer> {
 
     private final Provisioner.ProvisionerBuilder builder = Provisioner.builder();
 
-    private Status status;
-
     @VisibleForTesting
     Provision() {}
 
@@ -204,13 +202,13 @@ public final class Provision implements Callable<Integer> {
     }
 
     public Integer call() {
-        this.status = builder.build().provision();
+        final Status status = builder.build().provision();
         System.out.println(status.toString());
         return status.failed() ? 1 : 0;
     }
 
     @VisibleForTesting
-    Status state() {
-        return status;
+    Status run() {
+        return builder.build().provision();
     }
 }
