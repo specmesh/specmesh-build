@@ -70,10 +70,8 @@ class ProvisionFunctionalTest {
      */
     @Test
     void shouldProvisionTopicsAndAclResourcesWithSchemas() throws Exception {
-
-        final Provision provision = new Provision();
-
         // Given:
+        final Provision provision = new Provision();
         final CommandLine.ParseResult parseResult =
                 new CommandLine(provision)
                         .parseArgs(
@@ -91,16 +89,15 @@ class ProvisionFunctionalTest {
 
         assertThat(parseResult.matchedArgs().size(), is(8));
 
-        assertThat(provision.call(), is(0));
-
         // check system properties
         assertThat(System.getProperty("some.property"), is("testOne"));
         assertThat(System.getProperty("some.other.property"), is("testTwo"));
 
         // When:
-        final var status = provision.state();
+        final var status = provision.run();
 
         // then: Verify status is correct
+        assertThat(status.failed(), is(false));
         final var topicProvisionStatus = status.topics();
         assertThat(
                 topicProvisionStatus.stream().map(Topic::name).collect(Collectors.toSet()),
