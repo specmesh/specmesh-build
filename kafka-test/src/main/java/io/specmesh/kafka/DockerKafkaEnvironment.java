@@ -85,6 +85,7 @@ public final class DockerKafkaEnvironment
     private final Map<String, String> srEnv;
     private final Set<AclBinding> aclBindings;
     private final Optional<Credentials> adminUser;
+    private final Optional<Network> explicitNetwork;
 
     private Network network;
     private KafkaContainer kafkaBroker;
@@ -108,7 +109,8 @@ public final class DockerKafkaEnvironment
             final Optional<DockerImageName> srDockerImage,
             final Map<String, String> srEnv,
             final Set<AclBinding> aclBindings,
-            final Optional<Credentials> adminUser) {
+            final Optional<Credentials> adminUser,
+            final Optional<Network> explicitNetwork) {
         this.startUpTimeout = requireNonNull(startUpTimeout, "startUpTimeout");
         this.startUpAttempts = startUpAttempts;
         this.kafkaDockerImage = requireNonNull(kafkaDockerImage, "kafkaDockerImage");
@@ -117,6 +119,7 @@ public final class DockerKafkaEnvironment
         this.srEnv = Map.copyOf(requireNonNull(srEnv, "srEnv"));
         this.aclBindings = Set.copyOf(requireNonNull(aclBindings, "aclBindings"));
         this.adminUser = requireNonNull(adminUser, "credentials");
+        this.explicitNetwork = requireNonNull(explicitNetwork, "explicitNetwork");
         tearDown();
     }
 
@@ -187,7 +190,7 @@ public final class DockerKafkaEnvironment
             return;
         }
 
-        network = Network.newNetwork();
+        network = explicitNetwork.orElseGet(Network::newNetwork);
 
         kafkaBroker =
                 new KafkaContainer(kafkaDockerImage)
@@ -232,7 +235,9 @@ public final class DockerKafkaEnvironment
         }
 
         if (network != null) {
-            network.close();
+            if (explicitNetwork.isEmpty()) {
+                network.close();
+            }
             network = null;
         }
 
@@ -245,6 +250,17 @@ public final class DockerKafkaEnvironment
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new AssertionError("Failed to create ACLs", e);
         }
+    }
+
+    public String testNetworkKafkaBootstrapServers() {
+        return "PLAINTEXT://" + kafkaBroker.getNetworkAliases().get(0) + ":9092";
+    }
+
+    public String testNetworkSchemeRegistryServer() {
+        return "http://"
+                + schemaRegistry.getNetworkAliases().get(0)
+                + ":"
+                + SchemaRegistryContainer.SCHEMA_REGISTRY_PORT;
     }
 
     /** Builder of {@link DockerKafkaEnvironment}. */
@@ -271,6 +287,12 @@ public final class DockerKafkaEnvironment
         private final Map<String, String> userPasswords = new LinkedHashMap<>();
         private boolean enableAcls = false;
         private final Set<AclBinding> aclBindings = new HashSet<>();
+        private Optional<Network> explicitNetwork = Optional.empty();
+
+        public Builder withNetwork(final Network network) {
+            this.explicitNetwork = Optional.of(network);
+            return this;
+        }
 
         /**
          * Customise the startup count.
@@ -436,7 +458,8 @@ public final class DockerKafkaEnvironment
                     srImage,
                     srEnv,
                     aclBindings,
-                    adminUser());
+                    adminUser(),
+                    explicitNetwork);
         }
 
         private Optional<Credentials> adminUser() {
