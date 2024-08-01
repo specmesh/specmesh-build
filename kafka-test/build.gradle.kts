@@ -38,5 +38,5 @@ dependencies {
 
     testImplementation("com.google.protobuf:protobuf-java:$protobufVersion")
     testImplementation("org.testcontainers:junit-jupiter:$testcontainersVersion")
-    testRuntimeOnly("commons-codec:commons-codec:1.17.0")
+    testRuntimeOnly("commons-codec:commons-codec:1.17.1")
 }
