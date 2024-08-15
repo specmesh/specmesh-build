@@ -49,9 +49,9 @@ public class KafkaBinding {
 
     @Builder.Default @JsonProperty private List<String> envs = List.of();
 
-    @Builder.Default @JsonProperty private int partitions = 1;
+    @Builder.Default @JsonProperty private Optional<Integer> partitions = Optional.empty();
 
-    @Builder.Default @JsonProperty private int replicas = 3;
+    @Builder.Default @JsonProperty private Optional<Short> replicas = Optional.empty();
 
     @Builder.Default @JsonProperty private Map<String, String> configs = Map.of();
 

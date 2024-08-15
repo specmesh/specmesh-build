@@ -25,6 +25,7 @@ import io.specmesh.kafka.provision.TopicProvisioner.Topic;
 import io.specmesh.kafka.provision.TopicReaders;
 import io.specmesh.kafka.provision.TopicReaders.TopicsReaderBuilder;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.Admin;
 
@@ -93,8 +94,8 @@ public final class Exporter {
     private static KafkaBinding kafkaBindings(final Topic topic) {
         return KafkaBinding.builder()
                 .bindingVersion("unknown")
-                .replicas(topic.replication())
-                .partitions(topic.partitions())
+                .replicas(Optional.of(topic.replication()))
+                .partitions(Optional.of(topic.partitions()))
                 .configs(topic.config())
                 .build();
     }

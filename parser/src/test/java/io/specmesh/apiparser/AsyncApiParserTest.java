@@ -25,6 +25,7 @@ import io.specmesh.apiparser.model.ApiSpec;
 import io.specmesh.apiparser.model.Bindings;
 import io.specmesh.apiparser.model.Channel;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.kafka.common.config.TopicConfig;
 import org.hamcrest.Matchers;
@@ -64,8 +65,8 @@ public class AsyncApiParserTest {
 
         final Bindings producerBindings =
                 channelsMap.get(".simple.streetlights._public.light.measured").bindings();
-        assertThat(producerBindings.kafka().partitions(), is(3));
-        assertThat(producerBindings.kafka().replicas(), is(1));
+        assertThat(producerBindings.kafka().partitions(), is(Optional.of(3)));
+        assertThat(producerBindings.kafka().replicas(), is(Optional.of((short) 1)));
 
         assertThat(
                 "Should use absolute path",
