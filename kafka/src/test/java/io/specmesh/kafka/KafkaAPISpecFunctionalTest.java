@@ -72,7 +72,7 @@ import org.junit.jupiter.api.function.Executable;
 import org.junitpioneer.jupiter.cartesian.CartesianTest;
 
 @SuppressFBWarnings(
-        value = "IC_INIT_CIRCULARITY",
+        value = {"IC_INIT_CIRCULARITY", "RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"},
         justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positivity")
 class KafkaAPISpecFunctionalTest {
 
