@@ -10,6 +10,9 @@ updates:
     open-pull-requests-limit: 50
     schedule:
       interval: monthly
+    ignore:
+      - dependency-name: "com.google.protobuf:protobuf-java"
+        update-types: [ "version-update:semver-major" ]
   - package-ecosystem: gradle
     directory: /
     open-pull-requests-limit: 50
