@@ -98,7 +98,7 @@ public final class KafkaApiSpec {
                                 new NewTopic(
                                                 e.getKey(),
                                                 e.getValue().bindings().kafka().partitions(),
-                                                (short) e.getValue().bindings().kafka().replicas())
+                                                e.getValue().bindings().kafka().replicas())
                                         .configs(e.getValue().bindings().kafka().configs()))
                 .collect(Collectors.toList());
     }

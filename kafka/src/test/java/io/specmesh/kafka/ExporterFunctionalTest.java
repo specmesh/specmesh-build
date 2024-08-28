@@ -39,6 +39,7 @@ import io.specmesh.test.TestSpecLoader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.common.acl.AccessControlEntry;
@@ -137,6 +138,13 @@ class ExporterFunctionalTest {
                                                                         KafkaBinding.builder()
                                                                                 .groupId(
                                                                                         "kafka-binding-group-id")
+                                                                                .partitions(
+                                                                                        Optional.of(
+                                                                                                1))
+                                                                                .replicas(
+                                                                                        Optional.of(
+                                                                                                (short)
+                                                                                                        3))
                                                                                 .build())
                                                                 .build())
                                                 .build()))
