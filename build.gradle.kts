@@ -18,7 +18,7 @@ plugins {
     java
     `maven-publish`
     signing
-    id("com.github.spotbugs") version "6.0.18"
+    id("com.github.spotbugs") version "6.0.20"
     id("com.diffplug.spotless") version "6.25.0"
     id("pl.allegro.tech.build.axion-release") version "1.18.4"
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
@@ -79,7 +79,7 @@ subprojects {
         set("hamcrestVersion", "1.3")
         set("log4jVersion", "2.23.1")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
         set("classGraphVersion", "4.8.21")
-        set("testcontainersVersion", "1.19.8")
+        set("testcontainersVersion", "1.20.1")
         set("lombokVersion", "1.18.34")
     }
 
