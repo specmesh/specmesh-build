@@ -16,6 +16,8 @@
 
 package io.specmesh.kafka.schema;
 
+import static io.specmesh.kafka.DockerKafkaEnvironment.KAFKA_DOCKER_NETWORK_PORT;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import org.testcontainers.containers.GenericContainer;
@@ -25,7 +27,6 @@ import org.testcontainers.utility.DockerImageName;
 /** Test container for the Schema Registry */
 public final class SchemaRegistryContainer extends GenericContainer<SchemaRegistryContainer> {
 
-    private static final int KAFKA_INSECURE_BROKER_CONNECTION = 9092;
     private static final DockerImageName DEFAULT_IMAGE_NAME =
             DockerImageName.parse("confluentinc/cp-schema-registry:7.5.3");
 
@@ -73,7 +74,7 @@ public final class SchemaRegistryContainer extends GenericContainer<SchemaRegist
                 "PLAINTEXT://"
                         + kafka.getNetworkAliases().get(0)
                         + ":"
-                        + KAFKA_INSECURE_BROKER_CONNECTION);
+                        + KAFKA_DOCKER_NETWORK_PORT);
         dependsOn(kafka);
         return this;
     }
