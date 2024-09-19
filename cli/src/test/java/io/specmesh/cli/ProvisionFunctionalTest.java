@@ -81,7 +81,7 @@ class ProvisionFunctionalTest {
                                                 + " --username admin"
                                                 + " --secret admin-secret"
                                                 + " --schema-registry "
-                                                + KAFKA_ENV.schemeRegistryServer()
+                                                + KAFKA_ENV.schemaRegistryServer()
                                                 + " --schema-path ./resources"
                                                 + " -Dsome.property=testOne"
                                                 + " -Dsome.other.property=testTwo")

@@ -66,8 +66,13 @@ import org.testcontainers.utility.DockerImageName;
  *  .build();
  * }</pre>
  *
- * The `KAFKA_ENV` can then be queried for the {@link #kafkaBootstrapServers() Kafka endpoint} and
- * ths {@link #schemeRegistryServer() Schema Registry endpoint}.
+ * <p>The `KAFKA_ENV` can then be queried for the {@link #kafkaBootstrapServers() Kafka endpoint}
+ * and ths {@link #schemaRegistryServer() Schema Registry endpoint}, which can be used to
+ * communicate with the services from within test code.
+ *
+ * <p>Use {@link #dockerNetworkKafkaBootstrapServers()} and {@link
+ * #dockerNetworkSchemaRegistryServer()} to configure other Docker instances to communicate with
+ * Kafka and the Schema Registry, respectively.
  */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class DockerKafkaEnvironment
@@ -76,6 +81,9 @@ public final class DockerKafkaEnvironment
                 BeforeEachCallback,
                 AfterEachCallback,
                 AfterAllCallback {
+
+    /** The port to use when connecting to Kafka from inside the Docker network */
+    public static final int KAFKA_DOCKER_NETWORK_PORT = 9092;
 
     private final int startUpAttempts;
     private final Duration startUpTimeout;
@@ -91,7 +99,7 @@ public final class DockerKafkaEnvironment
     private KafkaContainer kafkaBroker;
     private SchemaRegistryContainer schemaRegistry;
     private boolean invokedStatically = false;
-    private AtomicInteger setUpCount = new AtomicInteger(1);
+    private final AtomicInteger setUpCount = new AtomicInteger(1);
 
     /**
      * @return returns a {@link Builder} instance to allow customisation of the environment.
@@ -152,14 +160,55 @@ public final class DockerKafkaEnvironment
         tearDown();
     }
 
+    /**
+     * @return bootstrap servers for connecting to Kafka from outside the Docker network, i.e. from
+     *     test code
+     */
     @Override
     public String kafkaBootstrapServers() {
         return kafkaBroker.getBootstrapServers();
     }
 
+    /**
+     * @return bootstrap servers for connecting to Kafka from inside the Docker network
+     */
+    public String dockerNetworkKafkaBootstrapServers() {
+        final String protocol = adminUser.isPresent() ? "SASL_PLAINTEXT" : "PLAINTEXT";
+
+        return protocol
+                + "://"
+                + kafkaBroker.getNetworkAliases().get(0)
+                + ":"
+                + KAFKA_DOCKER_NETWORK_PORT;
+    }
+
+    /**
+     * @return bootstrap servers for connecting to Schema Registry from outside the Docker network,
+     *     i.e. from test code
+     */
+    @SuppressWarnings("deprecation")
     @Override
     public String schemeRegistryServer() {
+        return schemaRegistryServer();
+    }
+
+    /**
+     * @return bootstrap servers for connecting to Schema Registry from outside the Docker network,
+     *     i.e. from test code
+     */
+    @Override
+    public String schemaRegistryServer() {
         return schemaRegistry.hostNetworkUrl().toString();
+    }
+
+    /**
+     * @return bootstrap servers for connecting to Schema Registry from inside the Docker network
+     */
+    public String dockerNetworkSchemaRegistryServer() {
+        return "http://"
+                + schemaRegistry.getNetworkAliases().get(0)
+                + ":"
+                + SchemaRegistryContainer.SCHEMA_REGISTRY_PORT;
     }
 
     @Override
@@ -206,10 +255,14 @@ public final class DockerKafkaEnvironment
                                 image ->
                                         schemaRegistry =
                                                 new SchemaRegistryContainer(srDockerImage.get())
-                                                        .withKafka(kafkaBroker)
+                                                        .withNetwork(network)
+                                                        .dependsOn(kafkaBroker)
                                                         .withNetworkAliases("schema-registry")
                                                         .withStartupAttempts(startUpAttempts)
                                                         .withStartupTimeout(startUpTimeout)
+                                                        .withEnv(
+                                                                "SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS",
+                                                                dockerNetworkKafkaBootstrapServers())
                                                         .withEnv(srEnv))
                         .map(container -> (Startable) container)
                         .orElse(kafkaBroker);
@@ -252,15 +305,22 @@ public final class DockerKafkaEnvironment
         }
     }
 
+    /**
+     * @deprecated use {@link #dockerNetworkKafkaBootstrapServers}
+     * @return docker network bootstrap servers
+     */
+    @Deprecated
     public String testNetworkKafkaBootstrapServers() {
-        return "PLAINTEXT://" + kafkaBroker.getNetworkAliases().get(0) + ":9092";
+        return dockerNetworkKafkaBootstrapServers();
     }
 
+    /**
+     * @deprecated use {@link #dockerNetworkSchemaRegistryServer}
+     * @return docker network schema registry endpoint
+     */
+    @Deprecated
     public String testNetworkSchemeRegistryServer() {
-        return "http://"
-                + schemaRegistry.getNetworkAliases().get(0)
-                + ":"
-                + SchemaRegistryContainer.SCHEMA_REGISTRY_PORT;
+        return dockerNetworkSchemaRegistryServer();
     }
 
     /** Builder of {@link DockerKafkaEnvironment}. */
@@ -401,6 +461,11 @@ public final class DockerKafkaEnvironment
          *
          * <p>An {@code admin} user will be created
          *
+         * <p>Enables SASL for both host and docker listeners, i.e. both for the listener test code
+         * will connect to and other Docker containers will connect to, including Schema Registry
+         * and other Kafka brokers. Schema Registry is correctly configured to connect to Kafka
+         * using the supplied {@code adminUser} and {@code adminPassword}
+         *
          * @param adminUser name of the admin user.
          * @param adminPassword password for the admin user.
          * @param additionalUsers additional usernames and passwords or api-keys and tokens.
@@ -476,8 +541,9 @@ public final class DockerKafkaEnvironment
                 return;
             }
 
-            final String adminUser = adminUser().map(u -> "User:" + u.userName + ";").orElse("");
-            withKafkaEnv("KAFKA_SUPER_USERS", adminUser + "User:ANONYMOUS");
+            final String adminUser =
+                    adminUser().map(u -> "User:" + u.userName).orElse("User:ANONYMOUS");
+            withKafkaEnv("KAFKA_SUPER_USERS", adminUser);
             withKafkaEnv("KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND", "false");
             withKafkaEnv("KAFKA_AUTHORIZER_CLASS_NAME", "kafka.security.authorizer.AclAuthorizer");
         }
@@ -488,13 +554,25 @@ public final class DockerKafkaEnvironment
                 return;
             }
 
+            final String jaasConfig = buildJaasConfig(adminUser.get());
+
             withKafkaEnv(
                     "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP",
-                    "BROKER:PLAINTEXT,PLAINTEXT:SASL_PLAINTEXT");
-            withKafkaEnv(
-                    "KAFKA_LISTENER_NAME_PLAINTEXT_PLAIN_SASL_JAAS_CONFIG",
-                    buildJaasConfig(adminUser.get()));
+                    "BROKER:SASL_PLAINTEXT,PLAINTEXT:SASL_PLAINTEXT");
+            withKafkaEnv("KAFKA_LISTENER_NAME_BROKER_SASL_ENABLED_MECHANISMS", "PLAIN");
             withKafkaEnv("KAFKA_LISTENER_NAME_PLAINTEXT_SASL_ENABLED_MECHANISMS", "PLAIN");
+            withKafkaEnv("KAFKA_LISTENER_NAME_BROKER_PLAIN_SASL_JAAS_CONFIG", jaasConfig);
+            withKafkaEnv("KAFKA_LISTENER_NAME_PLAINTEXT_PLAIN_SASL_JAAS_CONFIG", jaasConfig);
+            withKafkaEnv("KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL", "PLAIN");
+
+            Clients.clientSaslAuthProperties(adminUser.get().userName, adminUser.get().password)
+                    .forEach(
+                            (key, value) -> {
+                                withSchemaRegistryEnv(
+                                        "SCHEMA_REGISTRY_KAFKASTORE_"
+                                                + key.toUpperCase().replaceAll("\\.", "_"),
+                                        value.toString());
+                            });
         }
 
         private String buildJaasConfig(final Credentials adminUser) {
@@ -522,7 +600,7 @@ public final class DockerKafkaEnvironment
 
     public CachedSchemaRegistryClient srClient() {
         return new CachedSchemaRegistryClient(
-                schemeRegistryServer(),
+                schemaRegistryServer(),
                 5,
                 List.of(
                         new ProtobufSchemaProvider(),
