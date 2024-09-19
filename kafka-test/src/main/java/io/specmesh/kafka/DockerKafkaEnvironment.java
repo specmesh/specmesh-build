@@ -67,11 +67,11 @@ import org.testcontainers.utility.DockerImageName;
  * }</pre>
  *
  * <p>The `KAFKA_ENV` can then be queried for the {@link #kafkaBootstrapServers() Kafka endpoint}
- * and ths {@link #schemeRegistryServer() Schema Registry endpoint}, which can be used to
+ * and ths {@link #schemaRegistryServer() Schema Registry endpoint}, which can be used to
  * communicate with the services from within test code.
  *
  * <p>Use {@link #dockerNetworkKafkaBootstrapServers()} and {@link
- * #dockerNetworkSchemeRegistryServer()} to configure other Docker instances to communicate with
+ * #dockerNetworkSchemaRegistryServer()} to configure other Docker instances to communicate with
  * Kafka and the Schema Registry, respectively.
  */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -186,15 +186,25 @@ public final class DockerKafkaEnvironment
      * @return bootstrap servers for connecting to Schema Registry from outside the Docker network,
      *     i.e. from test code
      */
+    @SuppressWarnings("deprecation")
     @Override
     public String schemeRegistryServer() {
+        return schemaRegistryServer();
+    }
+
+    /**
+     * @return bootstrap servers for connecting to Schema Registry from outside the Docker network,
+     *     i.e. from test code
+     */
+    @Override
+    public String schemaRegistryServer() {
         return schemaRegistry.hostNetworkUrl().toString();
     }
 
     /**
      * @return bootstrap servers for connecting to Schema Registry from inside the Docker network
      */
-    public String dockerNetworkSchemeRegistryServer() {
+    public String dockerNetworkSchemaRegistryServer() {
         return "http://"
                 + schemaRegistry.getNetworkAliases().get(0)
                 + ":"
@@ -305,12 +315,12 @@ public final class DockerKafkaEnvironment
     }
 
     /**
-     * @deprecated use {@link #dockerNetworkSchemeRegistryServer}
+     * @deprecated use {@link #dockerNetworkSchemaRegistryServer}
      * @return docker network schema registry endpoint
      */
     @Deprecated
     public String testNetworkSchemeRegistryServer() {
-        return dockerNetworkSchemeRegistryServer();
+        return dockerNetworkSchemaRegistryServer();
     }
 
     /** Builder of {@link DockerKafkaEnvironment}. */
@@ -590,7 +600,7 @@ public final class DockerKafkaEnvironment
 
     public CachedSchemaRegistryClient srClient() {
         return new CachedSchemaRegistryClient(
-                schemeRegistryServer(),
+                schemaRegistryServer(),
                 5,
                 List.of(
                         new ProtobufSchemaProvider(),
