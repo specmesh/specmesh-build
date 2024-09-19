@@ -99,7 +99,7 @@ public final class DockerKafkaEnvironment
     private KafkaContainer kafkaBroker;
     private SchemaRegistryContainer schemaRegistry;
     private boolean invokedStatically = false;
-    private AtomicInteger setUpCount = new AtomicInteger(1);
+    private final AtomicInteger setUpCount = new AtomicInteger(1);
 
     /**
      * @return returns a {@link Builder} instance to allow customisation of the environment.
@@ -531,7 +531,8 @@ public final class DockerKafkaEnvironment
                 return;
             }
 
-            final String adminUser = adminUser().map(u -> "User:" + u.userName).orElse("User:ANONYMOUS");
+            final String adminUser =
+                    adminUser().map(u -> "User:" + u.userName).orElse("User:ANONYMOUS");
             withKafkaEnv("KAFKA_SUPER_USERS", adminUser);
             withKafkaEnv("KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND", "false");
             withKafkaEnv("KAFKA_AUTHORIZER_CLASS_NAME", "kafka.security.authorizer.AclAuthorizer");
