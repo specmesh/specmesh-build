@@ -80,6 +80,4 @@ public class KafkaBinding {
     public List<String> envs() {
         return List.copyOf(envs);
     }
-
-    public void validate() {}
 }

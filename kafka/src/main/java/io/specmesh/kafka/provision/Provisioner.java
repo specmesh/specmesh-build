@@ -110,8 +110,6 @@ public final class Provisioner {
             final AclProvision aclProvision) {
         final String userName = domainUserAlias.isBlank() ? apiSpec.id() : domainUserAlias;
 
-        apiSpec.apiSpec().validate();
-
         final Status.StatusBuilder status =
                 Status.builder()
                         .topics(

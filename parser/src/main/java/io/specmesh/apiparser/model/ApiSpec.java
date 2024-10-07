@@ -16,18 +16,17 @@
 
 package io.specmesh.apiparser.model;
 
+import static java.util.Objects.requireNonNull;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.specmesh.apiparser.AsyncApiParser;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 /** Pojo representing the api spec */
@@ -35,10 +34,8 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 @SuppressFBWarnings
-public class ApiSpec {
+public final class ApiSpec {
     public static final char DELIMITER = System.getProperty("DELIMITER", ".").charAt(0);
     public static final String SPECMESH_PUBLIC = "specmesh.public";
 
@@ -48,6 +45,7 @@ public class ApiSpec {
     public static final String PROTECTED = System.getProperty(SPECMESH_PROTECTED, "_protected");
     public static final String SPECMESH_PRIVATE = "specmesh.private";
     public static final String PRIVATE = System.getProperty(SPECMESH_PRIVATE, "_private");
+    public static final String URN_PREFIX = "urn:";
 
     @JsonProperty private String id;
 
@@ -57,18 +55,27 @@ public class ApiSpec {
 
     @JsonProperty private Map<String, Channel> channels;
 
+    @JsonCreator
+    private ApiSpec(
+            @JsonProperty("id") final String id,
+            @JsonProperty("version") final String version,
+            @JsonProperty("asyncapi") final String asyncapi,
+            @JsonProperty("channels") final Map<String, Channel> channels) {
+        this.id = requireNonNull(id, "id");
+        this.version = version;
+        this.asyncapi = asyncapi;
+        this.channels = channels;
+
+        if (!id.startsWith(URN_PREFIX)) {
+            throw new IllegalStateException("ID must be formatted as a URN, expecting urn:");
+        }
+    }
+
     /**
      * @return unique spec id
      */
     public String id() {
-        return validate(id).substring("urn:".length()).replace(":", DELIMITER + "");
-    }
-
-    private String validate(final String id) {
-        if (!id.startsWith("urn:")) {
-            throw new IllegalStateException("ID must be formatted as a URN, expecting urn:");
-        }
-        return id;
+        return id.substring(URN_PREFIX.length()).replace(":", DELIMITER + "");
     }
 
     /**
@@ -98,19 +105,5 @@ public class ApiSpec {
         } else {
             return channelName;
         }
-    }
-
-    public void validate() {
-        this.validate(this.id);
-        this.channels()
-                .forEach(
-                        (key, value) -> {
-                            try {
-                                value.validate();
-                            } catch (Exception ex) {
-                                throw new AsyncApiParser.APIParserException(
-                                        "Validate failed for:" + key, ex);
-                            }
-                        });
     }
 }

@@ -87,7 +87,7 @@ public final class Exporter {
     private static Channel channel(final Topic topic) {
         return Channel.builder()
                 .bindings(Bindings.builder().kafka(kafkaBindings(topic)).build())
-                .publish(Operation.builder().build())
+                .publish(Operation.builder().operationId("OnPublish").build())
                 .build();
     }
 
