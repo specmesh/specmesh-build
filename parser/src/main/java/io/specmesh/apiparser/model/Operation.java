@@ -16,6 +16,9 @@
 
 package io.specmesh.apiparser.model;
 
+import static java.util.Objects.requireNonNull;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -23,12 +26,9 @@ import io.specmesh.apiparser.AsyncApiParser.APIParserException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 /**
@@ -41,14 +41,12 @@ import lombok.experimental.Accessors;
  */
 @Builder
 @Data
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @SuppressFBWarnings
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @SuppressWarnings("rawtypes")
-public class Operation {
+public final class Operation {
     @EqualsAndHashCode.Include @JsonProperty private String operationId;
 
     @JsonProperty private String summary;
@@ -64,6 +62,24 @@ public class Operation {
 
     @JsonProperty private Message message;
 
+    @JsonCreator
+    private Operation(
+            @JsonProperty(required = true, value = "operationId") final String operationId,
+            @JsonProperty("summary") final String summary,
+            @JsonProperty("description") final String description,
+            @JsonProperty("tags") final List<Tag> tags,
+            @JsonProperty("bindings") final Bindings bindings,
+            @JsonProperty("traits") final Map traits,
+            @JsonProperty("message") final Message message) {
+        this.operationId = requireNonNull(operationId, "operationId");
+        this.summary = summary;
+        this.description = description;
+        this.tags = tags == null ? List.of() : List.copyOf(tags);
+        this.bindings = bindings;
+        this.traits = traits;
+        this.message = message;
+    }
+
     /**
      * @return schema info
      */
@@ -77,12 +93,6 @@ public class Operation {
             throw new APIParserException(
                     "Error extracting schemas from (publish|subscribe) operation: " + operationId,
                     e);
-        }
-    }
-
-    public void validate() {
-        if (operationId == null) {
-            throw new APIParserException("(publish|subscribe) operationId  is null");
         }
     }
 }

@@ -41,16 +41,4 @@ public class Channel {
     @JsonProperty Operation publish;
 
     @JsonProperty Operation subscribe;
-
-    public void validate() {
-        if (this.bindings != null) {
-            this.bindings.validate();
-        }
-        if (publish != null) {
-            publish.validate();
-        }
-        if (subscribe != null) {
-            subscribe.validate();
-        }
-    }
 }

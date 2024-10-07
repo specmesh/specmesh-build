@@ -63,6 +63,7 @@ channels:
 
     publish:
       summary: Humans purchasing food
+      operationId: onPublishFood
       tags: [
         name: "grant-access:some.other.domain.root"
       ]
@@ -99,6 +100,7 @@ channels:
 
     publish:
       summary: Humans customers
+      operationId: onPublishCustomers
       message:
         name: Food Item
         bindings:
@@ -129,6 +131,7 @@ channels:
   london.hammersmith.transport._public.tube:
     subscribe:
       summary: Humans arriving in the borough
+      operationId: onSubscribeTube
       message:
         name: Human
         bindings:

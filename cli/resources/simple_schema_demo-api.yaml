@@ -102,6 +102,7 @@ channels:
   london.hammersmith.transport._public.tube:
     subscribe:
       summary: Humans arriving in the borough
+      operationId: onTube
       bindings:
         kafka:
           groupId: 'aConsumerGroupId'

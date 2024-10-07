@@ -211,7 +211,6 @@ class ProvisionerTest {
                 .provision(anyBoolean(), anyBoolean(), eq(explicitSpec), any(), any());
         verify(aclProvisioner)
                 .provision(anyBoolean(), anyBoolean(), eq(explicitSpec), any(), any());
-        verify(explicitSpec.apiSpec()).validate();
     }
 
     @Test
@@ -387,24 +386,6 @@ class ProvisionerTest {
 
         // Then:
         verify(aclProvisioner).provision(anyBoolean(), anyBoolean(), any(), eq("bob"), any());
-    }
-
-    @Test
-    void shouldValidateSpec() {
-        // Given:
-        final Provisioner provisioner = minimalBuilder().build();
-
-        // When:
-        provisioner.provision(
-                adminFactory,
-                srClientFactory,
-                specLoader,
-                topicProvisioner,
-                schemaProvisioner,
-                aclProvisioner);
-
-        // Then:
-        verify(spec.apiSpec()).validate();
     }
 
     @Test
