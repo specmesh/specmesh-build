@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "namespace": "simple.schema_demo._public.user_signed_up_value",
+  "namespace": "simple.schema_demo._public.super_user_signed_up_value",
   "name": "SuperUserSignedUp",
   "fields": [
     {"name": "role", "type": "string"},
