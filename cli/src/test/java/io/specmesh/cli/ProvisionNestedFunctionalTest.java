@@ -100,7 +100,7 @@ class ProvisionNestedFunctionalTest {
         // then: Verify status is correct
         assertThat(status.failed(), is(false));
         assertThat(statusRepublish.failed(), is(false));
-        final var topicProvisionStatus = status.topics();
+        final var topicProvisionStatus = statusRepublish.topics();
         assertThat(
                 topicProvisionStatus.stream().map(Topic::name).collect(Collectors.toSet()),
                 is(
@@ -130,7 +130,7 @@ class ProvisionNestedFunctionalTest {
         assertThat(cleanupPolicy("simple.schema_demo._public.user_signed_up1"), is("delete"));
         assertThat(cleanupPolicy("simple.schema_demo._public.user_checkout"), is("compact,delete"));
 
-        assertThat(status.schemas(), hasSize(4));
+        assertThat(statusRepublish.schemas(), hasSize(4));
     }
 
     private String cleanupPolicy(final String topicName) {
