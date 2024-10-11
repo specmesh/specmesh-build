@@ -1,0 +1,145 @@
+asyncapi: '2.4.0'
+id: 'urn:simple.schema_demo'
+info:
+  title: Streetlights API
+  version: '1.0.0'
+  description: |
+    The Smartylighting Streetlights API allows you
+    to remotely manage the city lights.
+  license:
+    name: Apache 2.0
+    url: 'https://www.apache.org/licenses/LICENSE-2.0'
+servers:
+  mosquitto:
+    url: mqtt://test.mosquitto.org
+    protocol: mqtt
+channels:
+  # PRODUCER/OWNER build pipe will publish schema to SR
+  _public.user_signed_up1:
+    # publish bindings to instruct topic configuration per environment
+    bindings:
+      kafka:
+        envs:
+          - staging
+          - prod
+        partitions: 3
+        replicas: 1
+        configs:
+          cleanup.policy: delete
+
+    publish:
+      summary: Inform about environmental lighting conditions for a particular streetlight.
+      operationId: onLightMeasured
+      message:
+        bindings:
+          kafka:
+            key:
+              type: long
+            schemaIdLocation: "payload"
+            schemaLookupStrategy: "RecordNameStrategy"
+        schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
+        contentType: "application/octet-stream"
+        payload:
+          $ref: "/schema/simple.schema_demo._public.user_signed_up.avsc"
+
+  _public.user_signed_up:
+    # publish bindings to instruct topic configuration per environment
+    bindings:
+      kafka:
+        envs:
+          - staging
+          - prod
+        partitions: 3
+        replicas: 1
+        configs:
+          cleanup.policy: delete
+
+    publish:
+      summary: Inform about environmental lighting conditions for a particular streetlight.
+      operationId: onLightMeasured
+      message:
+        bindings:
+          kafka:
+            key:
+              type: long
+            schemaIdLocation: "payload"
+            schemaLookupStrategy: "RecordNameStrategy"
+        schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
+        contentType: "application/octet-stream"
+        payload:
+          $ref: "/schema/simple.schema_demo._public.super_user_signed_up.avsc"
+
+  # PRODUCER/OWNER build pipe will publish schema to SR
+  _public.user_checkout:
+    # publish bindings to instruct topic configuration per environment
+    bindings:
+      kafka:
+        envs:
+          - staging
+          - prod
+        partitions: 3
+        replicas: 1
+        configs:
+          cleanup.policy: compact, delete
+
+    publish:
+      summary: User purchase confirmation
+      operationId: onUserCheckout
+      message:
+        bindings:
+          kafka:
+            key:
+              type: long
+            schemaIdLocation: "payload"
+        schemaFormat: "application/json;version=1.9.0"
+        contentType: "application/json"
+        payload:
+          $ref: "/schema/simple.schema_demo._public.user_checkout.yml"
+
+  # PRODUCER/OWNER build pipe will publish schema to SR
+  _public.user_info:
+    # publish bindings to instruct topic configuration per environment
+    bindings:
+      kafka:
+        envs:
+          - staging
+          - prod
+        partitions: 3
+        replicas: 1
+        configs:
+          cleanup.policy: delete
+          retention.ms: 999000
+
+    publish:
+      summary: User purchase confirmation
+      operationId: onUserCheckout
+      message:
+        bindings:
+          kafka:
+            key:
+              type: long
+            schemaIdLocation: "payload"
+        schemaFormat: "application/json;version=1.9.0"
+        contentType: "application/json"
+        payload:
+          $ref: "/schema/simple.schema_demo._public.user_info.proto"
+  # SUBSCRIBER WILL REQUEST SCHEMA from SR and CodeGen required classes. Header will be used for Id
+  .london.hammersmith.transport._public.tube:
+    subscribe:
+      operationId: onSubbing
+      summary: Humans arriving in the borough
+      bindings:
+        kafka:
+          groupId: 'aConsumerGroupId'
+      message:
+        schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
+        contentType: "application/octet-stream"
+        bindings:
+          kafka:
+            schemaIdLocation: "header"
+            key:
+              type: string
+        payload:
+          # client should lookup this schema remotely from the schema registry - it is owned by the publisher
+          $ref: "london.hammersmith.transport._public.tube.passenger.avsc"
+
