@@ -175,10 +175,7 @@ public final class SchemaReaders {
                                         Schema.builder()
                                                 .subject(entry.getKey())
                                                 .type(entry.getValue().get(0).schemaType())
-                                                .schemas(
-                                                        resolvePayload(
-                                                                entry.getValue()
-                                                                        .get(0)))
+                                                .schemas(resolvePayload(entry.getValue().get(0)))
                                                 .state(Status.STATE.READ)
                                                 .build())
                         .collect(Collectors.toList());
@@ -192,10 +189,14 @@ public final class SchemaReaders {
         }
 
         private ParsedSchema parsedSchema(final ParsedSchema schema) {
-            final  String type = schema.schemaType();
+            final String type = schema.schemaType();
             final String payload = schema.canonicalString();
             if (type.endsWith(".avsc") || type.equals("AVRO")) {
-                return new AvroSchema(payload, schema.references(), ((AvroSchema)schema).resolvedReferences(), -1);
+                return new AvroSchema(
+                        payload,
+                        schema.references(),
+                        ((AvroSchema) schema).resolvedReferences(),
+                        -1);
             }
             if (type.endsWith(".yml") || type.equals("JSON")) {
                 return new JsonSchema(payload);

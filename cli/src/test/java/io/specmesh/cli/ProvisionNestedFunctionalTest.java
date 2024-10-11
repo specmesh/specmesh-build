@@ -16,9 +16,16 @@
 
 package io.specmesh.cli;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+
 import io.specmesh.kafka.DockerKafkaEnvironment;
 import io.specmesh.kafka.KafkaEnvironment;
 import io.specmesh.kafka.provision.TopicProvisioner.Topic;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.Config;
 import org.apache.kafka.clients.admin.ListTopicsResult;
@@ -28,14 +35,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import picocli.CommandLine;
-
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
 
 class ProvisionNestedFunctionalTest {
 
@@ -68,22 +67,23 @@ class ProvisionNestedFunctionalTest {
      * @throws Exception - when broken
      */
     @Test
-    void shouldProvisionTopicsAndAclResourcesWithNestedSchemasAndRepublishCorrectly() throws Exception {
+    void shouldProvisionTopicsAndAclResourcesWithNestedSchemasAndRepublishCorrectly()
+            throws Exception {
         // Given:
         final Provision provision = new Provision();
         final CommandLine.ParseResult parseResult =
                 new CommandLine(provision)
                         .parseArgs(
                                 ("--bootstrap-server "
-                                        + KAFKA_ENV.kafkaBootstrapServers()
-                                        + " --spec nested_schema_demo-api.yaml"
-                                        + " --username admin"
-                                        + " --secret admin-secret"
-                                        + " --schema-registry "
-                                        + KAFKA_ENV.schemaRegistryServer()
-                                        + " --schema-path ./resources"
-                                        + " -Dsome.property=testOne"
-                                        + " -Dsome.other.property=testTwo")
+                                                + KAFKA_ENV.kafkaBootstrapServers()
+                                                + " --spec nested_schema_demo-api.yaml"
+                                                + " --username admin"
+                                                + " --secret admin-secret"
+                                                + " --schema-registry "
+                                                + KAFKA_ENV.schemaRegistryServer()
+                                                + " --schema-path ./resources"
+                                                + " -Dsome.property=testOne"
+                                                + " -Dsome.other.property=testTwo")
                                         .split(" "));
 
         assertThat(parseResult.matchedArgs().size(), is(8));
