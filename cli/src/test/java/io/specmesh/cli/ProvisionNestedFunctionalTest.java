@@ -56,7 +56,7 @@ class ProvisionNestedFunctionalTest {
                                         + " --secret admin-secret"
                                         + " --schema-registry "
                                         + KAFKA_ENV.schemaRegistryServer()
-                                        + " --schema-path ./resources")
+                                        + " --schema-path ./src/test/resources")
                                 .split(" "));
 
         // When:
