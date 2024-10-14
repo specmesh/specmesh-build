@@ -36,7 +36,7 @@ channels:
         schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
         contentType: "application/octet-stream"
         payload:
-          $ref: "/schema/simple.schema_demo._public.user_signed_up.avsc"
+          $ref: "/schema/simple.schema_demo._public.UserSignedUp.avsc"
 
   _private/user_checkout:
     bindings:

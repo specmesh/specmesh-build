@@ -108,7 +108,7 @@ class SchemaProvisionerFunctionalTest {
         // When:
         final Collection<Schema> provisioned =
                 SchemaProvisioner.provision(
-                        false, false, API_SPEC, "./build/resources/test", srClient);
+                        false, false, API_SPEC, "./src/test/resources", srClient);
 
         // Then: should have provisioned 3 schema:
         assertThat(
@@ -133,7 +133,7 @@ class SchemaProvisionerFunctionalTest {
 
         final Collection<Schema> dryRunChangeset =
                 SchemaProvisioner.provision(
-                        true, false, API_UPDATE_SPEC, "./build/resources/test", srClient);
+                        true, false, API_UPDATE_SPEC, "./src/test/resources", srClient);
 
         // Verify - the Update is proposed
         assertThat(
@@ -150,7 +150,7 @@ class SchemaProvisionerFunctionalTest {
 
         final Collection<Schema> updateChangeset =
                 SchemaProvisioner.provision(
-                        false, false, API_UPDATE_SPEC, "./build/resources/test", srClient);
+                        false, false, API_UPDATE_SPEC, "./src/test/resources", srClient);
 
         final var parsedSchemas =
                 srClient.getSchemas(updateChangeset.iterator().next().subject(), false, true);
@@ -207,7 +207,7 @@ class SchemaProvisionerFunctionalTest {
     private void testCleanUnSpecSchemas() throws IOException, RestClientException {
         final var cleanerSet2 =
                 SchemaProvisioner.provision(
-                        false, true, API_UPDATE_SPEC, "./build/resources/test", srClient);
+                        false, true, API_UPDATE_SPEC, "./src/test/resources", srClient);
 
         // verify it was removed
         assertThat(cleanerSet2.iterator().next().state(), is(STATE.DELETED));
@@ -225,7 +225,7 @@ class SchemaProvisionerFunctionalTest {
         // test dry run
         final var cleanerSet =
                 SchemaProvisioner.provision(
-                        true, true, API_UPDATE_SPEC, "./build/resources/test", srClient);
+                        true, true, API_UPDATE_SPEC, "./src/test/resources", srClient);
 
         // verify dry run
         assertThat(cleanerSet, is(hasSize(1)));

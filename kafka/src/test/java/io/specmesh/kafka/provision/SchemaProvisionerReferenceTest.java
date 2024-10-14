@@ -64,7 +64,7 @@ class SchemaProvisionerReferenceTest {
                         false,
                         false,
                         API_SPEC,
-                        "./build/resources/test/schema-ref",
+                        "./src/test/resources/schema-ref",
                         KAFKA_ENV.srClient());
 
         final var schemaState = provision.iterator().next();
@@ -83,7 +83,7 @@ class SchemaProvisionerReferenceTest {
                         false,
                         false,
                         COMMON_API_SPEC,
-                        "./build/resources/test/schema-ref",
+                        "./src/test/resources/schema-ref",
                         KAFKA_ENV.srClient());
 
         final var commonSchemaState = provisionCommon.iterator().next();
@@ -97,7 +97,7 @@ class SchemaProvisionerReferenceTest {
                         false,
                         false,
                         API_SPEC,
-                        "./build/resources/test/schema-ref",
+                        "./src/test/resources/schema-ref",
                         KAFKA_ENV.srClient());
 
         final var schemaState = provision.iterator().next();

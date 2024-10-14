@@ -66,7 +66,7 @@ import org.apache.kafka.streams.kstream.Consumed;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import picocli.CommandLine;
-import simple.schema_demo._public.user_signed_up_value.UserSignedUp;
+import simple.schema_demo._public.UserSignedUp;
 
 @SuppressFBWarnings({"UW_UNCOND_WAIT", "WA_NOT_IN_LOOP"})
 class StorageConsumptionFunctionalTest {
@@ -90,7 +90,7 @@ class StorageConsumptionFunctionalTest {
 
         Provisioner.builder()
                 .apiSpec(API_SPEC)
-                .schemaPath("./build/resources/test")
+                .schemaPath("./src/test/resources")
                 .adminClient(KAFKA_ENV.adminClient())
                 .closeAdminClient(true)
                 .schemaRegistryClient(KAFKA_ENV.srClient())

@@ -39,7 +39,7 @@ channels:
         schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
         contentType: "application/octet-stream"
         payload:
-          $ref: "/schema/simple.schema_demo._public.user_signed_up.avsc"
+          $ref: "/schema/simple.schema_demo._public.UserSignedUp.avsc"
 
   # PRODUCER/OWNER build pipe will publish schema to SR
   _public.user_checkout:
