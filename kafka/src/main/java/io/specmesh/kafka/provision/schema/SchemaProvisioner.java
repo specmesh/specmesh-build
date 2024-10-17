@@ -34,6 +34,7 @@ import io.specmesh.kafka.provision.schema.SchemaReaders.SchemaReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -78,7 +79,15 @@ public final class SchemaProvisioner {
         }
 
         final var schemas = calculator(client, cleanUnspecified).calculate(existing, required);
-        return mutator(dryRun, cleanUnspecified, client).mutate(schemas);
+        return mutator(dryRun, cleanUnspecified, client).mutate(sortByReferences(schemas));
+    }
+
+    private static Collection<Schema> sortByReferences(final Collection<Schema> schemas) {
+        return schemas.stream()
+                .sorted(
+                        Comparator.comparingInt(
+                                o -> o.schemas.iterator().next().references().size()))
+                .collect(Collectors.toList());
     }
 
     /**

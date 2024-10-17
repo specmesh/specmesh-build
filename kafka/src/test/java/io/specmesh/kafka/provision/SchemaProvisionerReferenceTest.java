@@ -23,6 +23,7 @@ import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.KafkaEnvironment;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner;
 import io.specmesh.test.TestSpecLoader;
+import java.util.ArrayList;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -42,6 +43,10 @@ class SchemaProvisionerReferenceTest {
 
     private static final KafkaApiSpec API_SPEC =
             TestSpecLoader.loadFromClassPath("schema-ref/com.example.trading-api.yml");
+
+    private static final KafkaApiSpec SPEC_WITH_REFS_API_SPEC =
+            TestSpecLoader.loadFromClassPath(
+                    "schema-ref/com.example.single-spec-with-refs-api.yml");
 
     private static final String ADMIN_USER = "admin";
 
@@ -76,7 +81,7 @@ class SchemaProvisionerReferenceTest {
     /** publish common schema (via api) and also domain-owned schema */
     @Test
     @Order(2)
-    void shouldProvisionSpecWithRefs() {
+    void shouldProvisionTwoSpecsWithRefs() {
 
         final var provisionCommon =
                 SchemaProvisioner.provision(
@@ -104,6 +109,45 @@ class SchemaProvisionerReferenceTest {
         assertThat(
                 "Failed to load with:" + schemaState.toString(),
                 schemaState.state(),
+                Matchers.is(Status.STATE.CREATED));
+    }
+
+    @Test
+    @Order(3)
+    void shouldProvisionSpecsWithMultipleRefsSoThatZeroRefsRegisterFirst() {
+
+        final var provisionBothSchemas =
+                SchemaProvisioner.provision(
+                        false,
+                        false,
+                        SPEC_WITH_REFS_API_SPEC,
+                        "./src/test/resources/schema-ref",
+                        KAFKA_ENV.srClient());
+
+        final var schemas = new ArrayList<>(provisionBothSchemas);
+
+        assertThat(schemas, Matchers.hasSize(2));
+
+        final var currencySchemaState = schemas.get(0);
+        assertThat(
+                "Failed to load with:" + currencySchemaState.subject(),
+                currencySchemaState.subject(),
+                Matchers.is("com.example.shared.Currency"));
+
+        assertThat(
+                "Failed to load with:" + currencySchemaState,
+                currencySchemaState.state(),
+                Matchers.is(Status.STATE.CREATED));
+
+        final var tradeSchemaState = schemas.get(1);
+        assertThat(
+                "Failed to load with:" + tradeSchemaState.subject(),
+                tradeSchemaState.subject(),
+                Matchers.is("com.example.refs._public.trade-value"));
+
+        assertThat(
+                "Failed to load with:" + tradeSchemaState,
+                tradeSchemaState.state(),
                 Matchers.is(Status.STATE.CREATED));
     }
 }
