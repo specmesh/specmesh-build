@@ -26,6 +26,7 @@ import io.specmesh.test.TestSpecLoader;
 import java.util.ArrayList;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -60,6 +61,7 @@ class SchemaProvisionerReferenceTest {
                     .build();
 
     @Test
+    @Order(1)
     void shouldProvisionSpecWithMissingRefToCurrency() {
 
         final var provision =
@@ -78,6 +80,7 @@ class SchemaProvisionerReferenceTest {
     }
     /** publish common schema (via api) and also domain-owned schema */
     @Test
+    @Order(2)
     void shouldProvisionTwoSpecsWithRefs() {
 
         final var provisionCommon =
@@ -110,6 +113,7 @@ class SchemaProvisionerReferenceTest {
     }
 
     @Test
+    @Order(3)
     void shouldProvisionSpecsWithMultipleRefsSoThatZeroRefsRegisterFirst() {
 
         final var provisionBothSchemas =
