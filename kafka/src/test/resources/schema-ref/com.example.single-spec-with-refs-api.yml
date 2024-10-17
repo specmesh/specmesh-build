@@ -1,0 +1,58 @@
+asyncapi: '2.4.0'
+id: 'urn:com.example.refs'
+info:
+  title: Common Data Set
+  version: '1.0.0'
+  description: |
+    Contains both a TRADE and Currency - where Trade --> Currency, it will provision both - but should determine the ref and process the 0 refs first
+servers:
+  mosquitto:
+    url: mqtt://test.mosquitto.org
+    protocol: kafka
+channels:
+  _public.trade:
+    bindings:
+      kafka:
+        envs:
+          - staging
+          - prod
+        partitions: 3
+        replicas: 1
+        configs:
+          cleanup.policy: delete
+          retention.ms: 999000
+    publish:
+      summary: Trade feed
+      description: Doing clever things
+      operationId: onTrade received
+      message:
+        bindings:
+          kafka:
+            schemaIdLocation: "header"
+            key:
+              type: string
+
+        schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
+        contentType: "application/octet-stream"
+        payload:
+          $ref: "/schema/com.example.trading.Trade.avsc"
+  _public.currency:
+    bindings:
+      kafka:
+        configs:
+          retention.ms: 999000
+    publish:
+      summary: Currency things
+      operationId: onCurrencyUpdate
+      message:
+        schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
+        contentType: "application/octet-stream"
+        bindings:
+          kafka:
+            schemaIdLocation: "header"
+            schemaLookupStrategy: "RecordNameStrategy"
+            key:
+              type: string
+        payload:
+          $ref: "/schema/com.example.shared.Currency.avsc"
+
