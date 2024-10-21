@@ -6,6 +6,7 @@
     {"name": "fullName", "type": "string"},
     {"name": "email",  "type": "string"},
     {"name": "address",  "type": "string"},
-    {"name": "age", "type": "int"}
+    {"name": "age", "type": "int"},
+    {"name": "newThing",  "type": [ "null", "string" ], "default": null}
   ]
 }

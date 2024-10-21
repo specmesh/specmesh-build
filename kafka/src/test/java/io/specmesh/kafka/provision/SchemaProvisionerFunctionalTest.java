@@ -27,7 +27,6 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
 import io.confluent.kafka.schemaregistry.avro.AvroSchema;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
-import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
 import io.specmesh.kafka.DockerKafkaEnvironment;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.KafkaEnvironment;
@@ -35,7 +34,6 @@ import io.specmesh.kafka.provision.Status.STATE;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
 import io.specmesh.test.TestSpecLoader;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -176,7 +174,7 @@ class SchemaProvisionerFunctionalTest {
 
     @Test
     @Order(3)
-    void shouldRemoveUnspecdSchemas() throws RestClientException, IOException {
+    void shouldRemoveUnspecdSchemas() throws Exception {
 
         final var subject = "simple.provision_demo._public.NOT_user_signed_up-value";
         final var schemaContent =
@@ -204,7 +202,7 @@ class SchemaProvisionerFunctionalTest {
         testCleanUnSpecSchemas();
     }
 
-    private void testCleanUnSpecSchemas() throws IOException, RestClientException {
+    private void testCleanUnSpecSchemas() throws Exception {
         final var cleanerSet2 =
                 SchemaProvisioner.provision(
                         false, true, API_UPDATE_SPEC, "./src/test/resources", srClient);
@@ -221,7 +219,7 @@ class SchemaProvisionerFunctionalTest {
                         "simple.provision_demo._protected.user_info-value"));
     }
 
-    private void testDryRun(final String subject) throws IOException, RestClientException {
+    private void testDryRun(final String subject) throws Exception {
         // test dry run
         final var cleanerSet =
                 SchemaProvisioner.provision(
