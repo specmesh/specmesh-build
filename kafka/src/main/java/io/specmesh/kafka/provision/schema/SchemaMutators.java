@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 /** Mutators for mutating Schemas */
 public final class SchemaMutators {
 
-    public static final String DEFAULT_EVOLUTION = "FORWARD_TRANSITIVE";
+    public static final String DEFAULT_EVOLUTION = "FULL_TRANSITIVE";
 
     /** defensive */
     private SchemaMutators() {}
