@@ -37,7 +37,7 @@ channels:
         schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
         contentType: "application/octet-stream"
         payload:
-          $ref: "/schema/simple.schema_demo._public.user_signed_up.avsc"
+          $ref: "/schema/simple.schema_demo._public.UserSignedUp.avsc"
 
   _public.super_user_signed_up:
     # publish bindings to instruct topic configuration per environment
@@ -63,4 +63,4 @@ channels:
         schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
         contentType: "application/octet-stream"
         payload:
-          $ref: "/schema/simple.schema_demo._public.super_user_signed_up.avsc"
+          $ref: "/schema/simple.schema_demo._public.SuperUserSignedUp.avsc"

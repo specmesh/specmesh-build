@@ -79,6 +79,6 @@ class SchemaChangeSetCalculatorsTest {
     }
 
     private static Path filename(final String extra) {
-        return Path.of("./build/resources/test/schema/" + SCHEMA_FILENAME + extra);
+        return Path.of("./src/test/resources/schema/" + SCHEMA_FILENAME + extra);
     }
 }

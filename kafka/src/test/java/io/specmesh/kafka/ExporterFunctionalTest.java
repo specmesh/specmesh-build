@@ -97,7 +97,7 @@ class ExporterFunctionalTest {
     static void setUp() {
         Provisioner.builder()
                 .apiSpec(API_SPEC)
-                .schemaPath("./build/resources/test")
+                .schemaPath("./src/test/resources")
                 .adminClient(KAFKA_ENV.adminClient())
                 .closeAdminClient(true)
                 .srDisabled(true)

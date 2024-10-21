@@ -193,7 +193,7 @@ class ProvisionerFreshStartFunctionalTest {
         final var srClient = KAFKA_ENV.srClient();
         final var changeset =
                 SchemaProvisioner.provision(
-                        true, false, API_SPEC, "./build/resources/test", srClient);
+                        true, false, API_SPEC, "./src/test/resources", srClient);
 
         // Verify - 11 created
         assertThat(
@@ -339,7 +339,7 @@ class ProvisionerFreshStartFunctionalTest {
         final var srClient = KAFKA_ENV.srClient();
         final var changeset =
                 SchemaProvisioner.provision(
-                        false, false, API_SPEC, "./build/resources/test", srClient);
+                        false, false, API_SPEC, "./src/test/resources", srClient);
 
         // Verify - 11 created
         assertThat(

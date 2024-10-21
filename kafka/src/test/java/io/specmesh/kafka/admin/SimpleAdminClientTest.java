@@ -73,7 +73,7 @@ class SimpleAdminClientTest {
 
             Provisioner.builder()
                     .apiSpec(API_SPEC)
-                    .schemaPath("./build/resources/test")
+                    .schemaPath("./src/test/resources")
                     .adminClient(adminClient)
                     .schemaRegistryClient(KAFKA_ENV.srClient())
                     .closeSchemaClient(true)
