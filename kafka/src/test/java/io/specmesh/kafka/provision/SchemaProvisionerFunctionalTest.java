@@ -35,7 +35,6 @@ import io.specmesh.kafka.provision.schema.SchemaProvisioner;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
 import io.specmesh.test.TestSpecLoader;
 import java.util.Collection;
-import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -168,8 +167,8 @@ class SchemaProvisionerFunctionalTest {
                 is(
                         containsInAnyOrder(
                                 "io.specmesh.kafka.schema.UserInfo",
-                                "simple.provision_demo._public.user_signed_up_value.key.UserSignedUpKey",
-                                "simple.provision_demo._public.user_signed_up_value.UserSignedUp")));
+                                "simple.provision_demo.UserSignedUpKey",
+                                "simple.provision_demo.UserSignedUp")));
     }
 
     @Test
@@ -191,12 +190,12 @@ class SchemaProvisionerFunctionalTest {
                 Schema.builder()
                         .subject(subject)
                         .type("/schema/simple.provision_demo._public.user_signed_up.avsc")
-                        .schemas(List.of(new AvroSchema(schemaContent)))
+                        .schema(new AvroSchema(schemaContent))
                         .state(STATE.READ)
                         .build();
 
         // insert the bad schema
-        srClient.register(subject, schema.getSchema());
+        srClient.register(subject, schema.schema());
 
         testDryRun(subject);
         testCleanUnSpecSchemas();

@@ -1,9 +1,0 @@
-{
-  "type": "record",
-  "namespace": "simple.schema_demo._public",
-  "name": "SuperUserSignedUp",
-  "fields": [
-    {"name": "role", "type": "string"},
-    {"name": "user", "type": "simple.schema_demo._public.UserSignedUp", "subject": "simple.schema_demo._public.UserSignedUp"}
-  ]
-}

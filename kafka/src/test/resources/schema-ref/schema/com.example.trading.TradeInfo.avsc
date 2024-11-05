@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "name": "TradeInfo",
+  "namespace": "com.example.trading",
+  "fields": [
+    {"name": "id",  "type": "string"}
+  ]
+}

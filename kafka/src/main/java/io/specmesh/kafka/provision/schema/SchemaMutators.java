@@ -31,6 +31,7 @@ import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -63,7 +64,7 @@ public final class SchemaMutators {
          * @return updated status
          */
         @Override
-        public Collection<Schema> mutate(final Collection<Schema> schemas) {
+        public List<Schema> mutate(final Collection<Schema> schemas) {
             return this.mutators
                     .map(mutator -> mutator.mutate(schemas))
                     .flatMap(Collection::stream)
@@ -92,12 +93,13 @@ public final class SchemaMutators {
          * @return updated set of schemas
          */
         @Override
-        public Collection<Schema> mutate(final Collection<Schema> schemas) {
+        public List<Schema> mutate(final Collection<Schema> schemas) {
             return schemas.stream()
                     .filter(
                             schema ->
                                     !schema.state().equals(STATE.UPDATE)
-                                            && !schema.state().equals(STATE.CREATE))
+                                            && !schema.state().equals(STATE.CREATE)
+                                            && !schema.state().equals(STATE.IGNORED))
                     .peek(
                             schema -> {
                                 try {
@@ -144,14 +146,14 @@ public final class SchemaMutators {
          * @return updated set of schemas
          */
         @Override
-        public Collection<Schema> mutate(final Collection<Schema> schemas) {
+        public List<Schema> mutate(final Collection<Schema> schemas) {
             return schemas.stream()
                     .filter(schema -> schema.state().equals(STATE.UPDATE))
                     .peek(
                             schema -> {
                                 try {
                                     final var schemaId =
-                                            client.register(schema.subject(), schema.getSchema());
+                                            client.register(schema.subject(), schema.schema());
                                     schema.state(UPDATED);
                                     schema.messages(
                                             "Subject:"
@@ -191,7 +193,7 @@ public final class SchemaMutators {
          * @return set of schemas with CREATE or FAILED + Exception
          */
         @Override
-        public Collection<Schema> mutate(final Collection<Schema> schemas) {
+        public List<Schema> mutate(final Collection<Schema> schemas) {
 
             return schemas.stream()
                     .filter(schema -> schema.state().equals(STATE.CREATE))
@@ -199,7 +201,7 @@ public final class SchemaMutators {
                             schema -> {
                                 try {
                                     final var schemaId =
-                                            client.register(schema.subject(), schema.getSchema());
+                                            client.register(schema.subject(), schema.schema());
                                     client.updateCompatibility(schema.subject(), DEFAULT_EVOLUTION);
                                     schema.messages(
                                             "Subject:"
@@ -221,6 +223,18 @@ public final class SchemaMutators {
         }
     }
 
+    /** Passes through ignored schemas so they appear in the output */
+    public static final class IgnoredMutator implements SchemaMutator {
+
+        @Override
+        public List<Schema> mutate(final Collection<Schema> schemas) {
+
+            return schemas.stream()
+                    .filter(schema -> schema.state().equals(STATE.IGNORED))
+                    .collect(Collectors.toList());
+        }
+    }
+
     /** Do nothing mutator */
     public static final class NoopSchemaMutator implements SchemaMutator {
 
@@ -231,8 +245,8 @@ public final class SchemaMutators {
          * @return schemas without status change
          */
         @Override
-        public Collection<Schema> mutate(final Collection<Schema> schemas) {
-            return schemas;
+        public List<Schema> mutate(final Collection<Schema> schemas) {
+            return List.copyOf(schemas);
         }
     }
 
@@ -244,7 +258,7 @@ public final class SchemaMutators {
          * @param schemas to write
          * @return updated status of schemas
          */
-        Collection<Schema> mutate(Collection<Schema> schemas);
+        List<Schema> mutate(Collection<Schema> schemas);
     }
 
     /**
@@ -321,7 +335,8 @@ public final class SchemaMutators {
             } else if (dryRun) {
                 return new NoopSchemaMutator();
             } else {
-                return new CollectiveMutator(new UpdateMutator(client), new WriteMutator(client));
+                return new CollectiveMutator(
+                        new UpdateMutator(client), new WriteMutator(client), new IgnoredMutator());
             }
         }
     }
