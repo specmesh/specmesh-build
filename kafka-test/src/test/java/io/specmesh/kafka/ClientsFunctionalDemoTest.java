@@ -80,7 +80,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import simple.schema_demo._public.user_signed_up_value.UserSignedUp;
+import simple.schema_demo.UserSignedUp;
 
 class ClientsFunctionalDemoTest {
 

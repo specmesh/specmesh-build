@@ -17,14 +17,23 @@
 package io.specmesh.cli;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
+import io.confluent.kafka.schemaregistry.ParsedSchema;
+import io.confluent.kafka.schemaregistry.avro.AvroSchema;
+import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.specmesh.kafka.DockerKafkaEnvironment;
 import io.specmesh.kafka.KafkaEnvironment;
+import io.specmesh.kafka.provision.Status;
 import io.specmesh.kafka.provision.TopicProvisioner.Topic;
+import io.specmesh.kafka.provision.schema.SchemaProvisioner;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -45,6 +54,8 @@ class ProvisionNestedFunctionalTest {
     @Test
     void shouldProvisionTopicsAndAclResourcesWithNestedSchemasAndRepublishCorrectly() {
         // Given:
+        givenCommonSchemaRegistered();
+
         final Provision provision = new Provision();
 
         new CommandLine(provision)
@@ -67,13 +78,25 @@ class ProvisionNestedFunctionalTest {
 
         assertThat(
                 status.topics().stream().map(Topic::name).collect(Collectors.toSet()),
-                is(
-                        containsInAnyOrder(
-                                "simple.schema_demo._public.super_user_signed_up",
-                                "simple.schema_demo._public.user_signed_up")));
+                is(contains("simple.schema_demo._public.super_user_signed_up")));
+
+        assertThat(
+                status.schemas().stream()
+                        .filter(s -> s.state() == Status.STATE.CREATED)
+                        .map(SchemaProvisioner.Schema::subject)
+                        .collect(Collectors.toList()),
+                containsInAnyOrder(
+                        "simple.schema_demo._public.super_user_signed_up-value",
+                        "simple.schema_demo._public.UserSignedUp"));
+
+        assertThat(
+                status.schemas().stream()
+                        .filter(s -> s.state() == Status.STATE.IGNORED)
+                        .map(SchemaProvisioner.Schema::subject)
+                        .collect(Collectors.toList()),
+                contains("other.domain.Common.subject"));
 
         assertThat(status.acls(), hasSize(10));
-        assertThat(status.schemas(), hasSize(2));
 
         // When:
         final var statusRepublish = provision.run();
@@ -82,10 +105,25 @@ class ProvisionNestedFunctionalTest {
         assertThat(statusRepublish.failed(), is(false));
         assertThat(statusRepublish.topics(), is(empty()));
         assertThat(statusRepublish.acls(), is(empty()));
-        assertThat(
-                "should be empty, but is 1 due to version number difference when comparing"
-                        + " references",
-                statusRepublish.schemas(),
-                hasSize(1));
+
+        final List<?> schemas =
+                statusRepublish.schemas().stream()
+                        .filter(s -> s.state() != Status.STATE.IGNORED)
+                        .collect(Collectors.toList());
+
+        assertThat(schemas, is(empty()));
+    }
+
+    private void givenCommonSchemaRegistered() {
+        try (SchemaRegistryClient srClient = KAFKA_ENV.srClient()) {
+            final ParsedSchema schema =
+                    new AvroSchema(
+                            Files.readString(
+                                    Path.of(
+                                            "./src/test/resources/schema/other.domain.Common.avsc")));
+            srClient.register("other.domain.Common.subject", schema);
+        } catch (Exception e) {
+            throw new AssertionError("failed to register common schema", e);
+        }
     }
 }

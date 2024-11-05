@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "namespace": "simple.schema_demo._public",
+  "namespace": "simple.schema_demo",
   "name": "UserSignedUp",
   "fields": [
     {"name": "fullName", "type": "string"},

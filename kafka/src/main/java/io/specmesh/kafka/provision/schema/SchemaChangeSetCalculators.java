@@ -16,78 +16,71 @@
 
 package io.specmesh.kafka.provision.schema;
 
+import static java.util.Objects.requireNonNull;
+
+import io.confluent.kafka.schemaregistry.ParsedSchema;
+import io.confluent.kafka.schemaregistry.avro.AvroSchema;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
+import io.confluent.kafka.schemaregistry.client.rest.entities.SchemaReference;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
 import io.specmesh.kafka.provision.Status;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Calculates a changeset of Schemas to create or update, should also return incompatible changes
  * for existing schemas
  */
-public final class SchemaChangeSetCalculators {
+final class SchemaChangeSetCalculators {
 
     /** defensive */
     private SchemaChangeSetCalculators() {}
 
     /** Collection based */
-    public static final class Collective implements ChangeSetCalculator {
+    static final class Collective implements ChangeSetCalculator {
 
-        private final Stream<ChangeSetCalculator> calculatorStream;
+        private final List<ChangeSetCalculator> calculatorStream;
+        private final IgnoreCalculator finalCalculator;
 
-        /**
-         * iterate over the calculators
-         *
-         * @param writers to iterate
-         */
-        private Collective(final ChangeSetCalculator... writers) {
-            this.calculatorStream = Arrays.stream(writers);
+        private Collective(
+                final IgnoreCalculator finalCalculator, final ChangeSetCalculator... writers) {
+            this.finalCalculator = requireNonNull(finalCalculator, "finalCalculator");
+            this.calculatorStream = List.of(writers);
         }
 
-        /**
-         * delegates updates
-         *
-         * @param existing schemas
-         * @param required needed schemas
-         * @return updated status
-         */
         @Override
         public Collection<Schema> calculate(
-                final Collection<Schema> existing, final Collection<Schema> required) {
-            return this.calculatorStream
-                    .map(calculator -> calculator.calculate(existing, required))
-                    .flatMap(Collection::stream)
-                    .collect(Collectors.toList());
+                final Collection<Schema> existing,
+                final Collection<Schema> required,
+                final String domainId) {
+            return finalCalculator.calculate(
+                    calculatorStream.stream()
+                            .map(calculator -> calculator.calculate(existing, required, domainId))
+                            .flatMap(Collection::stream)
+                            .collect(Collectors.toList()),
+                    domainId);
         }
     }
 
     /** Return set of 'unspecific' (i.e. non-required) schemas */
-    public static class CleanUnspecifiedCalculator implements ChangeSetCalculator {
+    static class CleanUnspecifiedCalculator implements ChangeSetCalculator {
 
-        /**
-         * remove the required items from the existing.. the remainder are not specified
-         *
-         * @param existing - existing
-         * @param required - needed
-         * @return schemas that aren't specd
-         */
         @Override
         public Collection<Schema> calculate(
-                final Collection<Schema> existing, final Collection<Schema> required) {
+                final Collection<Schema> existing,
+                final Collection<Schema> required,
+                final String domainId) {
             existing.removeAll(required);
             return existing;
         }
     }
 
     /** Returns those schemas to create and ignores existing */
-    public static final class UpdateCalculator implements ChangeSetCalculator {
+    static final class UpdateCalculator implements ChangeSetCalculator {
 
         private final SchemaRegistryClient client;
 
@@ -95,31 +88,28 @@ public final class SchemaChangeSetCalculators {
             this.client = client;
         }
 
-        /**
-         * Calculate the set of schemas to Update and also checks compatibility
-         *
-         * @param existing - existing
-         * @param required - needed
-         * @return updated set of schemas
-         */
         @Override
         public Collection<Schema> calculate(
-                final Collection<Schema> existing, final Collection<Schema> required) {
+                final Collection<Schema> existing,
+                final Collection<Schema> required,
+                final String domainId) {
             final var existingList = new ArrayList<>(existing);
             return required.stream()
-                    .filter(needs -> existing.contains(needs) && hasChanged(needs, existingList))
+                    .filter(needs -> hasChanged(needs, existingList))
                     .peek(
                             schema -> {
                                 schema.messages(schema.messages() + "\n Update");
                                 try {
                                     final var compatibilityMessages =
                                             client.testCompatibilityVerbose(
-                                                    schema.subject(), schema.getSchema());
-                                    schema.messages(
-                                            schema.messages()
-                                                    + "\nCompatibility test output:"
-                                                    + compatibilityMessages);
+                                                    schema.subject(), schema.schema());
+
                                     if (!compatibilityMessages.isEmpty()) {
+                                        schema.messages(
+                                                schema.messages()
+                                                        + "\nCompatibility test output:"
+                                                        + compatibilityMessages);
+
                                         schema.state(Status.STATE.FAILED);
                                     } else {
                                         schema.state(Status.STATE.UPDATE);
@@ -137,26 +127,44 @@ public final class SchemaChangeSetCalculators {
             final var foundAt = existingList.indexOf(needs);
             if (foundAt != -1) {
                 final var existing = existingList.get(foundAt);
-                return !existing.getSchema().equals(needs.getSchema());
+                return !normalizeSchema(existing.schema()).equals(normalizeSchema(needs.schema()));
             } else {
                 return false;
             }
         }
+
+        private ParsedSchema normalizeSchema(final ParsedSchema schema) {
+            if (!(schema instanceof AvroSchema)) {
+                // References not yet supported:
+                return schema.normalize();
+            }
+
+            final AvroSchema avroSchema = (AvroSchema) schema.normalize();
+
+            final List<SchemaReference> references =
+                    avroSchema.references().stream()
+                            .map(ref -> new SchemaReference(ref.getName(), ref.getSubject(), -1))
+                            .collect(Collectors.toList());
+
+            return new AvroSchema(
+                    avroSchema.canonicalString(),
+                    references,
+                    avroSchema.resolvedReferences(),
+                    avroSchema.metadata(),
+                    avroSchema.ruleSet(),
+                    -1,
+                    false);
+        }
     }
 
     /** Returns those schemas to create and ignores existing */
-    public static final class CreateCalculator implements ChangeSetCalculator {
+    static final class CreateCalculator implements ChangeSetCalculator {
 
-        /**
-         * Calculate set of schemas that dont already exist
-         *
-         * @param existing - existing schemas - state READ
-         * @param required - needed schemas - state CREATE
-         * @return set required to create - status set to CREATE
-         */
         @Override
         public Collection<Schema> calculate(
-                final Collection<Schema> existing, final Collection<Schema> required) {
+                final Collection<Schema> existing,
+                final Collection<Schema> required,
+                final String domainId) {
             return required.stream()
                     .filter(
                             schema ->
@@ -169,6 +177,29 @@ public final class SchemaChangeSetCalculators {
         }
     }
 
+    /** Ignores schemas from outside the domain */
+    static final class IgnoreCalculator {
+
+        public Collection<Schema> calculate(
+                final Collection<Schema> required, final String domainId) {
+            return required.stream()
+                    .map(schema -> markIgnoredIfOutsideDomain(schema, domainId))
+                    .collect(Collectors.toList());
+        }
+
+        private Schema markIgnoredIfOutsideDomain(final Schema schema, final String domainId) {
+            if (schema.schema() instanceof AvroSchema) {
+                final AvroSchema avroSchema = (AvroSchema) schema.schema();
+                if (!avroSchema.rawSchema().getNamespace().equals(domainId)) {
+                    return schema.state(Status.STATE.IGNORED)
+                            .messages("\n ignored as it does not belong to the domain");
+                }
+            }
+
+            return schema;
+        }
+    }
+
     /** Main API */
     interface ChangeSetCalculator {
         /**
@@ -177,9 +208,11 @@ public final class SchemaChangeSetCalculators {
          *
          * @param existing - existing
          * @param required - needed
-         * @return - set of those that dont exist
+         * @param domainId the id of the domain being provisioned
+         * @return - set of those that don't exist
          */
-        Collection<Schema> calculate(Collection<Schema> existing, Collection<Schema> required);
+        Collection<Schema> calculate(
+                Collection<Schema> existing, Collection<Schema> required, String domainId);
     }
 
     /**
@@ -187,12 +220,12 @@ public final class SchemaChangeSetCalculators {
      *
      * @return builder
      */
-    public static ChangeSetBuilder builder() {
+    static ChangeSetBuilder builder() {
         return ChangeSetBuilder.builder();
     }
 
     /** Builder of the things */
-    public static final class ChangeSetBuilder {
+    static final class ChangeSetBuilder {
 
         /** defensive */
         private ChangeSetBuilder() {}
@@ -202,7 +235,7 @@ public final class SchemaChangeSetCalculators {
          *
          * @return builder
          */
-        public static ChangeSetBuilder builder() {
+        static ChangeSetBuilder builder() {
             return new ChangeSetBuilder();
         }
 
@@ -213,13 +246,16 @@ public final class SchemaChangeSetCalculators {
          * @param client sr client
          * @return required calculator
          */
-        public ChangeSetCalculator build(
+        ChangeSetCalculator build(
                 final boolean cleanUnspecified, final SchemaRegistryClient client) {
             if (cleanUnspecified) {
                 return new CleanUnspecifiedCalculator();
 
             } else {
-                return new Collective(new UpdateCalculator(client), new CreateCalculator());
+                return new Collective(
+                        new IgnoreCalculator(),
+                        new UpdateCalculator(client),
+                        new CreateCalculator());
             }
         }
     }

@@ -17,14 +17,21 @@
 package io.specmesh.kafka.provision;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 
 import io.specmesh.kafka.DockerKafkaEnvironment;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.KafkaEnvironment;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner;
+import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
 import io.specmesh.test.TestSpecLoader;
-import java.util.ArrayList;
-import org.hamcrest.Matchers;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -44,10 +51,6 @@ class SchemaProvisionerReferenceTest {
     private static final KafkaApiSpec API_SPEC =
             TestSpecLoader.loadFromClassPath("schema-ref/com.example.trading-api.yml");
 
-    private static final KafkaApiSpec SPEC_WITH_REFS_API_SPEC =
-            TestSpecLoader.loadFromClassPath(
-                    "schema-ref/com.example.single-spec-with-refs-api.yml");
-
     private static final String ADMIN_USER = "admin";
 
     @RegisterExtension
@@ -62,9 +65,9 @@ class SchemaProvisionerReferenceTest {
 
     @Test
     @Order(1)
-    void shouldProvisionSpecWithMissingRefToCurrency() {
-
-        final var provision =
+    void shouldFailToProvisionIfSharedSchemaAreNotRegistered() {
+        // When:
+        final List<Schema> provision =
                 SchemaProvisioner.provision(
                         false,
                         false,
@@ -72,32 +75,44 @@ class SchemaProvisionerReferenceTest {
                         "./src/test/resources/schema-ref",
                         KAFKA_ENV.srClient());
 
-        final var schemaState = provision.iterator().next();
+        // Then:
+        assertThat(provision, hasSize(3));
+
+        final Map<String, Schema> bySubject =
+                provision.stream().collect(Collectors.toMap(Schema::subject, Function.identity()));
         assertThat(
-                "Failed to load with:" + schemaState.toString(),
-                schemaState.state(),
-                Matchers.is(Status.STATE.FAILED));
+                bySubject.keySet(),
+                is(
+                        Set.of(
+                                "com.example.shared.Currency",
+                                "com.example.trading._public.trade-value",
+                                "com.example.trading.TradeInfo")));
+
+        final Schema commonSchema = bySubject.get("com.example.shared.Currency");
+        assertThat(commonSchema.state(), is(Status.STATE.IGNORED));
+        assertThat(
+                commonSchema.messages(), endsWith("ignored as it does not belong to the domain"));
+
+        final Schema infoSchema = bySubject.get("com.example.trading.TradeInfo");
+        assertThat(infoSchema.state(), is(Status.STATE.CREATED));
+
+        final Schema tradeSchema = bySubject.get("com.example.trading._public.trade-value");
+        assertThat(tradeSchema.state(), is(Status.STATE.FAILED));
     }
-    /** publish common schema (via api) and also domain-owned schema */
+
     @Test
     @Order(2)
-    void shouldProvisionTwoSpecsWithRefs() {
+    void shouldProvisionOnceSharedSchemaAreRegistered() {
+        // Given:
+        SchemaProvisioner.provision(
+                false,
+                false,
+                COMMON_API_SPEC,
+                "./src/test/resources/schema-ref",
+                KAFKA_ENV.srClient());
 
-        final var provisionCommon =
-                SchemaProvisioner.provision(
-                        false,
-                        false,
-                        COMMON_API_SPEC,
-                        "./src/test/resources/schema-ref",
-                        KAFKA_ENV.srClient());
-
-        final var commonSchemaState = provisionCommon.iterator().next();
-        assertThat(
-                "Failed to load with:" + commonSchemaState.toString(),
-                commonSchemaState.state(),
-                Matchers.is(Status.STATE.CREATED));
-
-        final var provision =
+        // When:
+        final List<Schema> provision =
                 SchemaProvisioner.provision(
                         false,
                         false,
@@ -105,49 +120,41 @@ class SchemaProvisionerReferenceTest {
                         "./src/test/resources/schema-ref",
                         KAFKA_ENV.srClient());
 
-        final var schemaState = provision.iterator().next();
+        // Then:
+        final Map<String, Schema> bySubject =
+                provision.stream().collect(Collectors.toMap(Schema::subject, Function.identity()));
         assertThat(
-                "Failed to load with:" + schemaState.toString(),
-                schemaState.state(),
-                Matchers.is(Status.STATE.CREATED));
+                bySubject.keySet(),
+                is(
+                        Set.of(
+                                "com.example.shared.Currency",
+                                "com.example.trading._public.trade-value")));
+
+        final Schema commonSchema = bySubject.get("com.example.shared.Currency");
+        assertThat(commonSchema.state(), is(Status.STATE.IGNORED));
+
+        final Schema tradeSchema = bySubject.get("com.example.trading._public.trade-value");
+        assertThat(tradeSchema.state(), is(Status.STATE.CREATED));
     }
 
     @Test
     @Order(3)
-    void shouldProvisionSpecsWithMultipleRefsSoThatZeroRefsRegisterFirst() {
-
-        final var provisionBothSchemas =
+    void shouldNotProvisionAnythingIfNothingHasChanged() {
+        // When:
+        final List<Schema> provision =
                 SchemaProvisioner.provision(
                         false,
                         false,
-                        SPEC_WITH_REFS_API_SPEC,
+                        API_SPEC,
                         "./src/test/resources/schema-ref",
                         KAFKA_ENV.srClient());
 
-        final var schemas = new ArrayList<>(provisionBothSchemas);
+        // Then:
+        final Map<String, Schema> bySubject =
+                provision.stream().collect(Collectors.toMap(Schema::subject, Function.identity()));
+        assertThat(bySubject.keySet(), is(Set.of("com.example.shared.Currency")));
 
-        assertThat(schemas, Matchers.hasSize(2));
-
-        final var currencySchemaState = schemas.get(0);
-        assertThat(
-                "Failed to load with:" + currencySchemaState.subject(),
-                currencySchemaState.subject(),
-                Matchers.is("com.example.shared.Currency"));
-
-        assertThat(
-                "Failed to load with:" + currencySchemaState,
-                currencySchemaState.state(),
-                Matchers.is(Status.STATE.CREATED));
-
-        final var tradeSchemaState = schemas.get(1);
-        assertThat(
-                "Failed to load with:" + tradeSchemaState.subject(),
-                tradeSchemaState.subject(),
-                Matchers.is("com.example.refs._public.trade-value"));
-
-        assertThat(
-                "Failed to load with:" + tradeSchemaState,
-                tradeSchemaState.state(),
-                Matchers.is(Status.STATE.CREATED));
+        final Schema commonSchema = bySubject.get("com.example.shared.Currency");
+        assertThat(commonSchema.state(), is(Status.STATE.IGNORED));
     }
 }

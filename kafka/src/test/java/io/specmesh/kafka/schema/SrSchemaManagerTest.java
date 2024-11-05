@@ -42,8 +42,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
+import simple.schema_demo.UserSignedUp;
 import simple.schema_demo._public.user_checkout_value.UserCheckout;
-import simple.schema_demo._public.user_signed_up_value.UserSignedUp;
 
 class SrSchemaManagerTest {
 

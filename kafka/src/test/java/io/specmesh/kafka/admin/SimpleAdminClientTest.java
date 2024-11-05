@@ -27,14 +27,13 @@ import io.specmesh.kafka.DockerKafkaEnvironment;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.KafkaEnvironment;
 import io.specmesh.kafka.provision.Provisioner;
+import io.specmesh.kafka.provision.Status;
 import io.specmesh.test.TestSpecLoader;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -45,7 +44,7 @@ import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.LongSerializer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import simple.schema_demo._public.user_signed_up_value.UserSignedUp;
+import simple.schema_demo.UserSignedUp;
 
 class SimpleAdminClientTest {
 
@@ -63,7 +62,7 @@ class SimpleAdminClientTest {
             TestSpecLoader.loadFromClassPath("clientapi-functional-test-api.yaml");
 
     @Test
-    void shouldRecordStats() throws ExecutionException, InterruptedException, TimeoutException {
+    void shouldRecordStats() throws Exception {
 
         final var userSignedUpTopic = topicName("_public.user_signed_up");
         final var sentRecord = new UserSignedUp("joe blogs", "blogy@twasmail.com", 100);
@@ -71,15 +70,17 @@ class SimpleAdminClientTest {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
             final var client = SmAdminClient.create(adminClient);
 
-            Provisioner.builder()
-                    .apiSpec(API_SPEC)
-                    .schemaPath("./src/test/resources")
-                    .adminClient(adminClient)
-                    .schemaRegistryClient(KAFKA_ENV.srClient())
-                    .closeSchemaClient(true)
-                    .build()
-                    .provision()
-                    .check();
+            final Status status =
+                    Provisioner.builder()
+                            .apiSpec(API_SPEC)
+                            .schemaPath("./src/test/resources")
+                            .adminClient(adminClient)
+                            .schemaRegistryClient(KAFKA_ENV.srClient())
+                            .closeSchemaClient(true)
+                            .build()
+                            .provision();
+
+            status.check();
 
             // write seed info
             try (var producer = avroProducer(OWNER_USER)) {

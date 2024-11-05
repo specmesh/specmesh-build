@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package simple.schema_demo._public;
+package simple.schema_demo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

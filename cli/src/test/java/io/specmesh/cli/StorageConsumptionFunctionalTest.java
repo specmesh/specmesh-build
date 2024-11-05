@@ -66,7 +66,7 @@ import org.apache.kafka.streams.kstream.Consumed;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import picocli.CommandLine;
-import simple.schema_demo._public.UserSignedUp;
+import simple.schema_demo.UserSignedUp;
 
 @SuppressFBWarnings({"UW_UNCOND_WAIT", "WA_NOT_IN_LOOP"})
 class StorageConsumptionFunctionalTest {

@@ -361,8 +361,8 @@ class ProvisionerFreshStartFunctionalTest {
                 is(
                         containsInAnyOrder(
                                 "io.specmesh.kafka.schema.UserInfo",
-                                "simple.provision_demo._public.user_signed_up_value.key.UserSignedUpKey",
-                                "simple.provision_demo._public.user_signed_up_value.UserSignedUp")));
+                                "simple.provision_demo.UserSignedUpKey",
+                                "simple.provision_demo.UserSignedUp")));
     }
 
     private static Set<AclBinding> aclsForOtherDomain(final Domain domain) {

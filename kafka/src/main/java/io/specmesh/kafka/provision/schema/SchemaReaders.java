@@ -16,9 +16,10 @@
 
 package io.specmesh.kafka.provision.schema;
 
+import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toMap;
+
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
@@ -29,15 +30,16 @@ import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientExcept
 import io.confluent.kafka.schemaregistry.json.JsonSchema;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchema;
 import io.specmesh.kafka.provision.Status;
+import io.specmesh.kafka.provision.schema.AvroReferenceFinder.DetectedSchema;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.SchemaProvisioningException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -59,73 +61,72 @@ public final class SchemaReaders {
 
     public static final class FileSystemSchemaReader {
 
-        public Collection<ParsedSchema> readLocal(final Path filePath) {
-            try {
-                final var schemaContent = Files.readString(filePath);
-                final var results = new ArrayList<ParsedSchema>();
+        public static final class NamedSchema {
+            private final String subject;
+            private final ParsedSchema schema;
 
-                final String filename =
-                        Optional.ofNullable(filePath.getFileName())
-                                .map(Objects::toString)
-                                .orElse("");
-                if (filename.endsWith(".avsc")) {
-                    final var refs = resolveReferencesFor(filePath, schemaContent);
-                    results.add(
-                            new AvroSchema(
-                                    schemaContent, refs.references, refs.resolvedReferences, -1));
-                } else if (filename.endsWith(".yml")) {
-                    results.add(new JsonSchema(schemaContent));
-                } else if (filename.endsWith(".proto")) {
-                    results.add(new ProtobufSchema(schemaContent));
-                } else {
-                    throw new UnsupportedOperationException("Unsupported schema file: " + filePath);
-                }
+            public NamedSchema(final String subject, final ParsedSchema schema) {
+                this.subject = requireNonNull(subject, "subject");
+                this.schema = requireNonNull(schema, "parsedSchema");
+            }
 
-                return results;
-            } catch (Exception ex) {
-                throw new SchemaProvisioningException(
-                        "Failed to load: " + filePath + " from: " + filePath.toAbsolutePath(), ex);
+            public ParsedSchema schema() {
+                return schema;
+            }
+
+            public String subject() {
+                return subject;
             }
         }
 
         /**
-         * Avro schema reference resolution
-         *
-         * @param filePath
-         * @param schemaContent
-         * @return
+         * @param filePath path to schema.
+         * @return ordered list of schema, with schema dependencies earlier in the list. The schema
+         *     loaded from {@code filePath} will have an empty subject
          */
-        private SchemaReferences resolveReferencesFor(
-                final Path filePath, final String schemaContent) {
-            try {
-                final SchemaReferences results = new SchemaReferences();
-                final var refs = findJsonNodes(objectMapper.readTree(schemaContent), "subject");
-                final var parent = filePath.toFile().getParent();
-                refs.forEach(ref -> results.add(parent, ref));
-                return results;
-            } catch (JsonProcessingException e) {
-                throw new SchemaProvisioningException(
-                        "Cannot resolve SchemaReferences for:" + filePath, e);
+        public List<NamedSchema> readLocal(final Path filePath) {
+            final String schemaContent = readSchema(filePath);
+            final String filename =
+                    Optional.ofNullable(filePath.getFileName()).map(Objects::toString).orElse("");
+            if (filename.endsWith(".avsc")) {
+                final Path schemaDir = filePath.toAbsolutePath().getParent();
+                final AvroReferenceFinder refFinder =
+                        new AvroReferenceFinder(
+                                type -> readSchema(schemaDir.resolve(type + ".avsc")));
+
+                return refFinder.findReferences(schemaContent).stream()
+                        .map(s -> new NamedSchema(s.subject(), toAvroSchema(s)))
+                        .collect(Collectors.toList());
+            } else if (filename.endsWith(".yml")) {
+                return List.of(new NamedSchema("", new JsonSchema(schemaContent)));
+            } else if (filename.endsWith(".proto")) {
+                return List.of(new NamedSchema("", new ProtobufSchema(schemaContent)));
+            } else {
+                throw new UnsupportedOperationException("Unsupported schema file: " + filePath);
             }
         }
 
-        private List<JsonNode> findJsonNodes(final JsonNode node, final String searchFor) {
-            if (node.has(searchFor)) {
-                return List.of(node);
+        private static AvroSchema toAvroSchema(final DetectedSchema schema) {
+
+            final List<SchemaReference> references =
+                    schema.references().stream()
+                            .map(ref -> new SchemaReference(ref.name(), ref.subject(), -1))
+                            .collect(Collectors.toList());
+
+            final Map<String, String> resolvedReferences =
+                    schema.references().stream()
+                            .collect(toMap(DetectedSchema::subject, DetectedSchema::content));
+
+            return new AvroSchema(schema.content(), references, resolvedReferences, -1);
+        }
+
+        private String readSchema(final Path path) {
+            try {
+                return Files.readString(path, StandardCharsets.UTF_8);
+            } catch (IOException e) {
+                throw new SchemaProvisioningException(
+                        "Failed to read schema at path:" + path.toAbsolutePath(), e);
             }
-            // Recursively traverse child nodes
-            final var results = new ArrayList<JsonNode>();
-            if (node.isArray()) {
-                for (JsonNode child : node) {
-                    results.addAll(findJsonNodes(child, searchFor));
-                }
-                return results;
-            } else if (node.isObject()) {
-                for (Iterator<Map.Entry<String, JsonNode>> it = node.fields(); it.hasNext(); ) {
-                    results.addAll(findJsonNodes(it.next().getValue(), searchFor));
-                }
-            }
-            return results;
         }
     }
     /** Read Schemas from registry for given prefix */
@@ -156,7 +157,7 @@ public final class SchemaReaders {
                 final var schemas =
                         subjects.stream()
                                 .collect(
-                                        Collectors.toMap(
+                                        toMap(
                                                 subject -> subject,
                                                 subject -> {
                                                     try {
@@ -175,36 +176,13 @@ public final class SchemaReaders {
                                         Schema.builder()
                                                 .subject(entry.getKey())
                                                 .type(entry.getValue().get(0).schemaType())
-                                                .schemas(resolvePayload(entry.getValue().get(0)))
+                                                .schema(entry.getValue().get(0))
                                                 .state(Status.STATE.READ)
                                                 .build())
                         .collect(Collectors.toList());
             } catch (RestClientException | IOException e) {
                 throw new SchemaProvisioningException("Failed to read schemas for:" + prefix, e);
             }
-        }
-
-        private List<ParsedSchema> resolvePayload(final ParsedSchema schema) {
-            return List.of(parsedSchema(schema));
-        }
-
-        private ParsedSchema parsedSchema(final ParsedSchema schema) {
-            final String type = schema.schemaType();
-            final String payload = schema.canonicalString();
-            if (type.endsWith(".avsc") || type.equals("AVRO")) {
-                return new AvroSchema(
-                        payload,
-                        schema.references(),
-                        ((AvroSchema) schema).resolvedReferences(),
-                        -1);
-            }
-            if (type.endsWith(".yml") || type.equals("JSON")) {
-                return new JsonSchema(payload);
-            }
-            if (type.endsWith(".proto") || type.equals("PROTOBUF")) {
-                return new ProtobufSchema(payload);
-            }
-            return null;
         }
     }
 
@@ -269,21 +247,11 @@ public final class SchemaReaders {
     @Accessors(fluent = true)
     public static class SchemaReferences {
         final List<SchemaReference> references = new ArrayList<>();
-        final Map<String, String> resolvedReferences = new HashMap<>();
+        final Map<String, String> resolvedReferences = new LinkedHashMap<>();
 
-        public void add(final String path, final JsonNode ref) {
-            try {
-                references.add(
-                        new SchemaReference(
-                                ref.get("name").asText(), ref.get("subject").asText(), -1));
-
-                resolvedReferences.put(
-                        ref.get("subject").asText(),
-                        Files.readString(Path.of(path, ref.get("subject").asText() + ".avsc")));
-            } catch (IOException e) {
-                throw new SchemaProvisioningException(
-                        "Cannot construct AVRO SchemaReference from:" + ref, e);
-            }
+        public void add(final String type, final String subject, final String content) {
+            references.add(new SchemaReference(type, subject, -1));
+            resolvedReferences.put(subject, content);
         }
     }
 }
