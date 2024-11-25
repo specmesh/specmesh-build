@@ -28,8 +28,8 @@ import io.specmesh.apiparser.model.SchemaInfo;
 import io.specmesh.kafka.KafkaApiSpec;
 import io.specmesh.kafka.provision.ExceptionWrapper;
 import io.specmesh.kafka.provision.ProvisioningException;
+import io.specmesh.kafka.provision.ProvisioningTask;
 import io.specmesh.kafka.provision.Status;
-import io.specmesh.kafka.provision.WithState;
 import io.specmesh.kafka.provision.schema.SchemaReaders.FileSystemSchemaReader.NamedSchema;
 import io.specmesh.kafka.provision.schema.SchemaReaders.SchemaReader;
 import java.nio.file.Path;
@@ -275,7 +275,7 @@ public final class SchemaProvisioner {
     @Accessors(fluent = true)
     @EqualsAndHashCode(onlyExplicitlyIncluded = true)
     @SuppressFBWarnings
-    public static final class Schema implements WithState {
+    public static final class Schema implements ProvisioningTask {
         @EqualsAndHashCode.Include private String subject;
         private Status.STATE state;
         private String type;
@@ -283,6 +283,11 @@ public final class SchemaProvisioner {
         @Builder.Default private String messages = "";
 
         private ParsedSchema schema;
+
+        @Override
+        public String id() {
+            return "Schema subject:" + subject;
+        }
 
         public Schema exception(final Exception exception) {
             this.exception = new ExceptionWrapper(exception);

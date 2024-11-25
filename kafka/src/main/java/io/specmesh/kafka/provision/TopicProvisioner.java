@@ -123,7 +123,7 @@ public final class TopicProvisioner {
     @Accessors(fluent = true)
     @SuppressFBWarnings
     @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-    public static final class Topic implements WithState {
+    public static final class Topic implements ProvisioningTask {
         @EqualsAndHashCode.Include private String name;
         private Status.STATE state;
         private int partitions;
@@ -131,6 +131,11 @@ public final class TopicProvisioner {
         @Builder.Default private Map<String, String> config = Map.of();
         private Exception exception;
         @Builder.Default private String messages = "";
+
+        @Override
+        public String id() {
+            return "Topic:" + name;
+        }
 
         public Topic exception(final Exception exception) {
             this.exception = new ExceptionWrapper(exception);

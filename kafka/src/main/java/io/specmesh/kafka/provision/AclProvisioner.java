@@ -147,12 +147,17 @@ public final class AclProvisioner {
     @Accessors(fluent = true)
     @SuppressFBWarnings
     @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-    public static final class Acl implements WithState {
+    public static final class Acl implements ProvisioningTask {
         @EqualsAndHashCode.Include private String name;
         private Status.STATE state;
         private AclBinding aclBinding;
         private Exception exception;
         @Builder.Default private String messages = "";
+
+        @Override
+        public String id() {
+            return "ACL:" + name;
+        }
 
         public Acl exception(final Exception exception) {
             this.exception = new ExceptionWrapper(exception);
