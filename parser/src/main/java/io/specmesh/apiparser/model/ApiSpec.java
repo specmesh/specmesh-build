@@ -56,7 +56,7 @@ public final class ApiSpec {
     @JsonProperty private Map<String, Channel> channels;
 
     @JsonCreator
-    private ApiSpec(
+    ApiSpec(
             @JsonProperty("id") final String id,
             @JsonProperty("version") final String version,
             @JsonProperty("asyncapi") final String asyncapi,
@@ -67,7 +67,12 @@ public final class ApiSpec {
         this.channels = channels;
 
         if (!id.startsWith(URN_PREFIX)) {
-            throw new IllegalStateException("ID must be formatted as a URN, expecting urn:");
+            throw new IllegalArgumentException("ID must be formatted as a URN, expecting urn:");
+        }
+
+        if (id.substring(URN_PREFIX.length()).isBlank()) {
+            throw new IllegalArgumentException(
+                    "ID must define a domain id after the urn, e.g. urn:some.domain");
         }
     }
 
