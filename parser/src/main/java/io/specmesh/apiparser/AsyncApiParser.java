@@ -38,6 +38,17 @@ public class AsyncApiParser {
         return SpecMapper.mapper().readValue(inputStream, ApiSpec.class);
     }
 
+    /**
+     * Parse an {@link ApiSpec} from the supplied {@code content}.
+     *
+     * @param content the spec.
+     * @return the api spec
+     * @throws IOException on error
+     */
+    public final ApiSpec loadResource(final String content) throws IOException {
+        return SpecMapper.mapper().readValue(content, ApiSpec.class);
+    }
+
     public static class APIParserException extends RuntimeException {
         public APIParserException(final String message, final Exception cause) {
             super(message, cause);

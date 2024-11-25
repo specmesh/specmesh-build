@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
@@ -59,6 +60,10 @@ class SchemaProvisionerFunctionalTest {
 
     private static final KafkaApiSpec API_UPDATE_SPEC =
             TestSpecLoader.loadFromClassPath("provisioner-update-functional-test-api.yaml");
+
+    private static final KafkaApiSpec API_INCOMPATiBLE_SPEC =
+            TestSpecLoader.loadFromClassPath("provisioner-incompatible-functional-test-api.yaml");
+
     private SchemaRegistryClient srClient;
 
     private enum Domain {
@@ -173,6 +178,43 @@ class SchemaProvisionerFunctionalTest {
 
     @Test
     @Order(3)
+    void shouldFailToPublishIncompatibleSchema() throws Exception {
+        final Collection<Schema> dryRunChangeset =
+                SchemaProvisioner.provision(
+                        true, false, API_INCOMPATiBLE_SPEC, "./src/test/resources", srClient);
+
+        // Verify - the Update is proposed
+        assertThat(
+                dryRunChangeset.stream().filter(topic -> topic.state() == STATE.UPDATE).count(),
+                is(1L));
+
+        // Verify - should have 3 SR entries (1 was updated, 2 was from original spec)
+        assertThat(
+                srClient.getAllSubjects(),
+                containsInAnyOrder(
+                        "simple.provision_demo._public.user_signed_up-key",
+                        "simple.provision_demo._public.user_signed_up-value",
+                        "simple.provision_demo._protected.user_info-value"));
+
+        final Collection<Schema> updateChangeset =
+                SchemaProvisioner.provision(
+                        false, false, API_INCOMPATiBLE_SPEC, "./src/test/resources", srClient);
+
+        assertThat(updateChangeset, hasSize(1));
+        final Schema schema = updateChangeset.iterator().next();
+        assertThat(schema.state(), is(STATE.FAILED));
+        assertThat(schema.messages(), containsString("READER_FIELD_MISSING_DEFAULT_VALUE"));
+
+        final var parsedSchemas = srClient.getSchemas(schema.subject(), false, true);
+
+        assertThat(
+                "Schema should not be updated",
+                parsedSchemas.get(0).canonicalString(),
+                not(containsString("borked")));
+    }
+
+    @Test
+    @Order(4)
     void shouldRemoveUnspecdSchemas() throws Exception {
 
         final var subject = "simple.provision_demo._public.NOT_user_signed_up-value";

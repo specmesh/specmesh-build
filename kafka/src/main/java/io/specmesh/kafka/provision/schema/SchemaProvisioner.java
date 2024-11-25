@@ -83,7 +83,7 @@ public final class SchemaProvisioner {
         }
 
         final Collection<Schema> schemas =
-                calculator(client, cleanUnspecified).calculate(existing, required, apiSpec.id());
+                calculator(cleanUnspecified).calculate(existing, required, apiSpec.id());
         return mutator(dryRun, cleanUnspecified, client).mutate(schemas);
     }
 
@@ -112,8 +112,8 @@ public final class SchemaProvisioner {
      * @return calculator
      */
     private static SchemaChangeSetCalculators.ChangeSetCalculator calculator(
-            final SchemaRegistryClient client, final boolean cleanUnspecified) {
-        return SchemaChangeSetCalculators.builder().build(cleanUnspecified, client);
+            final boolean cleanUnspecified) {
+        return SchemaChangeSetCalculators.builder().build(cleanUnspecified);
     }
 
     /**

@@ -405,6 +405,20 @@ public final class KafkaApiSpec {
         }
     }
 
+    /**
+     * Load from string
+     *
+     * @param spec the contents of the spec.
+     * @return loaded spec
+     */
+    public static KafkaApiSpec loadFromString(final String spec) {
+        try {
+            return new KafkaApiSpec(new AsyncApiParser().loadResource(spec));
+        } catch (Exception ex) {
+            throw new APIException("Failed to load spec:" + spec, ex);
+        }
+    }
+
     public ApiSpec apiSpec() {
         return apiSpec;
     }
