@@ -156,6 +156,7 @@ public final class AclProvisioner {
 
         public Acl exception(final Exception exception) {
             this.exception = new ExceptionWrapper(exception);
+            this.state = Status.STATE.FAILED;
             return this;
         }
     }

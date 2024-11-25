@@ -19,14 +19,12 @@ package io.specmesh.kafka.provision.schema;
 import static io.specmesh.kafka.provision.Status.STATE.CREATED;
 import static io.specmesh.kafka.provision.Status.STATE.DELETE;
 import static io.specmesh.kafka.provision.Status.STATE.DELETED;
-import static io.specmesh.kafka.provision.Status.STATE.FAILED;
 import static io.specmesh.kafka.provision.Status.STATE.UPDATED;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
 import io.specmesh.kafka.provision.ProvisioningException;
-import io.specmesh.kafka.provision.Status;
 import io.specmesh.kafka.provision.Status.STATE;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
 import java.io.IOException;
@@ -121,7 +119,6 @@ public final class SchemaMutators {
                                             new ProvisioningException(
                                                     "Failed to update schema:" + schema.subject(),
                                                     e));
-                                    schema.state(FAILED);
                                 }
                             })
                     .collect(Collectors.toList());
@@ -165,7 +162,12 @@ public final class SchemaMutators {
                                     + "\nCompatibility test output:"
                                     + compatibilityMessages);
 
-                    schema.state(Status.STATE.FAILED);
+                    schema.exception(
+                            new ProvisioningException(
+                                    "Schema compatibility issue detected for subject: "
+                                            + schema.subject()
+                                            + ", issues: "
+                                            + compatibilityMessages));
                     return schema;
                 }
 
@@ -176,7 +178,6 @@ public final class SchemaMutators {
                 schema.exception(
                         new ProvisioningException(
                                 "Failed to update schema:" + schema.subject(), e));
-                schema.state(FAILED);
             }
             return schema;
         }
@@ -204,7 +205,6 @@ public final class SchemaMutators {
          */
         @Override
         public List<Schema> mutate(final Collection<Schema> schemas) {
-
             return schemas.stream()
                     .filter(schema -> schema.state().equals(STATE.CREATE))
                     .peek(
@@ -226,7 +226,6 @@ public final class SchemaMutators {
                                             new ProvisioningException(
                                                     "Failed to write schema:" + schema.subject(),
                                                     e));
-                                    schema.state(FAILED);
                                 }
                             })
                     .collect(Collectors.toList());
