@@ -85,7 +85,17 @@ public class Status {
         }
     }
 
-    private Stream<WithState> all() {
+    /**
+     * @return any failed provisioning tasks
+     */
+    public List<ProvisioningTask> failures() {
+        return all().filter(ws -> ws.state() == STATE.FAILED).collect(Collectors.toList());
+    }
+
+    /**
+     * @return all provisioning tasks
+     */
+    public Stream<ProvisioningTask> all() {
         return Stream.concat(Stream.concat(topics.stream(), schemas.stream()), acls.stream());
     }
 

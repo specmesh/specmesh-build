@@ -16,7 +16,9 @@
 
 package io.specmesh.kafka.provision;
 
-public interface WithState {
+public interface ProvisioningTask {
+
+    String id();
 
     Status.STATE state();
 
