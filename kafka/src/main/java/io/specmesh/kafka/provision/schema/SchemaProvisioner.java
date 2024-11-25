@@ -286,6 +286,7 @@ public final class SchemaProvisioner {
 
         public Schema exception(final Exception exception) {
             this.exception = new ExceptionWrapper(exception);
+            this.state = FAILED;
             return this;
         }
     }

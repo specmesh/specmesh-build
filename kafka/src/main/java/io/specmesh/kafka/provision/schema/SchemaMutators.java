@@ -165,7 +165,9 @@ public final class SchemaMutators {
                     schema.exception(
                             new ProvisioningException(
                                     "Schema compatibility issue detected for subject: "
-                                            + schema.subject()));
+                                            + schema.subject()
+                                            + ", issues: "
+                                            + compatibilityMessages));
                     return schema;
                 }
 

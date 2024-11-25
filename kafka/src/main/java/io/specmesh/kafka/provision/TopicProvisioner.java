@@ -134,6 +134,7 @@ public final class TopicProvisioner {
 
         public Topic exception(final Exception exception) {
             this.exception = new ExceptionWrapper(exception);
+            this.state = Status.STATE.FAILED;
             return this;
         }
     }

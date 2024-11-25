@@ -22,23 +22,19 @@ import java.io.StringWriter;
 
 @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "exception copy")
 public class ExceptionWrapper extends RuntimeException {
-    private final Exception wrappedException;
 
     public ExceptionWrapper(final Exception exception) {
-        this.wrappedException = exception;
+        super(exception.getMessage(), exception);
     }
 
     @Override
     public String toString() {
         final var sb = new StringBuilder();
-        sb.append(getClass().getName())
-                .append(": ")
-                .append(wrappedException.getMessage())
-                .append("\n");
+        sb.append(getClass().getName()).append(": ").append(getMessage()).append("\n");
 
         final var sw = new StringWriter();
         final var pw = new PrintWriter(sw);
-        wrappedException.printStackTrace(pw);
+        getCause().printStackTrace(pw);
         sb.append(sw);
         return sb.toString();
     }

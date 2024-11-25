@@ -18,6 +18,7 @@ package io.specmesh.kafka.provision.schema;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import io.confluent.kafka.schemaregistry.ParsedSchema;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
@@ -68,11 +69,14 @@ class SchemaMutatorsTest {
         final Collection<SchemaProvisioner.Schema> schemas = mutators.mutate(required);
 
         // Then:
-        assertThat(schemas.iterator().next().state(), is(Status.STATE.FAILED));
+        final SchemaProvisioner.Schema schema = schemas.iterator().next();
+        assertThat(schema.state(), is(Status.STATE.FAILED));
+        assertThat(schema.messages(), containsString("READER_FIELD_MISSING_DEFAULT_VALUE"));
+        assertThat(schema.messages(), is(containsString("borked")));
+        assertThat(schema.exception(), is(notNullValue()));
         assertThat(
-                schemas.iterator().next().messages(),
-                is(containsString("READER_FIELD_MISSING_DEFAULT_VALUE")));
-        assertThat(schemas.iterator().next().messages(), is(containsString("borked")));
+                schema.exception().getMessage(),
+                containsString("READER_FIELD_MISSING_DEFAULT_VALUE"));
     }
 
     private static ParsedSchema loadSchema(final String fileName) {
