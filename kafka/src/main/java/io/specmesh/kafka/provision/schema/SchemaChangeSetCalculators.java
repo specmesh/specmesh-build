@@ -20,12 +20,9 @@ import static java.util.Objects.requireNonNull;
 
 import io.confluent.kafka.schemaregistry.ParsedSchema;
 import io.confluent.kafka.schemaregistry.avro.AvroSchema;
-import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.entities.SchemaReference;
-import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
 import io.specmesh.kafka.provision.Status;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -82,12 +79,6 @@ final class SchemaChangeSetCalculators {
     /** Returns those schemas to create and ignores existing */
     static final class UpdateCalculator implements ChangeSetCalculator {
 
-        private final SchemaRegistryClient client;
-
-        private UpdateCalculator(final SchemaRegistryClient client) {
-            this.client = client;
-        }
-
         @Override
         public Collection<Schema> calculate(
                 final Collection<Schema> existing,
@@ -97,29 +88,9 @@ final class SchemaChangeSetCalculators {
             return required.stream()
                     .filter(needs -> hasChanged(needs, existingList))
                     .peek(
-                            schema -> {
-                                schema.messages(schema.messages() + "\n Update");
-                                try {
-                                    final var compatibilityMessages =
-                                            client.testCompatibilityVerbose(
-                                                    schema.subject(), schema.schema());
-
-                                    if (!compatibilityMessages.isEmpty()) {
-                                        schema.messages(
-                                                schema.messages()
-                                                        + "\nCompatibility test output:"
-                                                        + compatibilityMessages);
-
-                                        schema.state(Status.STATE.FAILED);
-                                    } else {
-                                        schema.state(Status.STATE.UPDATE);
-                                    }
-
-                                } catch (IOException | RestClientException ex) {
-                                    schema.state(Status.STATE.FAILED);
-                                    schema.messages(schema.messages() + "\nException:" + ex);
-                                }
-                            })
+                            schema ->
+                                    schema.messages(schema.messages() + "\n Update")
+                                            .state(Status.STATE.UPDATE))
                     .collect(Collectors.toList());
         }
 
@@ -243,19 +214,15 @@ final class SchemaChangeSetCalculators {
          * build it
          *
          * @param cleanUnspecified - cleanup
-         * @param client sr client
          * @return required calculator
          */
-        ChangeSetCalculator build(
-                final boolean cleanUnspecified, final SchemaRegistryClient client) {
+        ChangeSetCalculator build(final boolean cleanUnspecified) {
             if (cleanUnspecified) {
                 return new CleanUnspecifiedCalculator();
 
             } else {
                 return new Collective(
-                        new IgnoreCalculator(),
-                        new UpdateCalculator(client),
-                        new CreateCalculator());
+                        new IgnoreCalculator(), new UpdateCalculator(), new CreateCalculator());
             }
         }
     }

@@ -26,6 +26,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
 import io.specmesh.kafka.provision.ProvisioningException;
+import io.specmesh.kafka.provision.Status;
 import io.specmesh.kafka.provision.Status.STATE;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
 import java.io.IOException;
@@ -149,26 +150,35 @@ public final class SchemaMutators {
         public List<Schema> mutate(final Collection<Schema> schemas) {
             return schemas.stream()
                     .filter(schema -> schema.state().equals(STATE.UPDATE))
-                    .peek(
-                            schema -> {
-                                try {
-                                    final var schemaId =
-                                            client.register(schema.subject(), schema.schema());
-                                    schema.state(UPDATED);
-                                    schema.messages(
-                                            "Subject:"
-                                                    + schema.subject()
-                                                    + " Updated with id: "
-                                                    + schemaId);
-                                } catch (IOException | RestClientException e) {
-                                    schema.exception(
-                                            new ProvisioningException(
-                                                    "Failed to update schema:" + schema.subject(),
-                                                    e));
-                                    schema.state(FAILED);
-                                }
-                            })
+                    .map(this::register)
                     .collect(Collectors.toList());
+        }
+
+        private Schema register(final Schema schema) {
+            try {
+                final var compatibilityMessages =
+                        client.testCompatibilityVerbose(schema.subject(), schema.schema());
+
+                if (!compatibilityMessages.isEmpty()) {
+                    schema.messages(
+                            schema.messages()
+                                    + "\nCompatibility test output:"
+                                    + compatibilityMessages);
+
+                    schema.state(Status.STATE.FAILED);
+                    return schema;
+                }
+
+                final var schemaId = client.register(schema.subject(), schema.schema());
+                schema.state(UPDATED);
+                schema.messages("Subject:" + schema.subject() + " Updated with id: " + schemaId);
+            } catch (IOException | RestClientException e) {
+                schema.exception(
+                        new ProvisioningException(
+                                "Failed to update schema:" + schema.subject(), e));
+                schema.state(FAILED);
+            }
+            return schema;
         }
     }
 

@@ -18,8 +18,8 @@ package io.specmesh.kafka.provision;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.kafka.provision.AclProvisioner.Acl;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.Admin;
@@ -101,7 +101,7 @@ public class AclReaders {
                                 .toString()
                                 .contains(
                                         "org.apache.kafka.common.errors.SecurityDisabledException")) {
-                    return List.of();
+                    return new ArrayList<>();
                 }
                 throw new ProvisioningException("Failed to read ACLs", e);
             }
