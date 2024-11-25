@@ -197,7 +197,6 @@ public final class SchemaProvisioner {
             return Stream.of(
                     Schema.builder()
                             .messages("Failed to parse: " + schemaRef)
-                            .state(FAILED)
                             .exception(ex)
                             .build());
         }

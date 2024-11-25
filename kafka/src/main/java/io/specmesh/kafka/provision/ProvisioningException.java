@@ -21,4 +21,8 @@ public final class ProvisioningException extends RuntimeException {
     public ProvisioningException(final String msg, final Throwable cause) {
         super(msg, cause);
     }
+
+    public ProvisioningException(final String msg) {
+        super(msg);
+    }
 }

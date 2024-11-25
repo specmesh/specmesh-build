@@ -80,7 +80,7 @@ public class Status {
                 all().flatMap(e -> Optional.ofNullable(e.exception()).stream())
                         .collect(Collectors.toList());
 
-        if (!exceptions.isEmpty()) {
+        if (!exceptions.isEmpty() || failed()) {
             throw new CompositeException(exceptions);
         }
     }

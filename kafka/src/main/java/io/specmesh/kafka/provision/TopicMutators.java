@@ -165,8 +165,7 @@ public class TopicMutators {
                 topic.state(STATE.UPDATED);
 
             } catch (Exception ex) {
-                topic.state(STATE.FAILED)
-                        .exception(new ProvisioningException("Failed to update config ", ex));
+                topic.exception(new ProvisioningException("Failed to update config ", ex));
             }
         }
 
@@ -193,8 +192,7 @@ public class TopicMutators {
                                     + " higher");
                 }
             } catch (Exception ex) {
-                topic.state(STATE.FAILED)
-                        .exception(new ProvisioningException("Failed to update partitions", ex));
+                topic.exception(new ProvisioningException("Failed to update partitions", ex));
             }
         }
     }
@@ -248,9 +246,7 @@ public class TopicMutators {
                 unwanted.forEach(
                         topic ->
                                 topic.exception(
-                                                new ProvisioningException(
-                                                        "failed to delete topics", ex))
-                                        .state(STATE.FAILED));
+                                        new ProvisioningException("failed to delete topics", ex)));
             }
             return unwanted;
         }
@@ -306,9 +302,7 @@ public class TopicMutators {
                 topicsToCreate.forEach(
                         topic ->
                                 topic.exception(
-                                                new ProvisioningException(
-                                                        "failed to write topics", e))
-                                        .state(STATE.FAILED));
+                                        new ProvisioningException("failed to write topics", e)));
             }
             return topics;
         }
