@@ -31,5 +31,5 @@ channels:
             key:
               type: string
         payload:
-          $ref: "/schema/com.example.shared.Currency.avsc"
+          $ref: "schema/com.example.shared.Currency.avsc"
 

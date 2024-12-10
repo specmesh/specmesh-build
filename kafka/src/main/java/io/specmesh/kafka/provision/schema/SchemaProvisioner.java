@@ -30,7 +30,7 @@ import io.specmesh.kafka.provision.ExceptionWrapper;
 import io.specmesh.kafka.provision.ProvisioningException;
 import io.specmesh.kafka.provision.ProvisioningTask;
 import io.specmesh.kafka.provision.Status;
-import io.specmesh.kafka.provision.schema.SchemaReaders.FileSystemSchemaReader.NamedSchema;
+import io.specmesh.kafka.provision.schema.SchemaReaders.NamedSchema;
 import io.specmesh.kafka.provision.schema.SchemaReaders.SchemaReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -174,7 +174,7 @@ public final class SchemaProvisioner {
         try {
             final Path schemaPath = Path.of(baseResourcePath.toString(), schemaRef);
             final List<NamedSchema> schemas =
-                    new SchemaReaders.FileSystemSchemaReader().readLocal(schemaPath);
+                    new SchemaReaders.LocalSchemaReader().read(schemaPath);
 
             return schemas.stream()
                     .map(

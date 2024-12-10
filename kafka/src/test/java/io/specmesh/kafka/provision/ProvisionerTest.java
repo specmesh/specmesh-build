@@ -233,7 +233,7 @@ class ProvisionerTest {
         verify(srClientFactory).schemaRegistryClient("sr-url", null, null);
 
         verify(topicProvisioner).provision(false, false, spec, adminClient);
-        verify(schemaProvisioner).provision(false, false, spec, null, srClient);
+        verify(schemaProvisioner).provision(false, false, spec, "", srClient);
         verify(aclProvisioner).provision(false, false, spec, DOMAIN_ID, adminClient);
     }
 

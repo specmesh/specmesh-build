@@ -34,6 +34,7 @@ import io.specmesh.kafka.provision.schema.AvroReferenceFinder.DetectedSchema;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.SchemaProvisioningException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -59,25 +60,21 @@ public final class SchemaReaders {
     /** defensive */
     private SchemaReaders() {}
 
-    public static final class FileSystemSchemaReader {
+    public static final class LocalSchemaReader {
 
-        public static final class NamedSchema {
-            private final String subject;
-            private final ParsedSchema schema;
+        private final ClassPathSchemaReader cpReader = new ClassPathSchemaReader();
+        private final FileSystemSchemaReader fsReader = new FileSystemSchemaReader();
 
-            public NamedSchema(final String subject, final ParsedSchema schema) {
-                this.subject = requireNonNull(subject, "subject");
-                this.schema = requireNonNull(schema, "parsedSchema");
-            }
-
-            public ParsedSchema schema() {
-                return schema;
-            }
-
-            public String subject() {
-                return subject;
+        public List<NamedSchema> read(final Path schemaFile) {
+            if (cpReader.has(schemaFile)) {
+                return cpReader.readLocal(schemaFile);
+            } else {
+                return fsReader.readLocal(schemaFile);
             }
         }
+    }
+
+    private abstract static class BaseLocalSchemaReader {
 
         /**
          * @param filePath path to schema.
@@ -89,12 +86,7 @@ public final class SchemaReaders {
             final String filename =
                     Optional.ofNullable(filePath.getFileName()).map(Objects::toString).orElse("");
             if (filename.endsWith(".avsc")) {
-                final Path schemaDir = filePath.toAbsolutePath().getParent();
-                final AvroReferenceFinder refFinder =
-                        new AvroReferenceFinder(
-                                type -> readSchema(schemaDir.resolve(type + ".avsc")));
-
-                return refFinder.findReferences(schemaContent).stream()
+                return referenceFinder(filePath).findReferences(schemaContent).stream()
                         .map(s -> new NamedSchema(s.subject(), toAvroSchema(s)))
                         .collect(Collectors.toList());
             } else if (filename.endsWith(".yml")) {
@@ -105,6 +97,10 @@ public final class SchemaReaders {
                 throw new UnsupportedOperationException("Unsupported schema file: " + filePath);
             }
         }
+
+        protected abstract String readSchema(Path path);
+
+        abstract AvroReferenceFinder referenceFinder(Path parentSchema);
 
         private static AvroSchema toAvroSchema(final DetectedSchema schema) {
 
@@ -119,8 +115,39 @@ public final class SchemaReaders {
 
             return new AvroSchema(schema.content(), references, resolvedReferences, -1);
         }
+    }
 
-        private String readSchema(final Path path) {
+    public static final class ClassPathSchemaReader extends BaseLocalSchemaReader {
+
+        public boolean has(final Path schemaFile) {
+            return getClass().getClassLoader().getResource(schemaFile.toString()) != null;
+        }
+
+        @Override
+        protected String readSchema(final Path path) {
+            try (InputStream s = getClass().getClassLoader().getResourceAsStream(path.toString())) {
+                if (s == null) {
+                    throw new RuntimeException(path + " not found");
+                }
+                return new String(s.readAllBytes(), StandardCharsets.UTF_8);
+            } catch (Exception e) {
+                throw new SchemaProvisioningException(
+                        "Failed to read schema from classpath:" + path, e);
+            }
+        }
+
+        @Override
+        AvroReferenceFinder referenceFinder(final Path parentSchema) {
+            final Path schemaDir =
+                    Optional.ofNullable(parentSchema.getParent()).orElse(Path.of(""));
+
+            return new AvroReferenceFinder(type -> readSchema(schemaDir.resolve(type + ".avsc")));
+        }
+    }
+
+    public static final class FileSystemSchemaReader extends BaseLocalSchemaReader {
+
+        protected String readSchema(final Path path) {
             try {
                 return Files.readString(path, StandardCharsets.UTF_8);
             } catch (IOException e) {
@@ -128,7 +155,15 @@ public final class SchemaReaders {
                         "Failed to read schema at path:" + path.toAbsolutePath(), e);
             }
         }
+
+        @Override
+        AvroReferenceFinder referenceFinder(final Path parentSchema) {
+            final Path schemaDir = parentSchema.toAbsolutePath().getParent();
+
+            return new AvroReferenceFinder(type -> readSchema(schemaDir.resolve(type + ".avsc")));
+        }
     }
+
     /** Read Schemas from registry for given prefix */
     public static final class SrSchemaReader implements SchemaReader {
 
@@ -186,13 +221,13 @@ public final class SchemaReaders {
         }
     }
 
-    /** Read Acls API */
-    interface SchemaReader {
+    /** Read Schema API */
+    public interface SchemaReader {
         /**
-         * read some acls
+         * read all schema with the supplied subject name {@code prefix}.
          *
-         * @param prefix to read
-         * @return updated status of acls
+         * @param prefix the subject name prefix
+         * @return the found schema.
          */
         Collection<Schema> read(String prefix);
     }
@@ -252,6 +287,24 @@ public final class SchemaReaders {
         public void add(final String type, final String subject, final String content) {
             references.add(new SchemaReference(type, subject, -1));
             resolvedReferences.put(subject, content);
+        }
+    }
+
+    public static final class NamedSchema {
+        private final String subject;
+        private final ParsedSchema schema;
+
+        public NamedSchema(final String subject, final ParsedSchema schema) {
+            this.subject = requireNonNull(subject, "subject");
+            this.schema = requireNonNull(schema, "parsedSchema");
+        }
+
+        public ParsedSchema schema() {
+            return schema;
+        }
+
+        public String subject() {
+            return subject;
         }
     }
 }
