@@ -42,6 +42,7 @@ allprojects {
 
 subprojects {
     project.version = project.parent?.version!!
+    project.group = project.parent?.group!!
 
     apply(plugin = "maven-publish")
     apply(plugin = "signing")
@@ -50,7 +51,10 @@ subprojects {
         mavenCentral()
         maven {
             url = uri("https://packages.confluent.io/maven/")
-            group = "io.confluent"
+            content {
+                includeGroup("io.confluent")
+                includeGroup("org.apache.kafka")
+            }
         }
     }
 
