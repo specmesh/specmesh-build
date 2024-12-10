@@ -20,7 +20,7 @@ plugins {
     signing
     id("com.github.spotbugs") version "6.0.26"
     id("com.diffplug.spotless") version "6.25.0"
-    id("pl.allegro.tech.build.axion-release") version "1.18.14"
+    id("pl.allegro.tech.build.axion-release") version "1.18.16"
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
     id("com.bmuschko.docker-remote-api") version "9.4.0" apply false
 }
@@ -64,7 +64,7 @@ subprojects {
     }
 
     extra.apply {
-        set("kafkaVersion", "7.7.1-ce")
+        set("kafkaVersion", "7.7.2-ce")
         set("openTracingVersion", "0.33.0")
         set("observabilityVersion", "1.1.8")
         set("guavaVersion", "33.3.1-jre")
@@ -77,10 +77,10 @@ subprojects {
         set("junitPioneerVersion", "2.3.0")
         set("spotBugsVersion", "4.8.6")
         set("hamcrestVersion", "1.3")
-        set("log4jVersion", "2.24.1")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
+        set("log4jVersion", "2.24.2")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
         set("classGraphVersion", "4.8.21")
         set("testcontainersVersion", "1.20.1")
-        set("lombokVersion", "1.18.34")
+        set("lombokVersion", "1.18.36")
     }
 
     val junitVersion: String by extra
