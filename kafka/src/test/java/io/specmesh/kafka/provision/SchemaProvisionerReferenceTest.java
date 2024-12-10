@@ -157,4 +157,18 @@ class SchemaProvisionerReferenceTest {
         final Schema commonSchema = bySubject.get("com.example.shared.Currency");
         assertThat(commonSchema.state(), is(Status.STATE.IGNORED));
     }
+
+    @Test
+    @Order(4)
+    void shouldProvisionFromClassPath() {
+        // When:
+        final List<Schema> provisioned =
+                SchemaProvisioner.provision(
+                        false, false, API_SPEC, "schema-ref", KAFKA_ENV.srClient());
+
+        // Then:
+        assertThat(
+                provisioned.stream().filter(topic -> topic.state() == Status.STATE.FAILED).count(),
+                is(0L));
+    }
 }

@@ -45,7 +45,7 @@ public final class Provisioner {
     private String srApiSecret;
     private SchemaRegistryClient schemaRegistryClient;
     @Builder.Default private boolean closeSchemaClient = false;
-    private String schemaPath;
+    @Builder.Default private String schemaPath = "";
     @Builder.Default private String specPath = "";
     @Builder.Default private String domainUserAlias = "";
     private KafkaApiSpec apiSpec;

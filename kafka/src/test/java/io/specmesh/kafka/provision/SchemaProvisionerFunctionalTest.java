@@ -36,6 +36,7 @@ import io.specmesh.kafka.provision.schema.SchemaProvisioner;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
 import io.specmesh.test.TestSpecLoader;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -131,6 +132,19 @@ class SchemaProvisionerFunctionalTest {
 
     @Test
     @Order(2)
+    void shouldProvisionLoadingSchemaFromClassPath() {
+        // When:
+        final List<Schema> provisioned =
+                SchemaProvisioner.provision(false, false, API_SPEC, "", srClient);
+
+        // Then:
+        assertThat(
+                provisioned.stream().filter(topic -> topic.state() == STATE.FAILED).count(),
+                is(0L));
+    }
+
+    @Test
+    @Order(3)
     void shouldPublishUpdatedSchemas() throws Exception {
 
         final Collection<Schema> dryRunChangeset =
@@ -177,7 +191,7 @@ class SchemaProvisionerFunctionalTest {
     }
 
     @Test
-    @Order(3)
+    @Order(4)
     void shouldFailToPublishIncompatibleSchema() throws Exception {
         final Collection<Schema> dryRunChangeset =
                 SchemaProvisioner.provision(
@@ -214,7 +228,7 @@ class SchemaProvisionerFunctionalTest {
     }
 
     @Test
-    @Order(4)
+    @Order(5)
     void shouldRemoveUnspecdSchemas() throws Exception {
 
         final var subject = "simple.provision_demo._public.NOT_user_signed_up-value";
