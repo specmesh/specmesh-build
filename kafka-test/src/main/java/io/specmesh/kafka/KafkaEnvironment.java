@@ -34,13 +34,6 @@ public interface KafkaEnvironment extends Extension {
 
     /**
      * @return Connection string for connecting to Schema Registry.
-     * @deprecated use {@link #schemaRegistryServer}
-     */
-    @Deprecated
-    String schemeRegistryServer();
-
-    /**
-     * @return Connection string for connecting to Schema Registry.
      */
     String schemaRegistryServer();
 

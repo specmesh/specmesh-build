@@ -66,7 +66,9 @@ public final class SchemaRegistryContainer extends GenericContainer<SchemaRegist
      *
      * @param kafka kafka container
      * @return self.
+     * @deprecated will be removed in future version.
      */
+    @Deprecated
     public SchemaRegistryContainer withKafka(final KafkaContainer kafka) {
         withNetwork(kafka.getNetwork());
         withEnv(
