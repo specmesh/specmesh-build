@@ -23,6 +23,7 @@ import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.json.JsonSchemaProvider;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
 import io.specmesh.kafka.schema.SchemaRegistryContainer;
+import java.io.Closeable;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
@@ -80,7 +81,8 @@ public final class DockerKafkaEnvironment
                 BeforeAllCallback,
                 BeforeEachCallback,
                 AfterEachCallback,
-                AfterAllCallback {
+                AfterAllCallback,
+                Closeable {
 
     /** The port to use when connecting to Kafka from inside the Docker network */
     public static final int KAFKA_DOCKER_NETWORK_PORT = 9092;
@@ -99,7 +101,7 @@ public final class DockerKafkaEnvironment
     private KafkaContainer kafkaBroker;
     private SchemaRegistryContainer schemaRegistry;
     private boolean invokedStatically = false;
-    private final AtomicInteger setUpCount = new AtomicInteger(1);
+    private final AtomicInteger setUpCount = new AtomicInteger(0);
 
     /**
      * @return returns a {@link Builder} instance to allow customisation of the environment.
@@ -128,13 +130,12 @@ public final class DockerKafkaEnvironment
         this.aclBindings = Set.copyOf(requireNonNull(aclBindings, "aclBindings"));
         this.adminUser = requireNonNull(adminUser, "credentials");
         this.explicitNetwork = requireNonNull(explicitNetwork, "explicitNetwork");
-        tearDown();
     }
 
     @Override
     public void beforeAll(final ExtensionContext context) {
         invokedStatically = true;
-        setUp();
+        start();
     }
 
     @Override
@@ -143,7 +144,7 @@ public final class DockerKafkaEnvironment
             return;
         }
 
-        setUp();
+        start();
     }
 
     @Override
@@ -152,12 +153,12 @@ public final class DockerKafkaEnvironment
             return;
         }
 
-        tearDown();
+        close();
     }
 
     @Override
     public void afterAll(final ExtensionContext context) {
-        tearDown();
+        close();
     }
 
     /**
@@ -180,16 +181,6 @@ public final class DockerKafkaEnvironment
                 + kafkaBroker.getNetworkAliases().get(0)
                 + ":"
                 + KAFKA_DOCKER_NETWORK_PORT;
-    }
-
-    /**
-     * @return bootstrap servers for connecting to Schema Registry from outside the Docker network,
-     *     i.e. from test code
-     */
-    @SuppressWarnings("deprecation")
-    @Override
-    public String schemeRegistryServer() {
-        return schemaRegistryServer();
     }
 
     /**
@@ -223,6 +214,18 @@ public final class DockerKafkaEnvironment
         return AdminClient.create(properties);
     }
 
+    @Override
+    public CachedSchemaRegistryClient srClient() {
+        return new CachedSchemaRegistryClient(
+                schemaRegistryServer(),
+                5,
+                List.of(
+                        new ProtobufSchemaProvider(),
+                        new AvroSchemaProvider(),
+                        new JsonSchemaProvider()),
+                Map.of());
+    }
+
     /**
      * @return the Docker network Kafka and SR are running on, allowing additional containers to use
      *     the same network, if needed.
@@ -234,7 +237,8 @@ public final class DockerKafkaEnvironment
         return network;
     }
 
-    private void setUp() {
+    /** Start the contains */
+    public void start() {
         if (setUpCount.incrementAndGet() != 1) {
             return;
         }
@@ -272,7 +276,8 @@ public final class DockerKafkaEnvironment
         installAcls();
     }
 
-    private void tearDown() {
+    @Override
+    public void close() {
         if (setUpCount.decrementAndGet() != 0) {
             return;
         }
@@ -323,6 +328,14 @@ public final class DockerKafkaEnvironment
         return dockerNetworkSchemaRegistryServer();
     }
 
+    public String kafkaLogs() {
+        return kafkaBroker == null ? "Kafka Broker not started" : kafkaBroker.getLogs();
+    }
+
+    public String schemaRegistryLogs() {
+        return schemaRegistry == null ? "Schema Registry not started" : schemaRegistry.getLogs();
+    }
+
     /** Builder of {@link DockerKafkaEnvironment}. */
     public static final class Builder {
 
@@ -338,17 +351,22 @@ public final class DockerKafkaEnvironment
 
         private int startUpAttempts = DEFAULT_CONTAINER_STARTUP_ATTEMPTS;
         private Duration startUpTimeout = DEFAULT_CONTAINER_STARTUP_TIMEOUT;
-        private DockerImageName kafkaDockerImage =
-                DockerImageName.parse(DEFAULT_KAFKA_DOCKER_IMAGE);
-        private final Map<String, String> kafkaEnv = new HashMap<>(DEFAULT_KAFKA_ENV);
-        private Optional<DockerImageName> srImage =
-                Optional.of(DockerImageName.parse(DEFAULT_SCHEMA_REG_IMAGE));
+        private DockerImageName kafkaDockerImage;
+        private final Map<String, String> kafkaEnv = new HashMap<>();
+        private Optional<DockerImageName> srImage;
         private final Map<String, String> srEnv = new HashMap<>();
         private final Map<String, String> userPasswords = new LinkedHashMap<>();
         private boolean enableAcls = false;
         private final Set<AclBinding> aclBindings = new HashSet<>();
         private Optional<Network> explicitNetwork = Optional.empty();
 
+        public Builder() {
+            withKafkaEnv(DEFAULT_KAFKA_ENV)
+                    .withKafkaImage(DEFAULT_KAFKA_DOCKER_IMAGE)
+                    .withSchemaRegistryImage(DEFAULT_SCHEMA_REG_IMAGE);
+        }
+
+        @SuppressWarnings("unused")
         public Builder withNetwork(final Network network) {
             this.explicitNetwork = Optional.of(network);
             return this;
@@ -398,6 +416,7 @@ public final class DockerKafkaEnvironment
          * @param value the environment value.
          * @return self.
          */
+        @SuppressWarnings("UnusedReturnValue")
         public Builder withKafkaEnv(final String key, final String value) {
             return withKafkaEnv(Map.of(key, value));
         }
@@ -429,6 +448,7 @@ public final class DockerKafkaEnvironment
          * @param imageName the Docker image name.
          * @return self.
          */
+        @SuppressWarnings("UnusedReturnValue")
         public Builder withSchemaRegistryImage(final String imageName) {
             this.srImage = Optional.of(DockerImageName.parse(imageName));
             return this;
@@ -441,6 +461,7 @@ public final class DockerKafkaEnvironment
          * @param value the environment value.
          * @return self.
          */
+        @SuppressWarnings("UnusedReturnValue")
         public Builder withSchemaRegistryEnv(final String key, final String value) {
             return withSchemaRegistryEnv(Map.of(key, value));
         }
@@ -567,12 +588,11 @@ public final class DockerKafkaEnvironment
 
             Clients.clientSaslAuthProperties(adminUser.get().userName, adminUser.get().password)
                     .forEach(
-                            (key, value) -> {
-                                withSchemaRegistryEnv(
-                                        "SCHEMA_REGISTRY_KAFKASTORE_"
-                                                + key.toUpperCase().replaceAll("\\.", "_"),
-                                        value.toString());
-                            });
+                            (key, value) ->
+                                    withSchemaRegistryEnv(
+                                            "SCHEMA_REGISTRY_KAFKASTORE_"
+                                                    + key.toUpperCase().replaceAll("\\.", "_"),
+                                            value.toString()));
         }
 
         private String buildJaasConfig(final Credentials adminUser) {
@@ -596,16 +616,5 @@ public final class DockerKafkaEnvironment
             this.userName = requireNonNull(userName, "userName");
             this.password = requireNonNull(password, "password");
         }
-    }
-
-    public CachedSchemaRegistryClient srClient() {
-        return new CachedSchemaRegistryClient(
-                schemaRegistryServer(),
-                5,
-                List.of(
-                        new ProtobufSchemaProvider(),
-                        new AvroSchemaProvider(),
-                        new JsonSchemaProvider()),
-                Map.of());
     }
 }
