@@ -408,7 +408,7 @@ class ClientsFunctionalDemoTest {
 
     private static <K, V> List<Map.Entry<K, V>> entries(
             final Consumer<K, V> consumer, final int expectedCount) {
-        final Instant timeout = Instant.now().plus(Duration.ofSeconds(60)); // Todo: reduce
+        final Instant timeout = Instant.now().plus(Duration.ofSeconds(10));
         final List<Map.Entry<K, V>> entries = new ArrayList<>();
         while (entries.size() < expectedCount && Instant.now().isBefore(timeout)) {
             consumer.poll(Duration.ofMillis(100))
