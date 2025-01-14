@@ -344,7 +344,11 @@ public final class DockerKafkaEnvironment
 
         private static final String DEFAULT_KAFKA_DOCKER_IMAGE = "confluentinc/cp-kafka:7.5.3";
         private static final Map<String, String> DEFAULT_KAFKA_ENV =
-                Map.of("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "false");
+                Map.of(
+                        "KAFKA_AUTO_CREATE_TOPICS_ENABLE",
+                        "false",
+                        "KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS",
+                        "0");
 
         private static final String DEFAULT_SCHEMA_REG_IMAGE =
                 "confluentinc/cp-schema-registry:7.5.3";

@@ -113,8 +113,6 @@ class ClientsFunctionalDemoTest {
                             DIFFERENT_USER,
                             DIFFERENT_USER + "-secret")
                     .withKafkaAcls(aclsForOtherDomain())
-                    .withKafkaEnv("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "false")
-                    .withKafkaEnv("KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS", "0")
                     .build();
 
     private SchemaRegistryClient schemaRegistryClient;
@@ -442,7 +440,7 @@ class ClientsFunctionalDemoTest {
         final Map<String, Object> props =
                 Clients.kstreamsProperties(
                         API_SPEC.id(),
-                        "_private.client-func-demo",
+                        "client-func-demo",
                         KAFKA_ENV.kafkaBootstrapServers(),
                         KAFKA_ENV.schemaRegistryServer(),
                         Serdes.LongSerde.class,
