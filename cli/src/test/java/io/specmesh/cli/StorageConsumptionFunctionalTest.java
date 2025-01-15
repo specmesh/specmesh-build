@@ -250,11 +250,6 @@ class StorageConsumptionFunctionalTest {
         return count;
     }
 
-    // todo: can we get principal / account into this SpecMesh data?  Ideally we use SoecMesh for
-    // this and NOT ccloud.
-    // todo: does CCloud metrics API require use of RBAC? (Which we hate)
-    // Todo: produce and consume data to CCLoud and check out metrics.
-
     private static void shouldDoStorageStats() throws Exception {
         final var command = Storage.builder().build();
         final CommandLine.ParseResult parseResult =

@@ -31,8 +31,8 @@ If you wish to maintain the visibility marker for internal topics, then it is re
 in the Kafka Streams properties, should be set to `${domain.id}._private.${service.name}`. 
 This ensures the ACLs are correctly set for the private internal topics of the service.  
 
-Optionally, the Kafka `client.id` and `group.id` can be set to `${domain.id}.${service.name}`, to remove the `_private`
-component, if required.
+Optionally, the Kafka `client.id` can be set to `${domain.id}.${service.name}`, to remove the `_private` component, if required.
+Unfortunately, `group.id` can not be customised in streams apps, hence the `_private` component is unavoidable. 
 
 Chose store names and repartition node names so that they build the channel and topic names required. 
 

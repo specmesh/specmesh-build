@@ -99,7 +99,7 @@ class ClientsFunctionalDemoTest {
     private static final KafkaApiSpec API_SPEC =
             TestSpecLoader.loadFromClassPath("kafka_test-simple_schema_demo-api.yaml");
 
-    private static final String OWNER_USER = "simple.schema_demo";
+    private static final String OWNER_USER = API_SPEC.id();
     private static final String DIFFERENT_USER = "different-user";
 
     @RegisterExtension
