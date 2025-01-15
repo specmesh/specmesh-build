@@ -17,26 +17,81 @@ For topic's owned by the domain, their full topic name is that used in the spec,
 i.e. `<domain-id>.<channel-name>`.  In this way, all topics owned by the domain and also prefixed by the domain name,
 making it trivial to trace back the topic name to its owning domain. 
 
+### Working with Kafka Streams internal topics
+
+Kafka Streams applications can create internal repartition and changelog topics.
+These internal topics should be defined as channels in the mesh spec.
+
+At the time of writing the names of internal topics are restricted to the following format by Kafka Streams:
+
+* Change log topics: `${application.id"}-${store.name}-changelog`
+* Repartition topics: `${application.id"}-${node.name}-repartition`
+
+If you wish to maintain the visibility marker for internal topics, then it is recommended the `application.id"`, passed
+in the Kafka Streams properties, should be set to `${domain.id}._private.${service.name}`. 
+This ensures the ACLs are correctly set for the private internal topics of the service.  
+
+Optionally, the Kafka `client.id` can be set to `${domain.id}.${service.name}`, to remove the `_private` component, if required.
+Unfortunately, `group.id` can not be customised in streams apps, hence the `_private` component is unavoidable. 
+
+Chose store names and repartition node names so that they build the channel and topic names required. 
+
+#### Changelog example
+
+Given an `application.id` in the form `${domain.id}._private.${service.name}`, for example `acme.user._private.user-service`,
+and given a store name of `store.user`, for example:
+
+```java
+    streamBuilder.addStateStore(
+       Stores.keyValueStoreBuilder(
+           Stores.inMemoryKeyValueStore("store.user"),
+           storeKeySerde,
+           storeValSerde)
+     .withLoggingEnabled(logConfig));
+```
+
+The topology will require the spec to define a channel named `_private.user-service-store.user-changelog`, which will 
+provision a topic named `acme.user._private.user-service-store.user-changelog`.
+
+#### Repartition example
+
+Given an `application.id` in the form `${domain.id}._private.${service.name}`, for example `acme.user._private.user-service`,
+and given a node name of `rekey.by-age`, for example:
+
+```java
+ users.map((k, v) -> new KeyValue<>(v.getAge(), 1), Named.as("select-key"))
+    .groupByKey(
+      Grouped.<Integer, Integer>as("rekey.by-age")
+              .withKeySerde(Serdes.Integer())
+              .withValueSerde(Serdes.Integer()))
+    .count(Named.as("count-by-age"));
+```
+
+The topology will require the spec to define a channel named `_private.client-func-demo-rekey.by-age-repartition`, which will
+provision a topic named `acme.user._private.client-func-demo-rekey.by-age-repartition`.
+
 ## Authorisation
 
-## Group authorisation
+### Resource types
+
+#### Group authorisation
 
 The provisioner will set ACLs to allow the domain to use any consumer group prefixed with the domain id.
 It is recommended that, in most cases, domain services use a consumer group name of `<domain-id>-<service-name>`.
 
-## Transaction id authorisation
+#### Transaction id authorisation
 
 The provisioner will set ACLs to allow the domain to use any transaction id prefixed with the domain id. 
 
-## Topic authorisation
+#### Topic authorisation
 
 The provisioner will set ACLs to enforce the following topic authorisation:
 
-### Public topics:
+#### Public topics:
 
 Only the domain itself can `WRITE` to public topics; Any domain can `READ` from them.
 
-### Protected topics:
+#### Protected topics:
 
 Only the domain itself can `WRITE` to protected topics; Any domain specifically tagged in the spec can `READ` from them.
 
@@ -48,7 +103,7 @@ Access to a protected topic can be granted to another domain by adding a `grant-
       ]
 ```
 
-### Private topics:
+#### Private topics:
 
 Only the domain itself can `WRITE` to private topics; Only the domain itself can `READ` to private topics.
 
@@ -104,7 +159,6 @@ The set of ACLs created from the `provisioner-functional-test-api.yaml`
 =(principal=User:simple.provision_demo, host=*, operation=IDEMPOTENT_WRITE, permissionType=ALLOW)), 
 ]
 ```
-
 
 ### Custom usernames
 

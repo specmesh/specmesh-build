@@ -22,7 +22,7 @@ channels:
         envs:
           - staging
           - prod
-        partitions: 3
+        partitions: 1
         replicas: 1
         configs:
           cleanup.policy: delete
@@ -47,7 +47,7 @@ channels:
         envs:
           - staging
           - prod
-        partitions: 3
+        partitions: 1
         replicas: 1
         configs:
           cleanup.policy: delete
@@ -73,7 +73,7 @@ channels:
         envs:
           - staging
           - prod
-        partitions: 3
+        partitions: 1
         replicas: 1
         configs:
           cleanup.policy: delete
@@ -97,7 +97,7 @@ channels:
         envs:
           - staging
           - prod
-        partitions: 3
+        partitions: 1
         replicas: 1
         configs:
           cleanup.policy: delete
@@ -115,6 +115,54 @@ channels:
         contentType: "application/json"
         payload:
           $ref: "/simple.schema_demo._public.user_info_enriched.proto"
+
+  _private.client-func-demo-rekey.by-age-repartition:
+    bindings:
+      kafka:
+        envs:
+          - staging
+          - prod
+        partitions: 1
+        replicas: 1
+        configs:
+          cleanup.policy: delete
+          retention.ms: 999000
+
+    publish:
+      operationId: onRepartitionByAge
+      message:
+        bindings:
+          kafka:
+            key:
+              type: int
+        schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
+        contentType: "application/octet-stream"
+        payload:
+          type: int
+
+  _private.client-func-demo-store.age-changelog:
+    bindings:
+      kafka:
+        envs:
+          - staging
+          - prod
+        partitions: 1
+        replicas: 1
+        configs:
+          cleanup.policy: delete
+          retention.ms: 999000
+
+    publish:
+      operationId: onStoreByAge
+      message:
+        bindings:
+          kafka:
+            key:
+              type: int
+        schemaFormat: "application/text"
+        payload:
+          type: long
+
 # SUBSCRIBER WILL REQUEST SCHEMA from SR and CodeGen required classes. Header will be used for Id
   london.hammersmith.transport._public.tube:
     subscribe:

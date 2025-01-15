@@ -283,7 +283,7 @@ public final class Clients {
         props.putAll(
                 Map.of(
                         StreamsConfig.APPLICATION_ID_CONFIG,
-                        domainId + "." + serviceId,
+                        domainId + "._private." + serviceId,
                         StreamsConfig.CLIENT_ID_CONFIG,
                         domainId + "." + serviceId + ".client",
                         StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG,
@@ -333,7 +333,7 @@ public final class Clients {
     /**
      * Create a map of consumer properties with sensible defaults.
      *
-     * @param domainId the domain id, used to scope resource names.
+     * @param domainId the domain id of the consumer, used to scope resource names.
      * @param serviceId the name of the service
      * @param bootstrapServers bootstrap servers config
      * @param schemaRegistryUrl url of schema registry
