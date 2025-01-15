@@ -18,14 +18,21 @@ package io.specmesh.kafka;
 
 import static java.util.Objects.requireNonNull;
 
+import com.google.protobuf.MessageLiteOrBuilder;
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientConfig;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
-import io.confluent.kafka.serializers.KafkaAvroSerializerConfig;
+import io.confluent.kafka.serializers.KafkaAvroDeserializer;
+import io.confluent.kafka.serializers.KafkaAvroSerializer;
+import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
+import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
+import io.confluent.kafka.streams.serdes.avro.GenericAvroSerde;
+import io.confluent.kafka.streams.serdes.protobuf.KafkaProtobufSerde;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -33,17 +40,44 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.security.plain.PlainLoginModule;
+import org.apache.kafka.common.serialization.BooleanDeserializer;
+import org.apache.kafka.common.serialization.BooleanSerializer;
+import org.apache.kafka.common.serialization.Deserializer;
+import org.apache.kafka.common.serialization.DoubleDeserializer;
+import org.apache.kafka.common.serialization.DoubleSerializer;
+import org.apache.kafka.common.serialization.FloatDeserializer;
+import org.apache.kafka.common.serialization.FloatSerializer;
+import org.apache.kafka.common.serialization.IntegerDeserializer;
+import org.apache.kafka.common.serialization.IntegerSerializer;
+import org.apache.kafka.common.serialization.LongDeserializer;
+import org.apache.kafka.common.serialization.LongSerializer;
+import org.apache.kafka.common.serialization.Serde;
+import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.serialization.Serializer;
+import org.apache.kafka.common.serialization.ShortDeserializer;
+import org.apache.kafka.common.serialization.ShortSerializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.common.serialization.UUIDDeserializer;
+import org.apache.kafka.common.serialization.UUIDSerializer;
+import org.apache.kafka.common.serialization.VoidDeserializer;
+import org.apache.kafka.common.serialization.VoidSerializer;
 import org.apache.kafka.streams.StreamsConfig;
 
 /** Factory for Kafka clients */
+@SuppressWarnings("RedundantCast")
 public final class Clients {
 
     public static final String SASL_MECHANISM = "sasl.mechanism";
@@ -53,6 +87,105 @@ public final class Clients {
     public static final String PLAIN = "PLAIN";
     public static final String SASL_PLAINTEXT = "SASL_PLAINTEXT";
     public static final int TIMEOUT = 30;
+
+    private static final Map<Class<?>, SerdeTypes<?>> STD_SERDE =
+            Map.ofEntries(
+                    Map.entry(
+                            Long.class,
+                            typeMetaData(
+                                    LongSerializer.class,
+                                    LongDeserializer.class,
+                                    Serdes.LongSerde.class)),
+                    Map.entry(
+                            long.class,
+                            typeMetaData(
+                                    LongSerializer.class,
+                                    LongDeserializer.class,
+                                    Serdes.LongSerde.class)),
+                    Map.entry(
+                            Integer.class,
+                            typeMetaData(
+                                    IntegerSerializer.class,
+                                    IntegerDeserializer.class,
+                                    Serdes.IntegerSerde.class)),
+                    Map.entry(
+                            int.class,
+                            typeMetaData(
+                                    IntegerSerializer.class,
+                                    IntegerDeserializer.class,
+                                    Serdes.IntegerSerde.class)),
+                    Map.entry(
+                            Short.class,
+                            typeMetaData(
+                                    ShortSerializer.class,
+                                    ShortDeserializer.class,
+                                    Serdes.ShortSerde.class)),
+                    Map.entry(
+                            short.class,
+                            typeMetaData(
+                                    ShortSerializer.class,
+                                    ShortDeserializer.class,
+                                    Serdes.ShortSerde.class)),
+                    Map.entry(
+                            Float.class,
+                            typeMetaData(
+                                    FloatSerializer.class,
+                                    FloatDeserializer.class,
+                                    Serdes.FloatSerde.class)),
+                    Map.entry(
+                            float.class,
+                            typeMetaData(
+                                    FloatSerializer.class,
+                                    FloatDeserializer.class,
+                                    Serdes.FloatSerde.class)),
+                    Map.entry(
+                            Double.class,
+                            typeMetaData(
+                                    DoubleSerializer.class,
+                                    DoubleDeserializer.class,
+                                    Serdes.DoubleSerde.class)),
+                    Map.entry(
+                            double.class,
+                            typeMetaData(
+                                    DoubleSerializer.class,
+                                    DoubleDeserializer.class,
+                                    Serdes.DoubleSerde.class)),
+                    Map.entry(
+                            Boolean.class,
+                            typeMetaData(
+                                    BooleanSerializer.class,
+                                    BooleanDeserializer.class,
+                                    Serdes.BooleanSerde.class)),
+                    Map.entry(
+                            boolean.class,
+                            typeMetaData(
+                                    BooleanSerializer.class,
+                                    BooleanDeserializer.class,
+                                    Serdes.BooleanSerde.class)),
+                    Map.entry(
+                            String.class,
+                            typeMetaData(
+                                    StringSerializer.class,
+                                    StringDeserializer.class,
+                                    Serdes.StringSerde.class)),
+                    Map.entry(
+                            UUID.class,
+                            typeMetaData(
+                                    UUIDSerializer.class,
+                                    UUIDDeserializer.class,
+                                    Serdes.UUIDSerde.class)),
+                    Map.entry(
+                            void.class,
+                            typeMetaData(
+                                    VoidSerializer.class,
+                                    VoidDeserializer.class,
+                                    Serdes.VoidSerde.class)),
+                    Map.entry(
+                            Void.class,
+                            typeMetaData(
+                                    VoidSerializer.class,
+                                    VoidDeserializer.class,
+                                    Serdes.VoidSerde.class)));
 
     private Clients() {}
 
@@ -147,7 +280,7 @@ public final class Clients {
      * @return true if principal was set
      */
     private static boolean isPrincipalSpecified(final String principal) {
-        return principal != null && !principal.isEmpty();
+        return principal != null && !principal.isBlank();
     }
 
     private static String buildJaasConfig(final String userName, final String password) {
@@ -185,6 +318,478 @@ public final class Clients {
                 requireNonNull(schemaRegistryUrl, "schemaRegistryUrl"), 5, properties);
     }
 
+    public static ClientBuilder builder(
+            final String domainId,
+            final String serviceId,
+            final String bootstrapServers,
+            final String schemaRegistryUrl) {
+        return new ClientBuilder(domainId, serviceId, bootstrapServers, schemaRegistryUrl);
+    }
+
+    /**
+     * Type safe container of client properties.
+     *
+     * <p>The type parameters match the type of the key and value serde types used when constructing
+     * the properties.
+     *
+     * @param <K> the type of the key
+     * @param <V> the type of the value
+     */
+    @SuppressWarnings("unused")
+    public abstract static class ClientProperties<K, V> {
+
+        private final Map<String, ?> properties;
+
+        private ClientProperties(final Map<String, ?> properties) {
+            this.properties = Map.copyOf(requireNonNull(properties, "properties"));
+        }
+
+        public Map<String, Object> asMap() {
+            return Map.copyOf(properties);
+        }
+
+        public Properties asProperties() {
+            final Properties props = new Properties();
+            props.putAll(properties);
+            return props;
+        }
+    }
+
+    /**
+     * Type-safe producer config
+     *
+     * <p>The type parameters match the type of the key and value serializer types used when
+     * constructing the properties.
+     *
+     * @param <K> the type of the key
+     * @param <V> the type of the value
+     */
+    public static final class ProducerProperties<K, V> extends ClientProperties<K, V> {
+
+        private ProducerProperties(final Map<String, ?> properties) {
+            super(properties);
+        }
+    }
+
+    /**
+     * Type-safe consumer config
+     *
+     * <p>The type parameters match the type of the key and value deserializer types used when
+     * constructing the properties.
+     *
+     * @param <K> the type of the key
+     * @param <V> the type of the value
+     */
+    public static final class ConsumerProperties<K, V> extends ClientProperties<K, V> {
+
+        private ConsumerProperties(final Map<String, ?> properties) {
+            super(properties);
+        }
+    }
+
+    /**
+     * Type-safe kafka streams config
+     *
+     * <p>The type parameters match the type of the key and value serde types used when constructing
+     * the properties.
+     *
+     * @param <K> the type of the key
+     * @param <V> the type of the value
+     */
+    public static final class KStreamsProperties<K, V> extends ClientProperties<K, V> {
+
+        private KStreamsProperties(final Map<String, ?> properties) {
+            super(properties);
+        }
+    }
+
+    public static final class ClientBuilder {
+
+        private static final Map<String, ?> BASE_PROPS =
+                Map.of(
+                        // schema-reflect MUST be true when writing Java objects (otherwise you send
+                        // a datum-container instead of a Pojo)
+                        AbstractKafkaSchemaSerDeConfig.SCHEMA_REFLECTION_CONFIG, true);
+
+        private final String domainId;
+        private final String serviceId;
+        private final Map<String, ?> commonProps;
+        private final Map<String, Object> overrides;
+
+        private ClientBuilder(
+                final String domainId,
+                final String serviceId,
+                final String bootstrapServers,
+                final String schemaRegistryUrl) {
+            this.domainId = requireNonNull(domainId, "domainId");
+            this.serviceId = requireNonNull(serviceId, "serviceId");
+            this.commonProps =
+                    Map.of(
+                            CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG,
+                            bootstrapServers,
+                            AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG,
+                            schemaRegistryUrl);
+            this.overrides = new HashMap<>();
+        }
+
+        public ClientBuilder(
+                final String domainId,
+                final String serviceId,
+                final Map<String, ?> commonProps,
+                final Map<String, Object> overrides) {
+            this.domainId = requireNonNull(domainId, "domainId");
+            this.serviceId = requireNonNull(serviceId, "serviceId");
+            this.commonProps = Map.copyOf(requireNonNull(commonProps, "commonProps"));
+            this.overrides = new HashMap<>(overrides);
+        }
+
+        public ClientBuilder withProps(final Map<String, ?> overrides) {
+            final Map<String, Object> newOverrides = new HashMap<>(this.overrides);
+            newOverrides.putAll(overrides);
+            return new ClientBuilder(domainId, serviceId, commonProps, newOverrides);
+        }
+
+        public ClientBuilder withProp(final String key, final Object value) {
+            return withProps(Map.of(key, value));
+        }
+
+        public ProducerBuilder<Void, Void> producer() {
+            return new ProducerBuilder<>(this);
+        }
+
+        public ConsumerBuilder<Void, Void> consumer() {
+            return new ConsumerBuilder<>(this);
+        }
+
+        public <V, K> KStreamsBuilder<K, V> kstreams() {
+            return new KStreamsBuilder<>(this);
+        }
+
+        private String clientIdentifier(final String lastPart) {
+            return domainId + "." + serviceId + "." + lastPart;
+        }
+
+        private Map<String, ?> overrides(final String... nonOverridableKeys) {
+            final HashMap<String, Object> allowed = new HashMap<>(overrides);
+            for (final String nonOverridableKey : nonOverridableKeys) {
+                allowed.keySet().remove(nonOverridableKey);
+            }
+            return allowed;
+        }
+
+        private Map<String, Object> baseProps() {
+            final Map<String, Object> props = new HashMap<>(BASE_PROPS);
+            props.putAll(commonProps);
+            return props;
+        }
+    }
+
+    @SuppressWarnings({"unchecked", "OptionalUsedAsFieldOrParameterType"})
+    public static final class ProducerBuilder<K, V> {
+
+        private static final Map<String, ?> DEFAULT_PRODUCER_PROPS =
+                Map.of(
+                        // Disable auto-reg to allow schemas to be published by controlled processes
+                        AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS,
+                        false,
+                        AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION,
+                        true);
+
+        private final ClientBuilder clientBuilder;
+        private Optional<Class<? extends Serializer<K>>> keySerializer = Optional.empty();
+        private Optional<Class<? extends Serializer<V>>> valSerializer = Optional.empty();
+        private boolean acksAll = true;
+
+        private ProducerBuilder(final ClientBuilder clientBuilder) {
+            this.clientBuilder = requireNonNull(clientBuilder, "clientBuilder");
+        }
+
+        public <T> ProducerBuilder<T, V> withKeyType(final Class<T> type) {
+            return withKeySerializerType(serializerFor(type));
+        }
+
+        public <T> ProducerBuilder<T, V> withKeySerializerType(
+                final Class<? extends Serializer<T>> type) {
+            final ProducerBuilder<T, V> adjusted = (ProducerBuilder<T, V>) this;
+            adjusted.keySerializer = Optional.of(type);
+            return (ProducerBuilder<T, V>) this;
+        }
+
+        public <T> ProducerBuilder<K, T> withValueType(final Class<T> type) {
+            return withValueSerializerType(serializerFor(type));
+        }
+
+        public <T> ProducerBuilder<K, T> withValueSerializerType(
+                final Class<? extends Serializer<T>> type) {
+            final ProducerBuilder<K, T> adjusted = (ProducerBuilder<K, T>) this;
+            adjusted.valSerializer = Optional.of(type);
+            return (ProducerBuilder<K, T>) this;
+        }
+
+        public ProducerBuilder<K, V> withAcks(final boolean acksAll) {
+            this.acksAll = acksAll;
+            return this;
+        }
+
+        public ProducerProperties<K, V> buildProperties() {
+            final Class<? extends Serializer<K>> keySer =
+                    keySerializer.orElseThrow(
+                            () ->
+                                    new ClientsException(
+                                            "key serializer not set. Call either withKeyType or"
+                                                    + " withKeySerializerType."));
+            final Class<? extends Serializer<V>> valSer =
+                    valSerializer.orElseThrow(
+                            () ->
+                                    new ClientsException(
+                                            "value serializer not set. Call either withValueType or"
+                                                    + " withValueSerializerType."));
+
+            final Map<String, Object> props = clientBuilder.baseProps();
+            props.putAll(DEFAULT_PRODUCER_PROPS);
+            props.putAll(
+                    Map.of(
+                            CommonClientConfigs.CLIENT_ID_CONFIG,
+                            clientBuilder.clientIdentifier("producer"),
+                            ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                            keySer,
+                            ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                            valSer,
+                            ProducerConfig.ACKS_CONFIG,
+                            acksAll ? "all" : "1"));
+            props.putAll(
+                    clientBuilder.overrides(
+                            ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                            ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG));
+            return new ProducerProperties<>(props);
+        }
+
+        public Producer<K, V> build() {
+            return producer(buildProperties());
+        }
+
+        @SuppressWarnings("unchecked")
+        private static <T> Class<? extends Serializer<T>> serializerFor(final Class<T> type) {
+            if (MessageLiteOrBuilder.class.isAssignableFrom(type)) {
+                return (Class<? extends Serializer<T>>) (Class<?>) KafkaProtobufSerializer.class;
+            }
+
+            if (GenericRecord.class.isAssignableFrom(type)) {
+                return (Class<? extends Serializer<T>>) (Class<?>) KafkaAvroSerializer.class;
+            }
+
+            return stdSerdeType(type).serializer;
+        }
+    }
+
+    @SuppressWarnings({"unchecked", "OptionalUsedAsFieldOrParameterType"})
+    public static final class ConsumerBuilder<K, V> {
+
+        private final ClientBuilder clientBuilder;
+        private Optional<Class<? extends Deserializer<K>>> keyDeserializer = Optional.empty();
+        private Optional<Class<? extends Deserializer<V>>> valDeserializer = Optional.empty();
+        private boolean autoOffsetResetEarliest = true;
+
+        private ConsumerBuilder(final ClientBuilder clientBuilder) {
+            this.clientBuilder = requireNonNull(clientBuilder, "clientBuilder");
+        }
+
+        public <T> ConsumerBuilder<T, V> withKeyType(final Class<T> type) {
+            return withKeyDeserializerType(deserializerFor(type));
+        }
+
+        public <T> ConsumerBuilder<T, V> withKeyDeserializerType(
+                final Class<? extends Deserializer<T>> type) {
+            final ConsumerBuilder<T, V> adjusted = (ConsumerBuilder<T, V>) this;
+            adjusted.keyDeserializer = Optional.of(type);
+            return (ConsumerBuilder<T, V>) this;
+        }
+
+        public <T> ConsumerBuilder<K, T> withValueType(final Class<T> type) {
+            return withValueDeserializerType(deserializerFor(type));
+        }
+
+        public <T> ConsumerBuilder<K, T> withValueDeserializerType(
+                final Class<? extends Deserializer<T>> type) {
+            final ConsumerBuilder<K, T> adjusted = (ConsumerBuilder<K, T>) this;
+            adjusted.valDeserializer = Optional.of(type);
+            return (ConsumerBuilder<K, T>) this;
+        }
+
+        public ConsumerBuilder<K, V> withAutoOffsetReset(final boolean earliest) {
+            this.autoOffsetResetEarliest = earliest;
+            return this;
+        }
+
+        public ConsumerProperties<K, V> buildProperties() {
+            final Class<? extends Deserializer<K>> keyDeser =
+                    keyDeserializer.orElseThrow(
+                            () ->
+                                    new ClientsException(
+                                            "key deserializer not set. Call either withKeyType or"
+                                                    + " withKeyDeserializerType."));
+            final Class<? extends Deserializer<V>> valDeser =
+                    valDeserializer.orElseThrow(
+                            () ->
+                                    new ClientsException(
+                                            "value deserializer not set. Call either withValueType"
+                                                    + " or withValueDeserializerType."));
+
+            final Map<String, Object> props = clientBuilder.baseProps();
+
+            props.putAll(
+                    Map.of(
+                            ConsumerConfig.CLIENT_ID_CONFIG,
+                            clientBuilder.clientIdentifier("consumer"),
+                            ConsumerConfig.GROUP_ID_CONFIG,
+                            clientBuilder.clientIdentifier("consumer-group"),
+                            ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
+                            autoOffsetResetEarliest ? "earliest" : "latest",
+                            ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                            keyDeser,
+                            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                            valDeser));
+            props.putAll(
+                    clientBuilder.overrides(
+                            ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG));
+            return new ConsumerProperties<>(props);
+        }
+
+        public Consumer<K, V> build() {
+            return consumer(buildProperties());
+        }
+
+        @SuppressWarnings("unchecked")
+        private static <T> Class<? extends Deserializer<T>> deserializerFor(final Class<T> type) {
+            if (MessageLiteOrBuilder.class.isAssignableFrom(type)) {
+                return (Class<? extends Deserializer<T>>)
+                        (Class<?>) KafkaProtobufDeserializer.class;
+            }
+
+            if (GenericRecord.class.isAssignableFrom(type)) {
+                return (Class<? extends Deserializer<T>>) (Class<?>) KafkaAvroDeserializer.class;
+            }
+
+            return stdSerdeType(type).deserializer;
+        }
+    }
+
+    @SuppressWarnings({"unchecked", "OptionalUsedAsFieldOrParameterType"})
+    public static final class KStreamsBuilder<K, V> {
+
+        private static final Map<String, ?> DEFAULT_STREAM_PROPS = Map.of();
+
+        private final ClientBuilder clientBuilder;
+        private Optional<Class<? extends Serde<K>>> keySerde = Optional.empty();
+        private Optional<Class<? extends Serde<V>>> valSerde = Optional.empty();
+        private boolean acksAll = true;
+
+        private KStreamsBuilder(final ClientBuilder clientBuilder) {
+            this.clientBuilder = requireNonNull(clientBuilder, "clientBuilder");
+        }
+
+        public <T> KStreamsBuilder<T, V> withKeyType(final Class<T> type) {
+            return withKeySerdeType(serdeFor(type));
+        }
+
+        public <T> KStreamsBuilder<T, V> withKeySerdeType(final Class<? extends Serde<T>> type) {
+            final KStreamsBuilder<T, V> adjusted = (KStreamsBuilder<T, V>) this;
+            adjusted.keySerde = Optional.of(type);
+            return (KStreamsBuilder<T, V>) this;
+        }
+
+        public <T> KStreamsBuilder<K, T> withValueType(final Class<T> type) {
+            return withValueSerdeType(serdeFor(type));
+        }
+
+        public <T> KStreamsBuilder<K, T> withValueSerdeType(final Class<? extends Serde<T>> type) {
+            final KStreamsBuilder<K, T> adjusted = (KStreamsBuilder<K, T>) this;
+            adjusted.valSerde = Optional.of(type);
+            return (KStreamsBuilder<K, T>) this;
+        }
+
+        public KStreamsBuilder<K, V> withAcks(final boolean acksAll) {
+            this.acksAll = acksAll;
+            return this;
+        }
+
+        public KStreamsProperties<K, V> buildProperties() {
+            final Class<? extends Serde<K>> keySerdeType =
+                    keySerde.orElseThrow(
+                            () ->
+                                    new ClientsException(
+                                            "key serde not set. Call either withKeyType or"
+                                                    + " withKeySerdeType."));
+            final Class<? extends Serde<V>> valSerdeType =
+                    valSerde.orElseThrow(
+                            () ->
+                                    new ClientsException(
+                                            "value serde not set. Call either withSerdeType"
+                                                    + " or withValueSerdeType."));
+
+            final Map<String, Object> props = clientBuilder.baseProps();
+            props.putAll(DEFAULT_STREAM_PROPS);
+            props.putAll(ProducerBuilder.DEFAULT_PRODUCER_PROPS);
+            props.putAll(
+                    Map.of(
+                            StreamsConfig.APPLICATION_ID_CONFIG,
+                            clientBuilder.domainId + "._private." + clientBuilder.serviceId,
+                            StreamsConfig.CLIENT_ID_CONFIG,
+                            clientBuilder.clientIdentifier("client"),
+                            StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG,
+                            keySerdeType,
+                            StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG,
+                            valSerdeType,
+                            StreamsConfig.COMMIT_INTERVAL_MS_CONFIG,
+                            Duration.ofSeconds(10).toMillis(),
+                            ProducerConfig.ACKS_CONFIG,
+                            acksAll ? "all" : "1"));
+            props.putAll(
+                    clientBuilder.overrides(
+                            StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG,
+                            StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG));
+            return new KStreamsProperties<>(props);
+        }
+
+        @SuppressWarnings("unchecked")
+        private static <T> Class<? extends Serde<T>> serdeFor(final Class<T> type) {
+            if (MessageLiteOrBuilder.class.isAssignableFrom(type)) {
+                return (Class<? extends Serde<T>>) (Class<?>) KafkaProtobufSerde.class;
+            }
+
+            if (GenericRecord.class.isAssignableFrom(type)) {
+                return (Class<? extends Serde<T>>) (Class<?>) GenericAvroSerde.class;
+            }
+
+            return stdSerdeType(type).serde;
+        }
+    }
+
+    /**
+     * Create a Kafka producer.
+     *
+     * @param properties the type-safe properties to create it from
+     * @return the producer
+     * @param <K> the type of the record key
+     * @param <V> the type of the record value
+     */
+    public static <K, V> KafkaProducer<K, V> producer(final ProducerProperties<K, V> properties) {
+        return new KafkaProducer<>(properties.asMap());
+    }
+
+    /**
+     * Create a Kafka consumer.
+     *
+     * @param properties the type-safe properties to create it from
+     * @return the consumer
+     * @param <K> the type of the record key
+     * @param <V> the type of the record value
+     */
+    public static <K, V> KafkaConsumer<K, V> consumer(final ConsumerProperties<K, V> properties) {
+        return new KafkaConsumer<>(properties.asMap());
+    }
+
     /**
      * Create a Kafka producer
      *
@@ -194,7 +799,10 @@ public final class Clients {
      * @param <K> the type of the key
      * @param <V> the type of the value
      * @return the producer
+     * @deprecated use the type-safe {@link ClientBuilder#producer()} or {@link
+     *     #producer(ProducerProperties)}.
      */
+    @Deprecated(forRemoval = true, since = "0.15.1")
     public static <K, V> KafkaProducer<K, V> producer(
             final Class<K> keyClass,
             final Class<V> valueClass,
@@ -214,9 +822,12 @@ public final class Clients {
      * @param acksAll require acks from all replicas?
      * @param additionalProperties additional props
      * @return props
+     * @deprecated use the type-safe {@link ClientBuilder#producer()} or {@link
+     *     #producer(ProducerProperties)}.
      */
     @SuppressWarnings("checkstyle:ParameterNumber")
     @SafeVarargs
+    @Deprecated(forRemoval = true, since = "0.15.1")
     public static Map<String, Object> producerProperties(
             final String domainId,
             final String serviceId,
@@ -226,31 +837,24 @@ public final class Clients {
             final Class<?> valueSerializerClass,
             final boolean acksAll,
             final Map<String, Object>... additionalProperties) {
-        final Map<String, Object> props = clientProperties(bootstrapServers);
-        props.putAll(
-                Map.of(
-                        AdminClientConfig.CLIENT_ID_CONFIG,
-                        domainId + "." + serviceId + ".producer",
-                        ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
-                        keySerializerClass.getCanonicalName(),
-                        ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-                        valueSerializerClass.getCanonicalName(),
-                        ProducerConfig.ACKS_CONFIG,
-                        acksAll ? "all" : "1",
-                        AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG,
-                        schemaRegistryUrl,
-                        // AUTO-REG should be false to allow schemas to be published by controlled
-                        // processes
-                        AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS,
-                        "false",
-                        // schema-reflect MUST be true when writing Java objects (otherwise you send
-                        // a
-                        // datum-container instead of a Pojo)
-                        KafkaAvroSerializerConfig.SCHEMA_REFLECTION_CONFIG,
-                        "true",
-                        KafkaAvroSerializerConfig.USE_LATEST_VERSION,
-                        "true"));
-        addAdditional(props, additionalProperties);
+
+        ClientBuilder builder =
+                Clients.builder(domainId, serviceId, bootstrapServers, schemaRegistryUrl);
+
+        for (final Map<String, Object> additional : additionalProperties) {
+            builder = builder.withProps(additional);
+        }
+
+        final ProducerProperties<Void, Void> producerProps =
+                builder.producer()
+                        .withKeyType(Void.class)
+                        .withValueType(Void.class)
+                        .withAcks(acksAll)
+                        .buildProperties();
+
+        final Map<String, Object> props = new HashMap<>(producerProps.asMap());
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySerializerClass);
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valueSerializerClass);
         return props;
     }
 
@@ -266,9 +870,11 @@ public final class Clients {
      * @param acksAll require acks from all replicas?
      * @param additionalProperties additional properties
      * @return the streams properties.
+     * @deprecated use the type-safe {@link ClientBuilder#kstreams()}.
      */
     @SuppressWarnings("checkstyle:ParameterNumber")
     @SafeVarargs
+    @Deprecated(forRemoval = true, since = "0.15.1")
     public static Map<String, Object> kstreamsProperties(
             final String domainId,
             final String serviceId,
@@ -279,37 +885,23 @@ public final class Clients {
             final boolean acksAll,
             final Map<String, Object>... additionalProperties) {
 
-        final Map<String, Object> props = clientProperties(bootstrapServers);
-        props.putAll(
-                Map.of(
-                        StreamsConfig.APPLICATION_ID_CONFIG,
-                        domainId + "._private." + serviceId,
-                        StreamsConfig.CLIENT_ID_CONFIG,
-                        domainId + "." + serviceId + ".client",
-                        StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG,
-                        keySerdeClass.getName(),
-                        StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG,
-                        valueSerdeClass.getName(),
-                        // Records should be flushed every 10 seconds. This is less than the default
-                        // in order to keep this example interactive.
-                        StreamsConfig.COMMIT_INTERVAL_MS_CONFIG,
-                        10 * 1000,
-                        ProducerConfig.ACKS_CONFIG,
-                        acksAll ? "all" : "1",
-                        AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG,
-                        schemaRegistryUrl,
-                        // AUTO-REG should be false to allow schemas to be published by controlled
-                        // processes
-                        AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS,
-                        "false",
-                        // schema-reflect MUST be true when writing Java objects
-                        // (otherwise you send a datum-container (avro) or dynamic record (proto)
-                        // instead of a Pojo)
-                        KafkaAvroSerializerConfig.SCHEMA_REFLECTION_CONFIG,
-                        "true",
-                        KafkaAvroSerializerConfig.USE_LATEST_VERSION,
-                        "true"));
-        addAdditional(props, additionalProperties);
+        ClientBuilder builder =
+                Clients.builder(domainId, serviceId, bootstrapServers, schemaRegistryUrl);
+
+        for (final Map<String, Object> additional : additionalProperties) {
+            builder = builder.withProps(additional);
+        }
+
+        final KStreamsProperties<Void, Void> kstreamProps =
+                builder.kstreams()
+                        .withKeyType(Void.class)
+                        .withValueType(Void.class)
+                        .withAcks(acksAll)
+                        .buildProperties();
+
+        final Map<String, Object> props = new HashMap<>(kstreamProps.asMap());
+        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, keySerdeClass);
+        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, valueSerdeClass);
         return props;
     }
 
@@ -321,8 +913,11 @@ public final class Clients {
      * @param consumerProperties the properties
      * @param <K> the type of the key
      * @param <V> the type of the value
-     * @return the producer
+     * @return the consumer
+     * @deprecated use the type-safe {@link ClientBuilder#consumer()} or {@link
+     *     #consumer(ConsumerProperties)}.
      */
+    @Deprecated(forRemoval = true, since = "0.15.1")
     public static <K, V> KafkaConsumer<K, V> consumer(
             final Class<K> keyClass,
             final Class<V> valueClass,
@@ -342,7 +937,9 @@ public final class Clients {
      * @param autoOffsetResetEarliest reset to earliest offset if no stored offsets?
      * @param additionalProperties additional properties
      * @return props
+     * @deprecated @deprecated use the type-safe {@link ClientBuilder#consumer()}.
      */
+    @Deprecated(forRemoval = true, since = "0.15.1")
     @SuppressWarnings("checkstyle:ParameterNumber")
     @SafeVarargs
     public static Map<String, Object> consumerProperties(
@@ -354,42 +951,65 @@ public final class Clients {
             final Class<?> valueDeserializerClass,
             final boolean autoOffsetResetEarliest,
             final Map<String, Object>... additionalProperties) {
-        final Map<String, Object> props = clientProperties(bootstrapServers);
-        props.putAll(
-                Map.of(
-                        ConsumerConfig.CLIENT_ID_CONFIG,
-                        domainId + "." + serviceId + ".consumer",
-                        ConsumerConfig.GROUP_ID_CONFIG,
-                        domainId + "." + serviceId + ".consumer-group",
-                        ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
-                        autoOffsetResetEarliest ? "earliest" : "latest",
-                        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
-                        keyDeserializerClass.getCanonicalName(),
-                        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
-                        valueDeserializerClass.getCanonicalName(),
-                        AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG,
-                        schemaRegistryUrl,
-                        AbstractKafkaSchemaSerDeConfig.SCHEMA_REFLECTION_CONFIG,
-                        "true"));
-        addAdditional(props, additionalProperties);
+
+        ClientBuilder builder =
+                Clients.builder(domainId, serviceId, bootstrapServers, schemaRegistryUrl);
+
+        for (final Map<String, Object> additional : additionalProperties) {
+            builder = builder.withProps(additional);
+        }
+
+        final ConsumerProperties<Void, Void> consumerProps =
+                builder.consumer()
+                        .withKeyType(Void.class)
+                        .withValueType(Void.class)
+                        .withAutoOffsetReset(autoOffsetResetEarliest)
+                        .buildProperties();
+
+        final Map<String, Object> props = new HashMap<>(consumerProps.asMap());
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, keyDeserializerClass);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, valueDeserializerClass);
         return props;
     }
 
-    private static Map<String, Object> clientProperties(final String bootstrapServers) {
-        final Map<String, Object> basicProps = new HashMap<>();
-        basicProps.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        return basicProps;
+    @SuppressWarnings("unchecked")
+    private static <T> SerdeTypes<T> stdSerdeType(final Class<T> type) {
+        final SerdeTypes<T> found = (SerdeTypes<T>) STD_SERDE.get(type);
+        if (found != null) {
+            return found;
+        }
+
+        throw new ClientsException("Could not determine serde for type: " + type.getName());
     }
 
-    @SafeVarargs
-    private static void addAdditional(
-            final Map<String, Object> props, final Map<String, Object>... additionalProperties) {
-        for (final Map<String, Object> additional : additionalProperties) {
-            props.putAll(additional);
+    private static <T> SerdeTypes<T> typeMetaData(
+            final Class<? extends Serializer<T>> serializer,
+            final Class<? extends Deserializer<T>> deserializer,
+            final Class<? extends Serde<T>> serde) {
+        return new SerdeTypes<>(serializer, deserializer, serde);
+    }
+
+    private static final class SerdeTypes<T> {
+
+        private final Class<? extends Serializer<T>> serializer;
+        private final Class<? extends Deserializer<T>> deserializer;
+        private final Class<? extends Serde<T>> serde;
+
+        SerdeTypes(
+                final Class<? extends Serializer<T>> serializer,
+                final Class<? extends Deserializer<T>> deserializer,
+                final Class<? extends Serde<T>> serde) {
+            this.serializer = requireNonNull(serializer, "serializer");
+            this.deserializer = requireNonNull(deserializer, "deserializer");
+            this.serde = requireNonNull(serde, "serde");
         }
     }
 
     private static class ClientsException extends RuntimeException {
+        ClientsException(final String message) {
+            super(message);
+        }
+
         ClientsException(final String message, final Exception cause) {
             super(message, cause);
         }

@@ -17,7 +17,6 @@
 package io.specmesh.kafka;
 
 import static io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig.VALUE_SUBJECT_NAME_STRATEGY;
-import static io.specmesh.kafka.Clients.producerProperties;
 import static java.util.stream.Collectors.toList;
 import static org.apache.kafka.common.acl.AclOperation.ALL;
 import static org.apache.kafka.common.acl.AclPermissionType.ALLOW;
@@ -36,13 +35,13 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
-import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializerConfig;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
 import io.confluent.kafka.serializers.subject.RecordNameStrategy;
 import io.confluent.kafka.serializers.subject.TopicRecordNameStrategy;
 import io.confluent.kafka.serializers.subject.strategy.SubjectNameStrategy;
 import io.confluent.kafka.streams.serdes.protobuf.KafkaProtobufSerde;
+import io.specmesh.kafka.Clients.KStreamsProperties;
 import io.specmesh.kafka.provision.Provisioner;
 import io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfo.UserInfo;
 import io.specmesh.kafka.schema.SimpleSchemaDemoPublicUserInfoEnriched.UserInfoEnriched;
@@ -56,10 +55,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import org.apache.commons.collections.MapUtils;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -67,10 +64,10 @@ import org.apache.kafka.common.acl.AccessControlEntry;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.errors.TopicAuthorizationException;
 import org.apache.kafka.common.resource.ResourcePattern;
-import org.apache.kafka.common.serialization.IntegerDeserializer;
-import org.apache.kafka.common.serialization.LongDeserializer;
-import org.apache.kafka.common.serialization.LongSerializer;
+import org.apache.kafka.common.serialization.Deserializer;
+import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -292,110 +289,128 @@ class ClientsFunctionalDemoTest {
         }
     }
 
-    @SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT")
     private static <K, V> Consumer<K, V> consumer(
             final Class<K> keyClass,
-            final Class<V> valueClass,
             final String topicName,
-            final Class<?> valueDeserializer,
+            final Class<? extends Deserializer<V>> valueDeserializer,
             final String userName,
             final Map<String, Object> additionalProps) {
 
-        final Class<?> keyDeserializer;
-        if (keyClass.equals(Long.class)) {
-            keyDeserializer = LongDeserializer.class;
-        } else if (keyClass.equals(Integer.class)) {
-            keyDeserializer = IntegerDeserializer.class;
-        } else {
-            throw new AssertionError("Unexpected Key type used in test: " + keyClass);
-        }
+        final Consumer<K, V> consumer =
+                Clients.builder(
+                                API_SPEC.id(),
+                                UUID.randomUUID().toString(),
+                                KAFKA_ENV.kafkaBootstrapServers(),
+                                KAFKA_ENV.schemaRegistryServer())
+                        .withProps(additionalProps)
+                        .withProps(Clients.clientSaslAuthProperties(userName, userName + "-secret"))
+                        .withProp(
+                                CommonClientConfigs.GROUP_ID_CONFIG,
+                                userName + "-" + UUID.randomUUID())
+                        .consumer()
+                        .withKeyType(keyClass)
+                        .withValueDeserializerType(valueDeserializer)
+                        .withAutoOffsetReset(false)
+                        .build();
 
-        final Map<String, Object> props =
-                Clients.consumerProperties(
-                        API_SPEC.id(),
-                        UUID.randomUUID().toString(),
-                        KAFKA_ENV.kafkaBootstrapServers(),
-                        KAFKA_ENV.schemaRegistryServer(),
-                        keyDeserializer,
-                        valueDeserializer,
-                        false,
-                        additionalProps);
-
-        props.putAll(Clients.clientSaslAuthProperties(userName, userName + "-secret"));
-        props.put(CommonClientConfigs.GROUP_ID_CONFIG, userName + "-" + UUID.randomUUID());
-
-        final KafkaConsumer<K, V> consumer = Clients.consumer(keyClass, valueClass, props);
         consumer.subscribe(List.of(topicName));
         consumer.poll(Duration.ofMillis(250));
         return consumer;
     }
 
+    @SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT")
+    private static <K> Clients.ConsumerBuilder<K, Void> consumerBuilder(
+            final Class<K> keyClass, final String userName, final Map<String, ?> additionalProps) {
+
+        return Clients.builder(
+                        API_SPEC.id(),
+                        UUID.randomUUID().toString(),
+                        KAFKA_ENV.kafkaBootstrapServers(),
+                        KAFKA_ENV.schemaRegistryServer())
+                .withProps(additionalProps)
+                .withProps(Clients.clientSaslAuthProperties(userName, userName + "-secret"))
+                .withProp(CommonClientConfigs.GROUP_ID_CONFIG, userName + "-" + UUID.randomUUID())
+                .consumer()
+                .withKeyType(keyClass)
+                .withAutoOffsetReset(false);
+    }
+
+    @SuppressWarnings("resource")
     private static <K, V> Consumer<K, V> protoConsumer(
             final Class<K> keyClass, final Class<V> valueClass, final String topicName) {
 
-        final Class<?> valueDeserializer;
-        if (valueClass.equals(Integer.class)) {
-            valueDeserializer = IntegerDeserializer.class;
-        } else {
-            valueDeserializer = KafkaProtobufDeserializer.class;
-        }
+        final Map<String, Class<V>> additional =
+                Map.of(KafkaProtobufDeserializerConfig.SPECIFIC_PROTOBUF_VALUE_TYPE, valueClass);
 
-        return consumer(
-                keyClass,
-                valueClass,
-                topicName,
-                valueDeserializer,
-                OWNER_USER,
-                Map.of(KafkaProtobufDeserializerConfig.SPECIFIC_PROTOBUF_VALUE_TYPE, valueClass));
+        final Consumer<K, V> consumer =
+                consumerBuilder(keyClass, OWNER_USER, additional).withValueType(valueClass).build();
+
+        return subscribe(topicName, consumer);
     }
 
+    @SuppressWarnings("resource")
     private Consumer<Long, UserSignedUp> avroConsumer(
             final String topicName,
             final String userName,
             final Class<? extends SubjectNameStrategy> namingStrategy) {
-        return consumer(
-                Long.class,
-                UserSignedUp.class,
-                topicName,
-                KafkaAvroDeserializer.class,
-                userName,
+
+        final Class<? extends Deserializer<UserSignedUp>> valueDeserializer =
+                (Class<? extends Deserializer<UserSignedUp>>)
+                        (Class<?>) KafkaAvroDeserializer.class;
+
+        final Map<String, String> additionalProps =
                 Map.of(
                         VALUE_SUBJECT_NAME_STRATEGY,
                         namingStrategy.getName(),
                         "schema.reflection",
-                        "true"));
+                        "true");
+
+        final Consumer<Long, UserSignedUp> consumer =
+                consumerBuilder(Long.class, userName, additionalProps)
+                        .withValueDeserializerType(valueDeserializer)
+                        .build();
+
+        return subscribe(topicName, consumer);
+    }
+
+    private static <K, V> Consumer<K, V> subscribe(
+            final String topicName, final Consumer<K, V> consumer) {
+        consumer.subscribe(List.of(topicName));
+        consumer.poll(Duration.ofMillis(250));
+        return consumer;
     }
 
     private static <V> Producer<Long, V> producer(
-            final Class<V> valueClass,
-            final Class<?> valueSerializer,
+            final Class<? extends Serializer<V>> valueSerializer,
             final String userName,
             final Map<String, Object> additionalProps) {
-        final Map<String, Object> props =
-                producerProperties(
+
+        return Clients.builder(
                         API_SPEC.id(),
                         UUID.randomUUID().toString(),
                         KAFKA_ENV.kafkaBootstrapServers(),
-                        KAFKA_ENV.schemaRegistryServer(),
-                        LongSerializer.class,
-                        valueSerializer,
-                        false,
-                        additionalProps);
-
-        props.putAll(Clients.clientSaslAuthProperties(userName, userName + "-secret"));
-
-        return Clients.producer(Long.class, valueClass, props);
+                        KAFKA_ENV.schemaRegistryServer())
+                .withProps(additionalProps)
+                .withProps(Clients.clientSaslAuthProperties(userName, userName + "-secret"))
+                .producer()
+                .withAcks(false)
+                .withKeyType(Long.class)
+                .withValueSerializerType(valueSerializer)
+                .build();
     }
 
     private static Producer<Long, UserInfo> protoProducer() {
-        return producer(UserInfo.class, KafkaProtobufSerializer.class, OWNER_USER, Map.of());
+        final Class<? extends Serializer<UserInfo>> valueSerializer =
+                (Class<? extends Serializer<UserInfo>>) (Class<?>) KafkaProtobufSerializer.class;
+        return producer(valueSerializer, OWNER_USER, Map.of());
     }
 
     private static Producer<Long, UserSignedUp> avroProducer(
             final String user, final Class<? extends SubjectNameStrategy> namingStrategy) {
+        final Class<? extends Serializer<UserSignedUp>> valueSerializer =
+                (Class<? extends Serializer<UserSignedUp>>) (Class<?>) KafkaAvroSerializer.class;
         return producer(
-                UserSignedUp.class,
-                KafkaAvroSerializer.class,
+                valueSerializer,
                 user,
                 Map.of(
                         VALUE_SUBJECT_NAME_STRATEGY,
@@ -404,6 +419,7 @@ class ClientsFunctionalDemoTest {
                         "true"));
     }
 
+    @SuppressWarnings("SameParameterValue")
     private static <K, V> List<Map.Entry<K, V>> entries(
             final Consumer<K, V> consumer, final int expectedCount) {
         final Instant timeout = Instant.now().plus(Duration.ofSeconds(10));
@@ -437,21 +453,27 @@ class ClientsFunctionalDemoTest {
     private KafkaStreams streamsApp(
             final String userInfoTopic, final String userInfoEnrichedTopic) {
 
-        final Map<String, Object> props =
-                Clients.kstreamsProperties(
-                        API_SPEC.id(),
-                        "client-func-demo",
-                        KAFKA_ENV.kafkaBootstrapServers(),
-                        KAFKA_ENV.schemaRegistryServer(),
-                        Serdes.LongSerde.class,
-                        KafkaProtobufSerde.class,
-                        false,
-                        Clients.clientSaslAuthProperties(OWNER_USER, OWNER_USER + "-secret"),
-                        Map.of(
+        final Class<? extends Serde<UserInfo>> valueSerdeType =
+                (Class<? extends Serde<UserInfo>>) (Class<?>) KafkaProtobufSerde.class;
+
+        final KStreamsProperties<Long, UserInfo> props =
+                Clients.builder(
+                                API_SPEC.id(),
+                                "client-func-demo",
+                                KAFKA_ENV.kafkaBootstrapServers(),
+                                KAFKA_ENV.schemaRegistryServer())
+                        .withProps(
+                                Clients.clientSaslAuthProperties(
+                                        OWNER_USER, OWNER_USER + "-secret"))
+                        .withProp(
                                 KafkaProtobufDeserializerConfig.SPECIFIC_PROTOBUF_VALUE_TYPE,
-                                UserInfo.class,
-                                StreamsConfig.COMMIT_INTERVAL_MS_CONFIG,
-                                1L));
+                                UserInfo.class)
+                        .withProp(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 1L)
+                        .kstreams()
+                        .withKeyType(Long.class)
+                        .withValueSerdeType(valueSerdeType)
+                        .withAcks(false)
+                        .buildProperties();
 
         final KafkaProtobufSerde<UserInfoEnriched> enhancedSerde =
                 new KafkaProtobufSerde<>(schemaRegistryClient, UserInfoEnriched.class);
@@ -511,7 +533,7 @@ class ClientsFunctionalDemoTest {
                                 .withValueSerde(Serdes.Integer()))
                 .count(Named.as("count-by-age"));
 
-        final var streams = new KafkaStreams(builder.build(), MapUtils.toProperties(props));
+        final var streams = new KafkaStreams(builder.build(), props.asProperties());
         streams.start();
         return streams;
     }
