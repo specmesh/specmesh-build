@@ -17,6 +17,7 @@
 plugins {
     `java-library`
     id("com.google.protobuf") version "0.9.4"
+    id("com.github.davidmc24.gradle.plugin.avro") version "1.9.1"
 }
 
 val testcontainersVersion : String by extra

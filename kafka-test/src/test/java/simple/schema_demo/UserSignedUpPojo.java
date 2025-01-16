@@ -20,10 +20,15 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Hand-crafted Pojo.
+ *
+ * <p>Not the recommended way of doing things! Ideally, generate specific types from Avro.
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserSignedUp {
+public class UserSignedUpPojo {
     String fullName;
     String email;
     int age;

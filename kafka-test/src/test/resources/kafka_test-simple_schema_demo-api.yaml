@@ -40,6 +40,26 @@ channels:
         payload:
           $ref: "/schema/simple.schema_demo._public.user_signed_up.avsc"
 
+  _public.user_signed_up_pojo:
+    bindings:
+      kafka:
+        partitions: 1
+        replicas: 1
+        configs:
+          cleanup.policy: delete
+
+    publish:
+      operationId: onLightMeasured
+      message:
+        bindings:
+          kafka:
+            schemaIdLocation: "payload"
+            schemaLookupStrategy: "RecordNameStrategy"
+        schemaFormat: "application/vnd.apache.avro+json;version=1.9.0"
+        contentType: "application/octet-stream"
+        payload:
+          $ref: "/schema/simple.schema_demo._public.user_signed_up_pojo.avsc"
+
   _public.user_signed_up_2:
     # publish bindings to instruct topic configuration per environment
     bindings:
