@@ -22,6 +22,7 @@ import static io.specmesh.apiparser.model.ApiSpec.PROTECTED;
 import static io.specmesh.apiparser.model.ApiSpec.PUBLIC;
 import static java.util.Objects.requireNonNull;
 import static org.apache.kafka.common.acl.AclOperation.CREATE;
+import static org.apache.kafka.common.acl.AclOperation.DELETE;
 import static org.apache.kafka.common.acl.AclOperation.DESCRIBE;
 import static org.apache.kafka.common.acl.AclOperation.IDEMPOTENT_WRITE;
 import static org.apache.kafka.common.acl.AclOperation.READ;
@@ -256,11 +257,11 @@ public final class KafkaApiSpec {
     }
 
     private Set<AclBinding> ownGroupAcls(final String user) {
-        return prefixedAcls(GROUP, id(), principal(user), READ);
+        return prefixedAcls(GROUP, id(), principal(user), READ, DELETE);
     }
 
     private Set<AclBinding> ownTopicAcls(final String user) {
-        return prefixedAcls(TOPIC, id(), principal(user), DESCRIBE, READ, WRITE);
+        return prefixedAcls(TOPIC, id(), principal(user), DESCRIBE, READ, WRITE, DELETE);
     }
 
     private Set<AclBinding> ownTransactionIdsAcls(final String user) {

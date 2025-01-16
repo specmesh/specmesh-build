@@ -96,7 +96,7 @@ class ProvisionNestedFunctionalTest {
                         .collect(Collectors.toList()),
                 contains("other.domain.Common.subject"));
 
-        assertThat(status.acls(), hasSize(10));
+        assertThat(status.acls(), hasSize(12));
 
         // When:
         final var statusRepublish = provision.run();
