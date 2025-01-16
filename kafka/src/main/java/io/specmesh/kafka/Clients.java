@@ -519,7 +519,6 @@ public final class Clients {
                         // Disable auto-reg to allow schemas to be published by controlled processes
                         AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS,
                         false,
-                        // Todo: seems wrong.
                         AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION,
                         true);
 
