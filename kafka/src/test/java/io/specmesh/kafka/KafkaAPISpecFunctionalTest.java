@@ -48,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.admin.RecordsToDelete;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -57,6 +58,7 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.KafkaFuture;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.acl.AccessControlEntry;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.errors.TopicAuthorizationException;
@@ -204,7 +206,7 @@ class KafkaAPISpecFunctionalTest {
     }
 
     @CartesianTest(name = "topic: {0}, domain: {1}")
-    void shouldHaveCorrectTopicCreationAcls(
+    void shouldHaveCorrectTopicCreationAndDeletionAcls(
             @CartesianTest.Enum final Topic topic, @CartesianTest.Enum final Domain domain)
             throws Throwable {
 
@@ -213,16 +215,26 @@ class KafkaAPISpecFunctionalTest {
                 new NewTopic(topic.topicName + "." + UUID.randomUUID(), 1, (short) 1);
 
         try (Admin adminClient = adminClient(domain)) {
-            final KafkaFuture<Void> f = adminClient.createTopics(List.of(newTopic)).all();
-            final Executable executable = () -> f.get(30, TimeUnit.SECONDS);
+            final KafkaFuture<Void> createFuture =
+                    adminClient.createTopics(List.of(newTopic)).all();
+            final Executable createExec = () -> createFuture.get(30, TimeUnit.SECONDS);
 
-            if (shouldSucceed) {
-                executable.execute();
-            } else {
+            if (!shouldSucceed) {
                 final Throwable cause =
-                        assertThrows(ExecutionException.class, executable).getCause();
+                        assertThrows(ExecutionException.class, createExec).getCause();
                 assertThat(cause, is(instanceOf(TopicAuthorizationException.class)));
+                return;
             }
+
+            createExec.execute();
+
+            adminClient
+                    .deleteRecords(
+                            Map.of(
+                                    new TopicPartition(topic.topicName, 1),
+                                    RecordsToDelete.beforeOffset(0)))
+                    .all();
+            adminClient.deleteTopics(List.of(topic.topicName)).all().get(30, TimeUnit.SECONDS);
         }
     }
 

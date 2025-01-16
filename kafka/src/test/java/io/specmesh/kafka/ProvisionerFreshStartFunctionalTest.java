@@ -16,6 +16,7 @@
 
 package io.specmesh.kafka;
 
+import static java.util.stream.Collectors.toList;
 import static org.apache.kafka.common.acl.AclOperation.ALL;
 import static org.apache.kafka.common.acl.AclOperation.IDEMPOTENT_WRITE;
 import static org.apache.kafka.common.acl.AclPermissionType.ALLOW;
@@ -27,6 +28,7 @@ import static org.apache.kafka.common.resource.ResourceType.GROUP;
 import static org.apache.kafka.common.resource.ResourceType.TRANSACTIONAL_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
@@ -154,35 +156,41 @@ class ProvisionerFreshStartFunctionalTest {
     void shouldDryRunACLsFromEmptyCluster() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
+            // When:
             final var changeset =
                     AclProvisioner.provision(true, false, API_SPEC, API_SPEC.id(), adminClient);
 
-            // Verify - 11 created
-            assertThat(
-                    "dry run should leave changeset in 'create' state",
-                    changeset.stream()
-                            .filter(topic -> topic.state() == Status.STATE.CREATE)
-                            .count(),
-                    is(12L));
-
-            // Verify - should have 6 TOPIC, 2 GROUP, 2 TRANSACTIONAL and 1 CLUSTER Acls
-            assertThat(
-                    changeset.stream().filter(aacl -> aacl.name().contains("TOPIC")).count(),
-                    is(8L));
-
             assertThat(
                     changeset.stream()
-                            .filter(aacl -> aacl.name().contains("TRANSACTIONAL_ID"))
+                            .filter(acl -> acl.state() != Status.STATE.CREATE)
+                            .collect(toList()),
+                    is(empty()));
+
+            final long topicCount = 9L;
+            assertThat(
+                    changeset.stream().filter(acl -> acl.name().contains("=TOPIC")).count(),
+                    is(topicCount));
+
+            final long transactionIdCount = 2L;
+            assertThat(
+                    changeset.stream()
+                            .filter(acl -> acl.name().contains("=TRANSACTIONAL_ID"))
                             .count(),
-                    is(2L));
+                    is(transactionIdCount));
+
+            final long groupCount = 2L;
+            assertThat(
+                    changeset.stream().filter(acl -> acl.name().contains("=GROUP")).count(),
+                    is(groupCount));
+
+            final long clusterCount = 1L;
+            assertThat(
+                    changeset.stream().filter(acl -> acl.name().contains("=CLUSTER")).count(),
+                    is(clusterCount));
 
             assertThat(
-                    changeset.stream().filter(aacl -> aacl.name().contains("GROUP")).count(),
-                    is(1L));
-
-            assertThat(
-                    changeset.stream().filter(aacl -> aacl.name().contains("CLUSTER")).count(),
-                    is(1L));
+                    changeset.size(),
+                    is((int) (topicCount + transactionIdCount + groupCount + clusterCount)));
         }
     }
 
@@ -195,7 +203,6 @@ class ProvisionerFreshStartFunctionalTest {
                 SchemaProvisioner.provision(
                         true, false, API_SPEC, "./src/test/resources", srClient);
 
-        // Verify - 11 created
         assertThat(
                 "dry run should leave changeset in 'create' state",
                 changeset.stream().filter(topic -> topic.state() == Status.STATE.CREATE).count(),
@@ -256,7 +263,7 @@ class ProvisionerFreshStartFunctionalTest {
             final var topicListings =
                     adminClient.listTopics().listings().get().stream()
                             .filter(topic -> topic.name().startsWith("simple"))
-                            .collect(Collectors.toList());
+                            .collect(toList());
             assertThat(topicListings, is(hasSize(2)));
 
             // Verify description - check partitions and replicas
@@ -291,44 +298,48 @@ class ProvisionerFreshStartFunctionalTest {
             final var changeset =
                     AclProvisioner.provision(false, false, API_SPEC, API_SPEC.id(), adminClient);
 
-            // Verify - 11 created
             assertThat(
-                    "dry run should leave changeset in 'create' state",
                     changeset.stream()
-                            .filter(topic -> topic.state() == Status.STATE.CREATED)
-                            .count(),
-                    is(12L));
+                            .filter(topic -> topic.state() != Status.STATE.CREATED)
+                            .collect(toList()),
+                    is(empty()));
 
             final var bindings = adminClient.describeAcls(AclBindingFilter.ANY).values().get();
 
             final var provisionDemoBindings =
                     bindings.stream()
                             .filter(binding -> binding.toString().contains("provision_demo"))
-                            .collect(Collectors.toList());
+                            .collect(toList());
 
-            // Verfiy 'provision_demo' has 6 topics, 2 transqction and 1 group
-
+            final long topicCount = 9L;
             assertThat(
                     provisionDemoBindings.stream()
                             .filter(binding -> binding.toString().contains("TOPIC"))
                             .count(),
-                    is(8L));
+                    is(topicCount));
+            final long transactionIdCount = 2L;
             assertThat(
                     provisionDemoBindings.stream()
                             .filter(binding -> binding.toString().contains("TRANSACTIONAL_ID"))
                             .count(),
-                    is(2L));
+                    is(transactionIdCount));
+            final long groupCount = 2L;
             assertThat(
                     provisionDemoBindings.stream()
                             .filter(binding -> binding.toString().contains("GROUP"))
                             .count(),
-                    is(1L));
+                    is(groupCount));
 
+            final long clusterCount = 1L;
             assertThat(
                     provisionDemoBindings.stream()
                             .filter(binding -> binding.toString().contains("CLUSTER"))
                             .count(),
-                    is(1L));
+                    is(clusterCount));
+
+            assertThat(
+                    changeset.size(),
+                    is((int) (topicCount + transactionIdCount + groupCount + clusterCount)));
         }
     }
 
@@ -341,7 +352,6 @@ class ProvisionerFreshStartFunctionalTest {
                 SchemaProvisioner.provision(
                         false, false, API_SPEC, "./src/test/resources", srClient);
 
-        // Verify - 11 created
         assertThat(
                 changeset.stream().filter(topic -> topic.state() == Status.STATE.CREATED).count(),
                 is(3L));

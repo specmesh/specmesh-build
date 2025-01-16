@@ -78,6 +78,13 @@ public class KafkaAPISpecWithGrantAccessAclsTest {
                         + " patternType=PREFIXED),"
                         + " entry=(principal=User:london.hammersmith.olympia.bigdatalondon,"
                         + " host=*, operation=WRITE, permissionType=ALLOW))"),
+        // Note: also allows `DELETE_RECORD` operation on private topics:
+        DELETE_OWN_PRIVATE_TOPICS(
+                "(pattern=ResourcePattern(resourceType=TOPIC,"
+                        + " name=london.hammersmith.olympia.bigdatalondon,"
+                        + " patternType=PREFIXED),"
+                        + " entry=(principal=User:london.hammersmith.olympia.bigdatalondon,"
+                        + " host=*, operation=DELETE, permissionType=ALLOW))"),
         CREATE_OWN_PRIVATE_TOPICS(
                 "(pattern=ResourcePattern(resourceType=TOPIC,"
                         + " name=london.hammersmith.olympia.bigdatalondon._private,"
@@ -90,6 +97,12 @@ public class KafkaAPISpecWithGrantAccessAclsTest {
                         + " patternType=PREFIXED),"
                         + " entry=(principal=User:london.hammersmith.olympia.bigdatalondon,"
                         + " host=*, operation=READ, permissionType=ALLOW))"),
+        DELETE_OWN_GROUPS(
+                "(pattern=ResourcePattern(resourceType=GROUP,"
+                        + " name=london.hammersmith.olympia.bigdatalondon,"
+                        + " patternType=PREFIXED),"
+                        + " entry=(principal=User:london.hammersmith.olympia.bigdatalondon,"
+                        + " host=*, operation=DELETE, permissionType=ALLOW))"),
         WRITE_OWN_TX_IDS(
                 "(pattern=ResourcePattern(resourceType=TRANSACTIONAL_ID,"
                         + " name=london.hammersmith.olympia.bigdatalondon, patternType=PREFIXED),"
