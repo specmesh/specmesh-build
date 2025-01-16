@@ -408,22 +408,19 @@ public final class Clients {
         }
     }
 
-    /**
-     * Type used to, erm, build clients.
-     */
+    /** Type used to, erm, build clients. */
     public static final class ClientBuilder {
 
         private static final Map<String, ?> BASE_PROPS =
                 Map.of(
                         // schema-reflect MUST be true when writing Java objects (otherwise you send
                         // a datum-container instead of a Pojo)
-                        // Todo: seems wrong.
                         AbstractKafkaSchemaSerDeConfig.SCHEMA_REFLECTION_CONFIG, true);
 
         private final String domainId;
         private final String serviceId;
         private final Map<String, ?> commonProps;
-        private final Map<String, Object> overrides;
+        private final Map<String, Object> additional;
 
         private ClientBuilder(
                 final String domainId,
@@ -438,38 +435,64 @@ public final class Clients {
                             bootstrapServers,
                             AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG,
                             schemaRegistryUrl);
-            this.overrides = new HashMap<>();
+            this.additional = new HashMap<>();
         }
 
         private ClientBuilder(
                 final String domainId,
                 final String serviceId,
                 final Map<String, ?> commonProps,
-                final Map<String, Object> overrides) {
+                final Map<String, Object> additional) {
             this.domainId = requireNonNull(domainId, "domainId");
             this.serviceId = requireNonNull(serviceId, "serviceId");
             this.commonProps = Map.copyOf(requireNonNull(commonProps, "commonProps"));
-            this.overrides = new HashMap<>(overrides);
+            this.additional = new HashMap<>(additional);
         }
 
-        public ClientBuilder withProps(final Map<String, ?> overrides) {
-            final Map<String, Object> newOverrides = new HashMap<>(this.overrides);
-            newOverrides.putAll(overrides);
-            return new ClientBuilder(domainId, serviceId, commonProps, newOverrides);
+        /**
+         * Add additional client properties.
+         *
+         * <p>Properties that change teh serde type of the clients will be ignored.
+         *
+         * @param additional additional client properties.
+         * @return a new builder instance with the additional properties set.
+         */
+        public ClientBuilder withProps(final Map<String, ?> additional) {
+            final Map<String, Object> newAdditional = new HashMap<>(this.additional);
+            newAdditional.putAll(additional);
+            return new ClientBuilder(domainId, serviceId, commonProps, newAdditional);
         }
 
+        /**
+         * Add additional client property.
+         *
+         * <p>Properties that change teh serde type of the clients will be ignored.
+         *
+         * @param key key of the additional client property.
+         * @param value value of the additional client property.
+         * @return a new builder instance with the additional properties set.
+         */
         public ClientBuilder withProp(final String key, final Object value) {
             return withProps(Map.of(key, value));
         }
 
+        /**
+         * @return a new producer builder, which can be used to build a producer or producer config
+         */
         public ProducerBuilder<Void, Void> producer() {
             return new ProducerBuilder<>(this);
         }
 
+        /**
+         * @return a new consumer builder, which can be used to build a consumer or consumer config
+         */
         public ConsumerBuilder<Void, Void> consumer() {
             return new ConsumerBuilder<>(this);
         }
 
+        /**
+         * @return a new kstreams builder, which can be used to build kstreams config
+         */
         public <V, K> KStreamsBuilder<K, V> kstreams() {
             return new KStreamsBuilder<>(this);
         }
@@ -479,7 +502,7 @@ public final class Clients {
         }
 
         private Map<String, ?> overrides(final String... nonOverridableKeys) {
-            final HashMap<String, Object> allowed = new HashMap<>(overrides);
+            final HashMap<String, Object> allowed = new HashMap<>(additional);
             for (final String nonOverridableKey : nonOverridableKeys) {
                 allowed.keySet().remove(nonOverridableKey);
             }
@@ -493,6 +516,12 @@ public final class Clients {
         }
     }
 
+    /**
+     * Type-safe builder of producers and producer config
+     *
+     * @param <K> the key type
+     * @param <V> the value type
+     */
     @SuppressWarnings({"unchecked", "OptionalUsedAsFieldOrParameterType"})
     public static final class ProducerBuilder<K, V> {
 
@@ -501,7 +530,6 @@ public final class Clients {
                         // Disable auto-reg to allow schemas to be published by controlled processes
                         AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS,
                         false,
-                        // Todo: seems wrong.
                         AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION,
                         true);
 
@@ -514,10 +542,34 @@ public final class Clients {
             this.clientBuilder = requireNonNull(clientBuilder, "clientBuilder");
         }
 
+        /**
+         * Set the key serializer from the supplied {@code type}.
+         *
+         * <p>Method will attempt to determine the correct serializer type from the supplied {@code
+         * type}. throwing an exception if there is insufficient type information to this to be
+         * determined.
+         *
+         * <p>The supplied {@code type} can be on of the types supported by the standard Kafka
+         * serializers, (see {@link #STD_SERDE}), or a generated Protobuf or Avro type.
+         *
+         * <p>If this method throws due to insufficient type information, use on of the {@link
+         * #withKeySerializerType} methods to supply more information.
+         *
+         * @param type the new key type
+         * @return self.
+         * @param <T> the new key type
+         */
         public <T> ProducerBuilder<T, V> withKeyType(final Class<T> type) {
             return withKeySerializerType(serializerFor(type));
         }
 
+        /**
+         * Set the key serializer to the supplied {@code type}.
+         *
+         * @param type the key serializer type
+         * @return self.
+         * @param <T> the new key type
+         */
         public <T> ProducerBuilder<T, V> withKeySerializerType(
                 final Class<? extends Serializer<T>> type) {
             final ProducerBuilder<T, V> adjusted = (ProducerBuilder<T, V>) this;
@@ -543,10 +595,34 @@ public final class Clients {
             return withKeySerializerType(castNonGeneric(serializerType, type));
         }
 
+        /**
+         * Set the value serializer from the supplied {@code type}.
+         *
+         * <p>Method will attempt to determine the correct serializer type from the supplied {@code
+         * type}. throwing an exception if there is insufficient type information to this to be
+         * determined.
+         *
+         * <p>The supplied {@code type} can be on of the types supported by the standard Kafka
+         * serializers, (see {@link #STD_SERDE}), or a generated Protobuf or Avro type.
+         *
+         * <p>If this method throws due to insufficient type information, use on of the {@link
+         * #withValueSerializerType} methods to supply more information.
+         *
+         * @param type the new value type
+         * @return self.
+         * @param <T> the new value type
+         */
         public <T> ProducerBuilder<K, T> withValueType(final Class<T> type) {
             return withValueSerializerType(serializerFor(type));
         }
 
+        /**
+         * Set the value serializer to the supplied {@code type}.
+         *
+         * @param type the value serializer type
+         * @return self.
+         * @param <T> the value key type
+         */
         public <T> ProducerBuilder<K, T> withValueSerializerType(
                 final Class<? extends Serializer<T>> type) {
             final ProducerBuilder<K, T> adjusted = (ProducerBuilder<K, T>) this;
@@ -572,11 +648,20 @@ public final class Clients {
             return withValueSerializerType(castNonGeneric(serializerType, type));
         }
 
+        /**
+         * Override the default acks required of {@code all}.
+         *
+         * @param acksAll if true, {@code all} acks are required, otherwise {@code 1}.
+         * @return self
+         */
         public ProducerBuilder<K, V> withAcks(final boolean acksAll) {
             this.acksAll = acksAll;
             return this;
         }
 
+        /**
+         * @return type-safe producer properties.
+         */
         public ProducerProperties<K, V> buildProperties() {
             final Class<? extends Serializer<K>> keySer =
                     keySerializer.orElseThrow(
@@ -610,6 +695,9 @@ public final class Clients {
             return new ProducerProperties<>(props);
         }
 
+        /**
+         * @return a new Kafka producer
+         */
         public Producer<K, V> build() {
             return producer(buildProperties());
         }
@@ -633,6 +721,12 @@ public final class Clients {
         }
     }
 
+    /**
+     * Type-safe builder of consumer and consumer config
+     *
+     * @param <K> the key type
+     * @param <V> the value type
+     */
     @SuppressWarnings({"unchecked", "OptionalUsedAsFieldOrParameterType"})
     public static final class ConsumerBuilder<K, V> {
 
@@ -645,10 +739,34 @@ public final class Clients {
             this.clientBuilder = requireNonNull(clientBuilder, "clientBuilder");
         }
 
+        /**
+         * Set the key deserializer from the supplied {@code type}.
+         *
+         * <p>Method will attempt to determine the correct deserializer type from the supplied
+         * {@code type}. throwing an exception if there is insufficient type information to this to
+         * be determined.
+         *
+         * <p>The supplied {@code type} can be on of the types supported by the standard Kafka
+         * deserializers, (see {@link #STD_SERDE}), or a generated Protobuf or Avro type.
+         *
+         * <p>If this method throws due to insufficient type information, use on of the {@link
+         * #withKeyDeserializerType} methods to supply more information.
+         *
+         * @param type the new key type
+         * @return self.
+         * @param <T> the new key type
+         */
         public <T> ConsumerBuilder<T, V> withKeyType(final Class<T> type) {
             return withKeyDeserializerType(deserializerFor(type));
         }
 
+        /**
+         * Set the key deserializer to the supplied {@code type}.
+         *
+         * @param type the key deserializer type
+         * @return self.
+         * @param <T> the new key type
+         */
         public <T> ConsumerBuilder<T, V> withKeyDeserializerType(
                 final Class<? extends Deserializer<T>> type) {
             final ConsumerBuilder<T, V> adjusted = (ConsumerBuilder<T, V>) this;
@@ -674,10 +792,34 @@ public final class Clients {
             return withKeyDeserializerType(castNonGeneric(deserializerType, type));
         }
 
+        /**
+         * Set the value deserializer from the supplied {@code type}.
+         *
+         * <p>Method will attempt to determine the correct deserializer type from the supplied
+         * {@code type}. throwing an exception if there is insufficient type information to this to
+         * be determined.
+         *
+         * <p>The supplied {@code type} can be on of the types supported by the standard Kafka
+         * deserializers, (see {@link #STD_SERDE}), or a generated Protobuf or Avro type.
+         *
+         * <p>If this method throws due to insufficient type information, use on of the {@link
+         * #withValueDeserializerType} methods to supply more information.
+         *
+         * @param type the new value type
+         * @return self.
+         * @param <T> the new value type
+         */
         public <T> ConsumerBuilder<K, T> withValueType(final Class<T> type) {
             return withValueDeserializerType(deserializerFor(type));
         }
 
+        /**
+         * Set the value deserializer to the supplied {@code type}.
+         *
+         * @param type the value deserializer type
+         * @return self.
+         * @param <T> the new value type
+         */
         public <T> ConsumerBuilder<K, T> withValueDeserializerType(
                 final Class<? extends Deserializer<T>> type) {
             final ConsumerBuilder<K, T> adjusted = (ConsumerBuilder<K, T>) this;
@@ -703,11 +845,21 @@ public final class Clients {
             return withValueDeserializerType(castNonGeneric(deserializerType, type));
         }
 
+        /**
+         * Override the default {@code auto.offset.reset} policy of {@code earliest}
+         *
+         * @param earliest if {@code true}, set {@code auto.offset.reset} to {@code earliest},
+         *     otherwise {@code latest}.
+         * @return self
+         */
         public ConsumerBuilder<K, V> withAutoOffsetReset(final boolean earliest) {
             this.autoOffsetResetEarliest = earliest;
             return this;
         }
 
+        /**
+         * @return type-safe consumer properties.
+         */
         public ConsumerProperties<K, V> buildProperties() {
             final Class<? extends Deserializer<K>> keyDeser =
                     keyDeserializer.orElseThrow(
@@ -743,6 +895,9 @@ public final class Clients {
             return new ConsumerProperties<>(props);
         }
 
+        /**
+         * @return new Kafka consumer.
+         */
         public Consumer<K, V> build() {
             return consumer(buildProperties());
         }
@@ -766,6 +921,12 @@ public final class Clients {
         }
     }
 
+    /**
+     * Type-safe builder of KStream config
+     *
+     * @param <K> the key type
+     * @param <V> the value type
+     */
     @SuppressWarnings({"unchecked", "OptionalUsedAsFieldOrParameterType"})
     public static final class KStreamsBuilder<K, V> {
 
@@ -780,10 +941,34 @@ public final class Clients {
             this.clientBuilder = requireNonNull(clientBuilder, "clientBuilder");
         }
 
+        /**
+         * Set the key serde from the supplied {@code type}.
+         *
+         * <p>Method will attempt to determine the correct serde type from the supplied {@code
+         * type}. throwing an exception if there is insufficient type information to this to be
+         * determined.
+         *
+         * <p>The supplied {@code type} can be on of the types supported by the standard Kafka
+         * serde, (see {@link #STD_SERDE}), or a generated Protobuf or Avro type.
+         *
+         * <p>If this method throws due to insufficient type information, use on of the {@link
+         * #withKeySerdeType} methods to supply more information.
+         *
+         * @param type the new key type
+         * @return self.
+         * @param <T> the new key type
+         */
         public <T> KStreamsBuilder<T, V> withKeyType(final Class<T> type) {
             return withKeySerdeType(serdeFor(type));
         }
 
+        /**
+         * Set the key serde to the supplied {@code type}.
+         *
+         * @param type the key serde type
+         * @return self.
+         * @param <T> the new key type
+         */
         public <T> KStreamsBuilder<T, V> withKeySerdeType(final Class<? extends Serde<T>> type) {
             final KStreamsBuilder<T, V> adjusted = (KStreamsBuilder<T, V>) this;
             adjusted.keySerde = Optional.of(type);
@@ -808,10 +993,34 @@ public final class Clients {
             return withKeySerdeType(castNonGeneric(serdeType, type));
         }
 
+        /**
+         * Set the value serde from the supplied {@code type}.
+         *
+         * <p>Method will attempt to determine the correct serde type from the supplied {@code
+         * type}. throwing an exception if there is insufficient type information to this to be
+         * determined.
+         *
+         * <p>The supplied {@code type} can be on of the types supported by the standard Kafka
+         * serde, (see {@link #STD_SERDE}), or a generated Protobuf or Avro type.
+         *
+         * <p>If this method throws due to insufficient type information, use on of the {@link
+         * #withValueSerdeType} methods to supply more information.
+         *
+         * @param type the new value type
+         * @return self.
+         * @param <T> the new value type
+         */
         public <T> KStreamsBuilder<K, T> withValueType(final Class<T> type) {
             return withValueSerdeType(serdeFor(type));
         }
 
+        /**
+         * Set the value serde to the supplied {@code type}.
+         *
+         * @param type the value serde type
+         * @return self.
+         * @param <T> the new value type
+         */
         public <T> KStreamsBuilder<K, T> withValueSerdeType(final Class<? extends Serde<T>> type) {
             final KStreamsBuilder<K, T> adjusted = (KStreamsBuilder<K, T>) this;
             adjusted.valSerde = Optional.of(type);
@@ -836,11 +1045,20 @@ public final class Clients {
             return withValueSerdeType(castNonGeneric(serdeType, type));
         }
 
+        /**
+         * Override the default acks required of {@code all}.
+         *
+         * @param acksAll if true, {@code all} acks are required, otherwise {@code 1}.
+         * @return self
+         */
         public KStreamsBuilder<K, V> withAcks(final boolean acksAll) {
             this.acksAll = acksAll;
             return this;
         }
 
+        /**
+         * @return type-safe KStreams properties.
+         */
         public KStreamsProperties<K, V> buildProperties() {
             final Class<? extends Serde<K>> keySerdeType =
                     keySerde.orElseThrow(
