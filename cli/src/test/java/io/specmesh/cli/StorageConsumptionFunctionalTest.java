@@ -345,6 +345,7 @@ class StorageConsumptionFunctionalTest {
                         KAFKA_ENV.schemaRegistryServer())
                 .withProps(Clients.clientSaslAuthProperties(OWNER_USER, OWNER_USER + "-secret"))
                 .withProp(AbstractKafkaSchemaSerDeConfig.SCHEMA_REFLECTION_CONFIG, true)
+                .withProp(AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION, true)
                 .producer()
                 .withKeyType(Long.class)
                 .withValueSerializerType(KafkaAvroSerializer.class, UserSignedUp.class)

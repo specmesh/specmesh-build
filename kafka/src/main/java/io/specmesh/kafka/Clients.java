@@ -25,6 +25,7 @@ import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientConfig;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
+import io.confluent.kafka.serializers.KafkaAvroSerializerConfig;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
 import io.confluent.kafka.streams.serdes.avro.GenericAvroSerde;
@@ -519,7 +520,9 @@ public final class Clients {
                         // Disable auto-reg to allow schemas to be published by controlled processes
                         AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS,
                         false,
-                        AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION,
+                        // Remove "avro.java.string" fields from schema
+                        // Which would result in a schema different to the one SpecMesh registered.
+                        KafkaAvroSerializerConfig.AVRO_REMOVE_JAVA_PROPS_CONFIG,
                         true);
 
         private final ClientBuilder clientBuilder;
@@ -1180,6 +1183,7 @@ public final class Clients {
 
         ClientBuilder builder =
                 Clients.builder(domainId, serviceId, bootstrapServers, schemaRegistryUrl)
+                        .withProp(AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION, true)
                         .withProp(AbstractKafkaSchemaSerDeConfig.SCHEMA_REFLECTION_CONFIG, true);
 
         for (final Map<String, Object> additional : additionalProperties) {
@@ -1196,6 +1200,7 @@ public final class Clients {
         final Map<String, Object> props = new HashMap<>(producerProps.asMap());
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySerializerClass);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valueSerializerClass);
+        props.remove(KafkaAvroSerializerConfig.AVRO_REMOVE_JAVA_PROPS_CONFIG);
         return props;
     }
 
@@ -1228,6 +1233,7 @@ public final class Clients {
 
         ClientBuilder builder =
                 Clients.builder(domainId, serviceId, bootstrapServers, schemaRegistryUrl)
+                        .withProp(AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION, true)
                         .withProp(AbstractKafkaSchemaSerDeConfig.SCHEMA_REFLECTION_CONFIG, true);
 
         for (final Map<String, Object> additional : additionalProperties) {
@@ -1244,6 +1250,7 @@ public final class Clients {
         final Map<String, Object> props = new HashMap<>(kstreamProps.asMap());
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, keySerdeClass);
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, valueSerdeClass);
+        props.remove(KafkaAvroSerializerConfig.AVRO_REMOVE_JAVA_PROPS_CONFIG);
         return props;
     }
 
