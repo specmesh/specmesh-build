@@ -67,7 +67,6 @@ import org.apache.kafka.common.acl.AccessControlEntry;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.errors.TopicAuthorizationException;
 import org.apache.kafka.common.resource.ResourcePattern;
-import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.streams.KafkaStreams;
@@ -139,7 +138,7 @@ class ClientsFunctionalDemoTest {
     @Test
     void shouldProduceAndConsumeUsingAvroWithReflection() {
         // Given:
-        final var userSignedUpTopic = topicName("_public.user_signed_up");
+        final var userSignedUpTopic = topicName("_public.user_signed_up_pojo");
         final var sentRecord = new UserSignedUpPojo("joe blogs", "blogy@twasmail.com", 100);
 
         try (Consumer<Long, UserSignedUpPojo> consumer =
@@ -334,35 +333,6 @@ class ClientsFunctionalDemoTest {
         }
     }
 
-    private static <K, V> Consumer<K, V> consumer(
-            final Class<K> keyClass,
-            final String topicName,
-            final Class<? extends Deserializer<V>> valueDeserializer,
-            final String userName,
-            final Map<String, Object> additionalProps) {
-
-        final Consumer<K, V> consumer =
-                Clients.builder(
-                                API_SPEC.id(),
-                                UUID.randomUUID().toString(),
-                                KAFKA_ENV.kafkaBootstrapServers(),
-                                KAFKA_ENV.schemaRegistryServer())
-                        .withProps(additionalProps)
-                        .withProps(Clients.clientSaslAuthProperties(userName, userName + "-secret"))
-                        .withProp(
-                                CommonClientConfigs.GROUP_ID_CONFIG,
-                                userName + "-" + UUID.randomUUID())
-                        .consumer()
-                        .withKeyType(keyClass)
-                        .withValueDeserializerType(valueDeserializer)
-                        .withAutoOffsetReset(false)
-                        .build();
-
-        consumer.subscribe(List.of(topicName));
-        consumer.poll(Duration.ofMillis(250));
-        return consumer;
-    }
-
     @SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT")
     private static <K> Clients.ConsumerBuilder<K, Void> consumerBuilder(
             final Class<K> keyClass, final String userName, final Map<String, ?> additionalProps) {
@@ -413,10 +383,10 @@ class ClientsFunctionalDemoTest {
                 new HashMap<>(Map.of(VALUE_SUBJECT_NAME_STRATEGY, namingStrategy.getName()));
 
         if (useReflection) {
-            additionalProps.put(
-                    // Turn on use of reflect
-                    AbstractKafkaSchemaSerDeConfig.SCHEMA_REFLECTION_CONFIG, true);
+            // Turn on use of reflect
+            additionalProps.put(AbstractKafkaSchemaSerDeConfig.SCHEMA_REFLECTION_CONFIG, true);
         } else {
+            // Have deserializer return generated type, not GenericRecord.
             additionalProps.put(KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG, true);
         }
 
@@ -477,10 +447,14 @@ class ClientsFunctionalDemoTest {
                 new HashMap<>(Map.of(VALUE_SUBJECT_NAME_STRATEGY, namingStrategy.getName()));
 
         if (useReflection) {
-            additionalProps.putAll(
-                    Map.of(
-                            // Turn on use of reflect.
-                            AbstractKafkaSchemaSerDeConfig.SCHEMA_REFLECTION_CONFIG, true));
+            // Turn on use of reflect.
+            // However, this will generate the wrong schema,
+            // which it won't find in the schema registry.
+            additionalProps.put(AbstractKafkaSchemaSerDeConfig.SCHEMA_REFLECTION_CONFIG, true);
+
+            // Hence, need to also tell it to just use the latest schema,
+            // i.e. the one SpecMesh registered
+            additionalProps.put(AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION, true);
         }
 
         return producer(valueType, KafkaAvroSerializer.class, user, additionalProps);

@@ -94,7 +94,7 @@ class ClientsTest {
                         SCHEMA_REG_URL,
                         AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS,
                         false,
-                        KafkaAvroSerializerConfig.USE_LATEST_VERSION,
+                        KafkaAvroSerializerConfig.AVRO_REMOVE_JAVA_PROPS_CONFIG,
                         true);
         assertThat(props.asMap(), is(expected));
     }
@@ -308,7 +308,7 @@ class ClientsTest {
                         SCHEMA_REG_URL,
                         AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS,
                         false,
-                        KafkaAvroSerializerConfig.USE_LATEST_VERSION,
+                        KafkaAvroSerializerConfig.AVRO_REMOVE_JAVA_PROPS_CONFIG,
                         true);
         assertThat(props.asMap(), is(expected));
     }
