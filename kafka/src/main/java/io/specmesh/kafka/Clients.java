@@ -286,9 +286,6 @@ public final class Clients {
                 + "\";";
     }
 
-    /**
-     * @deprecated use {@link #schemaRegistryClient(String, String, String)}.
-     */
     @Deprecated(forRemoval = true, since = "0.10.1")
     public static Optional<SchemaRegistryClient> schemaRegistryClient(
             final boolean srEnabled,
@@ -493,7 +490,7 @@ public final class Clients {
         /**
          * @return a new kstreams builder, which can be used to build kstreams config
          */
-        public <V, K> KStreamsBuilder<K, V> kstreams() {
+        public KStreamsBuilder<Void, Void> kstreams() {
             return new KStreamsBuilder<>(this);
         }
 
