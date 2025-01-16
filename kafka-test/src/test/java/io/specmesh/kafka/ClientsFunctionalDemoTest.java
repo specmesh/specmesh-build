@@ -65,7 +65,6 @@ import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.errors.TopicAuthorizationException;
 import org.apache.kafka.common.resource.ResourcePattern;
 import org.apache.kafka.common.serialization.Deserializer;
-import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.streams.KafkaStreams;
@@ -354,10 +353,6 @@ class ClientsFunctionalDemoTest {
             final String userName,
             final Class<? extends SubjectNameStrategy> namingStrategy) {
 
-        final Class<? extends Deserializer<UserSignedUp>> valueDeserializer =
-                (Class<? extends Deserializer<UserSignedUp>>)
-                        (Class<?>) KafkaAvroDeserializer.class;
-
         final Map<String, String> additionalProps =
                 Map.of(
                         VALUE_SUBJECT_NAME_STRATEGY,
@@ -367,7 +362,7 @@ class ClientsFunctionalDemoTest {
 
         final Consumer<Long, UserSignedUp> consumer =
                 consumerBuilder(Long.class, userName, additionalProps)
-                        .withValueDeserializerType(valueDeserializer)
+                        .withValueDeserializerType(KafkaAvroDeserializer.class, UserSignedUp.class)
                         .build();
 
         return subscribe(topicName, consumer);
@@ -380,8 +375,10 @@ class ClientsFunctionalDemoTest {
         return consumer;
     }
 
+    @SuppressWarnings("rawtypes")
     private static <V> Producer<Long, V> producer(
-            final Class<? extends Serializer<V>> valueSerializer,
+            final Class<V> valueType,
+            final Class<? extends Serializer> valueSerializer,
             final String userName,
             final Map<String, Object> additionalProps) {
 
@@ -395,22 +392,19 @@ class ClientsFunctionalDemoTest {
                 .producer()
                 .withAcks(false)
                 .withKeyType(Long.class)
-                .withValueSerializerType(valueSerializer)
+                .withValueSerializerType(valueSerializer, valueType)
                 .build();
     }
 
     private static Producer<Long, UserInfo> protoProducer() {
-        final Class<? extends Serializer<UserInfo>> valueSerializer =
-                (Class<? extends Serializer<UserInfo>>) (Class<?>) KafkaProtobufSerializer.class;
-        return producer(valueSerializer, OWNER_USER, Map.of());
+        return producer(UserInfo.class, KafkaProtobufSerializer.class, OWNER_USER, Map.of());
     }
 
     private static Producer<Long, UserSignedUp> avroProducer(
             final String user, final Class<? extends SubjectNameStrategy> namingStrategy) {
-        final Class<? extends Serializer<UserSignedUp>> valueSerializer =
-                (Class<? extends Serializer<UserSignedUp>>) (Class<?>) KafkaAvroSerializer.class;
         return producer(
-                valueSerializer,
+                UserSignedUp.class,
+                KafkaAvroSerializer.class,
                 user,
                 Map.of(
                         VALUE_SUBJECT_NAME_STRATEGY,
@@ -453,9 +447,6 @@ class ClientsFunctionalDemoTest {
     private KafkaStreams streamsApp(
             final String userInfoTopic, final String userInfoEnrichedTopic) {
 
-        final Class<? extends Serde<UserInfo>> valueSerdeType =
-                (Class<? extends Serde<UserInfo>>) (Class<?>) KafkaProtobufSerde.class;
-
         final KStreamsProperties<Long, UserInfo> props =
                 Clients.builder(
                                 API_SPEC.id(),
@@ -470,8 +461,8 @@ class ClientsFunctionalDemoTest {
                                 UserInfo.class)
                         .withProp(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 1L)
                         .kstreams()
-                        .withKeyType(Long.class)
-                        .withValueSerdeType(valueSerdeType)
+                        .withKeySerdeType(Serdes.LongSerde.class, Long.class)
+                        .withValueSerdeType(KafkaProtobufSerde.class, UserInfo.class)
                         .withAcks(false)
                         .buildProperties();
 

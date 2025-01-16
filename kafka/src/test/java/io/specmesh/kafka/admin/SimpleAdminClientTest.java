@@ -16,7 +16,6 @@
 
 package io.specmesh.kafka.admin;
 
-import static io.specmesh.kafka.Clients.producerProperties;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -31,13 +30,11 @@ import io.specmesh.kafka.provision.Status;
 import io.specmesh.test.TestSpecLoader;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.LongDeserializer;
@@ -83,7 +80,7 @@ class SimpleAdminClientTest {
             status.check();
 
             // write seed info
-            try (var producer = avroProducer(OWNER_USER)) {
+            try (var producer = avroProducer()) {
 
                 for (int i = 0; i < 10000; i++) {
                     producer.send(new ProducerRecord<>(userSignedUpTopic, 1000L + i, sentRecord))
@@ -92,8 +89,7 @@ class SimpleAdminClientTest {
                 producer.flush();
             }
 
-            try (Consumer<Long, UserSignedUp> consumer =
-                    avroConsumer(userSignedUpTopic, OWNER_USER, "testGroup")) {
+            try (Consumer<Long, UserSignedUp> consumer = avroConsumer(userSignedUpTopic)) {
                 final int count = consumer.poll(Duration.ofSeconds(1)).count();
                 consumer.commitSync();
 
@@ -111,44 +107,39 @@ class SimpleAdminClientTest {
         }
     }
 
-    private Consumer<Long, UserSignedUp> avroConsumer(
-            final String topicName, final String userName, final String groupName) {
-        return consumer(
-                UserSignedUp.class,
-                topicName,
-                KafkaAvroDeserializer.class,
-                userName,
-                Map.of("group.id", groupName));
-    }
+    private Consumer<Long, UserSignedUp> avroConsumer(final String topicName) {
 
-    private static <V> Consumer<Long, V> consumer(
-            final Class<V> valueClass,
-            final String topicName,
-            final Class<?> valueDeserializer,
-            final String userName,
-            final Map<String, Object> additionalProps) {
+        final Consumer<Long, UserSignedUp> consumer =
+                Clients.builder(
+                                API_SPEC.id(),
+                                UUID.randomUUID().toString(),
+                                KAFKA_ENV.kafkaBootstrapServers(),
+                                KAFKA_ENV.schemaRegistryServer())
+                        .withProps(
+                                Clients.clientSaslAuthProperties(
+                                        OWNER_USER, OWNER_USER + "-secret"))
+                        .withProp(CommonClientConfigs.GROUP_ID_CONFIG, OWNER_USER)
+                        .consumer()
+                        .withKeyDeserializerType(LongDeserializer.class, Long.class)
+                        .withValueDeserializerType(KafkaAvroDeserializer.class, UserSignedUp.class)
+                        .build();
 
-        final Map<String, Object> props =
-                Clients.consumerProperties(
-                        API_SPEC.id(),
-                        UUID.randomUUID().toString(),
-                        KAFKA_ENV.kafkaBootstrapServers(),
-                        KAFKA_ENV.schemaRegistryServer(),
-                        LongDeserializer.class,
-                        valueDeserializer,
-                        true,
-                        additionalProps);
-
-        props.putAll(Clients.clientSaslAuthProperties(userName, userName + "-secret"));
-        props.put(CommonClientConfigs.GROUP_ID_CONFIG, userName);
-
-        final KafkaConsumer<Long, V> consumer = Clients.consumer(Long.class, valueClass, props);
         consumer.subscribe(List.of(topicName));
         return consumer;
     }
 
-    private static Producer<Long, UserSignedUp> avroProducer(final String user) {
-        return producer(UserSignedUp.class, KafkaAvroSerializer.class, user, Map.of());
+    private static Producer<Long, UserSignedUp> avroProducer() {
+        return Clients.builder(
+                        API_SPEC.id(),
+                        UUID.randomUUID().toString(),
+                        KAFKA_ENV.kafkaBootstrapServers(),
+                        KAFKA_ENV.schemaRegistryServer())
+                .withProps(Clients.clientSaslAuthProperties(OWNER_USER, OWNER_USER + "-secret"))
+                .producer()
+                .withKeySerializerType(LongSerializer.class, Long.class)
+                .withValueSerializerType(KafkaAvroSerializer.class, UserSignedUp.class)
+                .withAcks(false)
+                .build();
     }
 
     private static String topicName(final String topicSuffix) {
@@ -157,26 +148,5 @@ class SimpleAdminClientTest {
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Topic " + topicSuffix + " not found"))
                 .name();
-    }
-
-    private static <V> Producer<Long, V> producer(
-            final Class<V> valueClass,
-            final Class<?> valueSerializer,
-            final String userName,
-            final Map<String, Object> additionalProps) {
-        final Map<String, Object> props =
-                producerProperties(
-                        API_SPEC.id(),
-                        UUID.randomUUID().toString(),
-                        KAFKA_ENV.kafkaBootstrapServers(),
-                        KAFKA_ENV.schemaRegistryServer(),
-                        LongSerializer.class,
-                        valueSerializer,
-                        false,
-                        additionalProps);
-
-        props.putAll(Clients.clientSaslAuthProperties(userName, userName + "-secret"));
-
-        return Clients.producer(Long.class, valueClass, props);
     }
 }

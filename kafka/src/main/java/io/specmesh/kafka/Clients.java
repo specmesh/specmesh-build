@@ -77,7 +77,6 @@ import org.apache.kafka.common.serialization.VoidSerializer;
 import org.apache.kafka.streams.StreamsConfig;
 
 /** Factory for Kafka clients */
-@SuppressWarnings("RedundantCast")
 public final class Clients {
 
     public static final String SASL_MECHANISM = "sasl.mechanism";
@@ -273,12 +272,6 @@ public final class Clients {
         }
     }
 
-    /**
-     * auth credentials are provided
-     *
-     * @param principal user-id
-     * @return true if principal was set
-     */
     private static boolean isPrincipalSpecified(final String principal) {
         return principal != null && !principal.isBlank();
     }
@@ -293,6 +286,9 @@ public final class Clients {
                 + "\";";
     }
 
+    /**
+     * @deprecated use {@link #schemaRegistryClient(String, String, String)}.
+     */
     @Deprecated(forRemoval = true, since = "0.10.1")
     public static Optional<SchemaRegistryClient> schemaRegistryClient(
             final boolean srEnabled,
@@ -318,6 +314,15 @@ public final class Clients {
                 requireNonNull(schemaRegistryUrl, "schemaRegistryUrl"), 5, properties);
     }
 
+    /**
+     * Obtain a new client builder, which can be used to build multiple clients.
+     *
+     * @param domainId the domain id, used to scope resource names and ids.
+     * @param serviceId the name of the service
+     * @param bootstrapServers the kafka bootstrap servers
+     * @param schemaRegistryUrl the url of schema registry
+     * @return new client builder instance
+     */
     public static ClientBuilder builder(
             final String domainId,
             final String serviceId,
@@ -403,12 +408,16 @@ public final class Clients {
         }
     }
 
+    /**
+     * Type used to, erm, build clients.
+     */
     public static final class ClientBuilder {
 
         private static final Map<String, ?> BASE_PROPS =
                 Map.of(
                         // schema-reflect MUST be true when writing Java objects (otherwise you send
                         // a datum-container instead of a Pojo)
+                        // Todo: seems wrong.
                         AbstractKafkaSchemaSerDeConfig.SCHEMA_REFLECTION_CONFIG, true);
 
         private final String domainId;
@@ -432,7 +441,7 @@ public final class Clients {
             this.overrides = new HashMap<>();
         }
 
-        public ClientBuilder(
+        private ClientBuilder(
                 final String domainId,
                 final String serviceId,
                 final Map<String, ?> commonProps,
@@ -492,6 +501,7 @@ public final class Clients {
                         // Disable auto-reg to allow schemas to be published by controlled processes
                         AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS,
                         false,
+                        // Todo: seems wrong.
                         AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION,
                         true);
 
@@ -515,6 +525,24 @@ public final class Clients {
             return (ProducerBuilder<T, V>) this;
         }
 
+        /**
+         * Set the key serializer to a non-generic type.
+         *
+         * <p>Some serializers, e.g. {@link KafkaAvroSerializer}, do not accept template parameters
+         * that represent the type they serialize. This method variant avoids the need for casts in
+         * code by accepting the target type and performing the cast.
+         *
+         * @param serializerType the serializer type
+         * @param type the key type the serializer handles
+         * @return self
+         * @param <T> the new key type
+         */
+        @SuppressWarnings("rawtypes")
+        public <T> ProducerBuilder<T, V> withKeySerializerType(
+                final Class<? extends Serializer> serializerType, final Class<T> type) {
+            return withKeySerializerType(castNonGeneric(serializerType, type));
+        }
+
         public <T> ProducerBuilder<K, T> withValueType(final Class<T> type) {
             return withValueSerializerType(serializerFor(type));
         }
@@ -524,6 +552,24 @@ public final class Clients {
             final ProducerBuilder<K, T> adjusted = (ProducerBuilder<K, T>) this;
             adjusted.valSerializer = Optional.of(type);
             return (ProducerBuilder<K, T>) this;
+        }
+
+        /**
+         * Set the value serializer to a non-generic type.
+         *
+         * <p>Some serializers, e.g. {@link KafkaAvroSerializer}, do not accept template parameters
+         * that represent the type they serialize. This method variant avoids the need for casts in
+         * code by accepting the target type and performing the cast.
+         *
+         * @param serializerType the serializer type
+         * @param type the value type the serializer handles
+         * @return self
+         * @param <T> the new value type
+         */
+        @SuppressWarnings("rawtypes")
+        public <T> ProducerBuilder<K, T> withValueSerializerType(
+                final Class<? extends Serializer> serializerType, final Class<T> type) {
+            return withValueSerializerType(castNonGeneric(serializerType, type));
         }
 
         public ProducerBuilder<K, V> withAcks(final boolean acksAll) {
@@ -568,17 +614,22 @@ public final class Clients {
             return producer(buildProperties());
         }
 
-        @SuppressWarnings("unchecked")
         private static <T> Class<? extends Serializer<T>> serializerFor(final Class<T> type) {
             if (MessageLiteOrBuilder.class.isAssignableFrom(type)) {
-                return (Class<? extends Serializer<T>>) (Class<?>) KafkaProtobufSerializer.class;
+                return castNonGeneric(KafkaProtobufSerializer.class, type);
             }
 
             if (GenericRecord.class.isAssignableFrom(type)) {
-                return (Class<? extends Serializer<T>>) (Class<?>) KafkaAvroSerializer.class;
+                return castNonGeneric(KafkaAvroSerializer.class, type);
             }
 
             return stdSerdeType(type).serializer;
+        }
+
+        @SuppressWarnings({"unused", "rawtypes"})
+        private static <T> Class<? extends Serializer<T>> castNonGeneric(
+                final Class<? extends Serializer> serializerType, final Class<T> type) {
+            return (Class<? extends Serializer<T>>) serializerType;
         }
     }
 
@@ -605,6 +656,24 @@ public final class Clients {
             return (ConsumerBuilder<T, V>) this;
         }
 
+        /**
+         * Set the key deserializer to a non-generic type.
+         *
+         * <p>Some deserializers, e.g. {@link KafkaAvroDeserializer}, do not accept template
+         * parameters that represent the type they deserialize. This method variant avoids the need
+         * for casts in code by accepting the target type and performing the cast.
+         *
+         * @param deserializerType the deserializer type
+         * @param type the key type the deserializer handles
+         * @return self
+         * @param <T> the new key type
+         */
+        @SuppressWarnings("rawtypes")
+        public <T> ConsumerBuilder<T, V> withKeyDeserializerType(
+                final Class<? extends Deserializer> deserializerType, final Class<T> type) {
+            return withKeyDeserializerType(castNonGeneric(deserializerType, type));
+        }
+
         public <T> ConsumerBuilder<K, T> withValueType(final Class<T> type) {
             return withValueDeserializerType(deserializerFor(type));
         }
@@ -614,6 +683,24 @@ public final class Clients {
             final ConsumerBuilder<K, T> adjusted = (ConsumerBuilder<K, T>) this;
             adjusted.valDeserializer = Optional.of(type);
             return (ConsumerBuilder<K, T>) this;
+        }
+
+        /**
+         * Set the value deserializer to a non-generic type.
+         *
+         * <p>Some deserializers, e.g. {@link KafkaAvroDeserializer}, do not accept template
+         * parameters that represent the type they deserialize. This method variant avoids the need
+         * for casts in code by accepting the target type and performing the cast.
+         *
+         * @param deserializerType the deserializer type
+         * @param type the value type the deserializer handles
+         * @return self
+         * @param <T> the new value type
+         */
+        @SuppressWarnings("rawtypes")
+        public <T> ConsumerBuilder<K, T> withValueDeserializerType(
+                final Class<? extends Deserializer> deserializerType, final Class<T> type) {
+            return withValueDeserializerType(castNonGeneric(deserializerType, type));
         }
 
         public ConsumerBuilder<K, V> withAutoOffsetReset(final boolean earliest) {
@@ -660,18 +747,22 @@ public final class Clients {
             return consumer(buildProperties());
         }
 
-        @SuppressWarnings("unchecked")
         private static <T> Class<? extends Deserializer<T>> deserializerFor(final Class<T> type) {
             if (MessageLiteOrBuilder.class.isAssignableFrom(type)) {
-                return (Class<? extends Deserializer<T>>)
-                        (Class<?>) KafkaProtobufDeserializer.class;
+                return castNonGeneric(KafkaProtobufDeserializer.class, type);
             }
 
             if (GenericRecord.class.isAssignableFrom(type)) {
-                return (Class<? extends Deserializer<T>>) (Class<?>) KafkaAvroDeserializer.class;
+                return castNonGeneric(KafkaAvroDeserializer.class, type);
             }
 
             return stdSerdeType(type).deserializer;
+        }
+
+        @SuppressWarnings({"unused", "rawtypes"})
+        private static <T> Class<? extends Deserializer<T>> castNonGeneric(
+                final Class<? extends Deserializer> deserializerType, final Class<T> type) {
+            return (Class<? extends Deserializer<T>>) deserializerType;
         }
     }
 
@@ -699,6 +790,24 @@ public final class Clients {
             return (KStreamsBuilder<T, V>) this;
         }
 
+        /**
+         * Set the key serde to a non-generic type.
+         *
+         * <p>Some serde, e.g. {@link GenericAvroSerde}, do not accept template parameters that
+         * represent the type they operate on. This method variant avoids the need for casts in code
+         * by accepting the target type and performing the cast.
+         *
+         * @param serdeType the serde type
+         * @param type the key type the serde handles
+         * @return self
+         * @param <T> the new key type
+         */
+        @SuppressWarnings("rawtypes")
+        public <T> KStreamsBuilder<T, V> withKeySerdeType(
+                final Class<? extends Serde> serdeType, final Class<T> type) {
+            return withKeySerdeType(castNonGeneric(serdeType, type));
+        }
+
         public <T> KStreamsBuilder<K, T> withValueType(final Class<T> type) {
             return withValueSerdeType(serdeFor(type));
         }
@@ -707,6 +816,24 @@ public final class Clients {
             final KStreamsBuilder<K, T> adjusted = (KStreamsBuilder<K, T>) this;
             adjusted.valSerde = Optional.of(type);
             return (KStreamsBuilder<K, T>) this;
+        }
+
+        /**
+         * Set the value serde to a non-generic type.
+         *
+         * <p>Some serde, e.g. {@link GenericAvroSerde}, do not accept template parameters that
+         * represent the type they operate on. This method variant avoids the need for casts in code
+         * by accepting the target type and performing the cast.
+         *
+         * @param serdeType the serde type
+         * @param type the value type the serde handles
+         * @return self
+         * @param <T> the new value type
+         */
+        @SuppressWarnings("rawtypes")
+        public <T> KStreamsBuilder<K, T> withValueSerdeType(
+                final Class<? extends Serde> serdeType, final Class<T> type) {
+            return withValueSerdeType(castNonGeneric(serdeType, type));
         }
 
         public KStreamsBuilder<K, V> withAcks(final boolean acksAll) {
@@ -752,17 +879,22 @@ public final class Clients {
             return new KStreamsProperties<>(props);
         }
 
-        @SuppressWarnings("unchecked")
         private static <T> Class<? extends Serde<T>> serdeFor(final Class<T> type) {
             if (MessageLiteOrBuilder.class.isAssignableFrom(type)) {
-                return (Class<? extends Serde<T>>) (Class<?>) KafkaProtobufSerde.class;
+                return castNonGeneric(KafkaProtobufSerde.class, type);
             }
 
             if (GenericRecord.class.isAssignableFrom(type)) {
-                return (Class<? extends Serde<T>>) (Class<?>) GenericAvroSerde.class;
+                return castNonGeneric(GenericAvroSerde.class, type);
             }
 
             return stdSerdeType(type).serde;
+        }
+
+        @SuppressWarnings({"unused", "rawtypes"})
+        private static <T> Class<? extends Serde<T>> castNonGeneric(
+                final Class<? extends Serde> serdeType, final Class<T> type) {
+            return (Class<? extends Serde<T>>) serdeType;
         }
     }
 
@@ -802,6 +934,7 @@ public final class Clients {
      * @deprecated use the type-safe {@link ClientBuilder#producer()} or {@link
      *     #producer(ProducerProperties)}.
      */
+    @SuppressWarnings("unused")
     @Deprecated(forRemoval = true, since = "0.15.1")
     public static <K, V> KafkaProducer<K, V> producer(
             final Class<K> keyClass,
@@ -823,9 +956,9 @@ public final class Clients {
      * @param additionalProperties additional props
      * @return props
      * @deprecated use the type-safe {@link ClientBuilder#producer()} or {@link
-     *     #producer(ProducerProperties)}.
+     *     #producer(ProducerProperties)}.§§
      */
-    @SuppressWarnings("checkstyle:ParameterNumber")
+    @SuppressWarnings({"checkstyle:ParameterNumber", "DeprecatedIsStillUsed"})
     @SafeVarargs
     @Deprecated(forRemoval = true, since = "0.15.1")
     public static Map<String, Object> producerProperties(
@@ -872,7 +1005,7 @@ public final class Clients {
      * @return the streams properties.
      * @deprecated use the type-safe {@link ClientBuilder#kstreams()}.
      */
-    @SuppressWarnings("checkstyle:ParameterNumber")
+    @SuppressWarnings({"checkstyle:ParameterNumber", "DeprecatedIsStillUsed"})
     @SafeVarargs
     @Deprecated(forRemoval = true, since = "0.15.1")
     public static Map<String, Object> kstreamsProperties(
@@ -917,6 +1050,7 @@ public final class Clients {
      * @deprecated use the type-safe {@link ClientBuilder#consumer()} or {@link
      *     #consumer(ConsumerProperties)}.
      */
+    @SuppressWarnings("unused")
     @Deprecated(forRemoval = true, since = "0.15.1")
     public static <K, V> KafkaConsumer<K, V> consumer(
             final Class<K> keyClass,
@@ -940,7 +1074,7 @@ public final class Clients {
      * @deprecated @deprecated use the type-safe {@link ClientBuilder#consumer()}.
      */
     @Deprecated(forRemoval = true, since = "0.15.1")
-    @SuppressWarnings("checkstyle:ParameterNumber")
+    @SuppressWarnings({"checkstyle:ParameterNumber", "DeprecatedIsStillUsed"})
     @SafeVarargs
     public static Map<String, Object> consumerProperties(
             final String domainId,
