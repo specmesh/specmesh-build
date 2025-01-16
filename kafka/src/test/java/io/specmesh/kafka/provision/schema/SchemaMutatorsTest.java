@@ -63,7 +63,8 @@ class SchemaMutatorsTest {
                                 .schema(loadSchema(SCHEMA_BASE + "user_signed_up-v3-bad.avsc"))
                                 .build());
 
-        final var mutators = SchemaMutators.builder().schemaRegistryClient(client).build();
+        final var mutators =
+                SchemaMutators.builder().schemaRegistryClient(client).build("a.domain.id");
 
         // When:
         final Collection<SchemaProvisioner.Schema> schemas = mutators.mutate(required);

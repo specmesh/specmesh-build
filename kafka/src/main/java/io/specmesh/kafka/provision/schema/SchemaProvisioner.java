@@ -84,26 +84,19 @@ public final class SchemaProvisioner {
 
         final Collection<Schema> schemas =
                 calculator(cleanUnspecified).calculate(existing, required, apiSpec.id());
-        return mutator(dryRun, cleanUnspecified, client).mutate(schemas);
+        return mutator(dryRun, cleanUnspecified, apiSpec.id(), client).mutate(schemas);
     }
 
-    /**
-     * schema writer
-     *
-     * @param dryRun real or noops writer
-     * @param cleanUnspecified - clean unexpected resource
-     * @param schemaRegistryClient - sr connection
-     * @return writer instance
-     */
     private static SchemaMutators.SchemaMutator mutator(
             final boolean dryRun,
             final boolean cleanUnspecified,
+            final String domainId,
             final SchemaRegistryClient schemaRegistryClient) {
         return SchemaMutators.builder()
                 .schemaRegistryClient(schemaRegistryClient)
                 .noop(dryRun)
                 .cleanUnspecified(cleanUnspecified)
-                .build();
+                .build(domainId);
     }
 
     /**
@@ -180,8 +173,9 @@ public final class SchemaProvisioner {
                     .map(
                             ns -> {
                                 final ParsedSchema schema = ns.schema();
+                                final boolean topicSchema = ns.subject().isEmpty();
                                 final String subject =
-                                        ns.subject().isEmpty()
+                                        topicSchema
                                                 ? resolveSubjectName(
                                                         topicName, schema, si, partName)
                                                 : ns.subject();
@@ -191,6 +185,7 @@ public final class SchemaProvisioner {
                                         .type(schema.schemaType())
                                         .subject(subject)
                                         .state(CREATE)
+                                        .topicSchema(topicSchema)
                                         .build();
                             });
         } catch (ProvisioningException ex) {
@@ -281,6 +276,7 @@ public final class SchemaProvisioner {
         private String type;
         private Exception exception;
         @Builder.Default private String messages = "";
+        @Builder.Default private boolean topicSchema = false;
 
         private ParsedSchema schema;
 

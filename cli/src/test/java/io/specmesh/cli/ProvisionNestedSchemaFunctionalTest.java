@@ -23,23 +23,21 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
-import io.confluent.kafka.schemaregistry.ParsedSchema;
-import io.confluent.kafka.schemaregistry.avro.AvroSchema;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
+import io.specmesh.cli.util.CommonSchema;
 import io.specmesh.kafka.DockerKafkaEnvironment;
 import io.specmesh.kafka.KafkaEnvironment;
 import io.specmesh.kafka.provision.Status;
 import io.specmesh.kafka.provision.TopicProvisioner.Topic;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import picocli.CommandLine;
 
-class ProvisionNestedFunctionalTest {
+/** Functional test of specs that use schema that reference other schema. */
+class ProvisionNestedSchemaFunctionalTest {
 
     private static final String OWNER_USER = "simple.schema_demo";
 
@@ -94,7 +92,7 @@ class ProvisionNestedFunctionalTest {
                         .filter(s -> s.state() == Status.STATE.IGNORED)
                         .map(SchemaProvisioner.Schema::subject)
                         .collect(Collectors.toList()),
-                contains("other.domain.Common.subject"));
+                containsInAnyOrder("other.domain.Common", "other.domain.CommonOther"));
 
         assertThat(status.acls(), hasSize(12));
 
@@ -116,14 +114,9 @@ class ProvisionNestedFunctionalTest {
 
     private void givenCommonSchemaRegistered() {
         try (SchemaRegistryClient srClient = KAFKA_ENV.srClient()) {
-            final ParsedSchema schema =
-                    new AvroSchema(
-                            Files.readString(
-                                    Path.of(
-                                            "./src/test/resources/schema/other.domain.Common.avsc")));
-            srClient.register("other.domain.Common.subject", schema);
+            CommonSchema.registerCommonSchema(srClient);
         } catch (Exception e) {
-            throw new AssertionError("failed to register common schema", e);
+            throw new AssertionError("failed to close client", e);
         }
     }
 }

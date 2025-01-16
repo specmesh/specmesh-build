@@ -1,0 +1,27 @@
+asyncapi: 2.4.0
+id: 'urn:simple.schema_demo'
+info:
+  title: Streetlights API
+  version: 1.0.0
+  description: |
+    Test spec that has channels that directly use a common schema.
+  license:
+    name: Apache 2.0
+    url: 'https://www.apache.org/licenses/LICENSE-2.0'
+channels:
+  _public.some.topic:
+    bindings:
+      kafka:
+        partitions: 1
+        replicas: 1
+    publish:
+      operationId: OnPublish
+      message:
+        bindings:
+          kafka:
+            key:
+              $ref: /schema/other.domain.CommonKey.avsc
+        schemaFormat: application/vnd.apache.avro+json;version=1.9.0
+        contentType: application/octet-stream
+        payload:
+          $ref: /schema/other.domain.Common.avsc

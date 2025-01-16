@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "namespace": "other.domain",
+  "name": "CommonOther",
+  "fields": [
+    {"name": "thing", "type": "string"}
+  ]
+}
