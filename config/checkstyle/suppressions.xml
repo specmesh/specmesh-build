@@ -26,4 +26,7 @@
 <suppressions>
     <!-- Exclude generated sources   -->
     <suppress files="[\\/]build[\\/]generated[\\/]source" checks=".*"/>
+    <suppress files="[\\/]build[\\/]generated-main-avro-java" checks=".*"/>
+    <suppress files="[\\/]build[\\/]generated-test-avro-java" checks=".*"/>
+    <suppress files="[\\/]build[\\/]jmh_generated[\\/]" checks=".*"/>
 </suppressions>

@@ -24,4 +24,16 @@
         <!-- Exclude generated sources   -->
         <Source name="~.*[\\/]build[\\/]generated[\\/]source.*" />
     </Match>
+    <Match>
+        <!-- Exclude generated sources   -->
+        <Source name="~.*[\\/]build[\\/]generated-main-avro-java.*" />
+    </Match>
+    <Match>
+        <!-- Exclude generated sources   -->
+        <Source name="~.*[\\/]build[\\/]generated-test-avro-java.*" />
+    </Match>
+    <Match>
+        <!-- Exclude generated sources   -->
+        <Source name="~.*[\\/]jmh_generated[\\/].*" />
+    </Match>
 </FindBugsFilter>

@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserSignedUp {
+public class UserSignedUpPojo {
     String fullName;
     String email;
     int age;

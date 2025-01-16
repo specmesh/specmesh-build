@@ -40,7 +40,7 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.generic.IndexedRecord;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -408,12 +408,6 @@ public final class Clients {
     /** Type used to, erm, build clients. */
     public static final class ClientBuilder {
 
-        private static final Map<String, ?> BASE_PROPS =
-                Map.of(
-                        // schema-reflect MUST be true when writing Java objects (otherwise you send
-                        // a datum-container instead of a Pojo)
-                        AbstractKafkaSchemaSerDeConfig.SCHEMA_REFLECTION_CONFIG, true);
-
         private final String domainId;
         private final String serviceId;
         private final Map<String, ?> commonProps;
@@ -507,9 +501,7 @@ public final class Clients {
         }
 
         private Map<String, Object> baseProps() {
-            final Map<String, Object> props = new HashMap<>(BASE_PROPS);
-            props.putAll(commonProps);
-            return props;
+            return new HashMap<>(commonProps);
         }
     }
 
@@ -527,6 +519,7 @@ public final class Clients {
                         // Disable auto-reg to allow schemas to be published by controlled processes
                         AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS,
                         false,
+                        // Todo: seems wrong.
                         AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION,
                         true);
 
@@ -704,7 +697,7 @@ public final class Clients {
                 return castNonGeneric(KafkaProtobufSerializer.class, type);
             }
 
-            if (GenericRecord.class.isAssignableFrom(type)) {
+            if (IndexedRecord.class.isAssignableFrom(type)) {
                 return castNonGeneric(KafkaAvroSerializer.class, type);
             }
 
@@ -904,7 +897,7 @@ public final class Clients {
                 return castNonGeneric(KafkaProtobufDeserializer.class, type);
             }
 
-            if (GenericRecord.class.isAssignableFrom(type)) {
+            if (IndexedRecord.class.isAssignableFrom(type)) {
                 return castNonGeneric(KafkaAvroDeserializer.class, type);
             }
 
@@ -1099,7 +1092,7 @@ public final class Clients {
                 return castNonGeneric(KafkaProtobufSerde.class, type);
             }
 
-            if (GenericRecord.class.isAssignableFrom(type)) {
+            if (IndexedRecord.class.isAssignableFrom(type)) {
                 return castNonGeneric(GenericAvroSerde.class, type);
             }
 
@@ -1187,7 +1180,8 @@ public final class Clients {
             final Map<String, Object>... additionalProperties) {
 
         ClientBuilder builder =
-                Clients.builder(domainId, serviceId, bootstrapServers, schemaRegistryUrl);
+                Clients.builder(domainId, serviceId, bootstrapServers, schemaRegistryUrl)
+                        .withProp(AbstractKafkaSchemaSerDeConfig.SCHEMA_REFLECTION_CONFIG, true);
 
         for (final Map<String, Object> additional : additionalProperties) {
             builder = builder.withProps(additional);
@@ -1234,7 +1228,8 @@ public final class Clients {
             final Map<String, Object>... additionalProperties) {
 
         ClientBuilder builder =
-                Clients.builder(domainId, serviceId, bootstrapServers, schemaRegistryUrl);
+                Clients.builder(domainId, serviceId, bootstrapServers, schemaRegistryUrl)
+                        .withProp(AbstractKafkaSchemaSerDeConfig.SCHEMA_REFLECTION_CONFIG, true);
 
         for (final Map<String, Object> additional : additionalProperties) {
             builder = builder.withProps(additional);
@@ -1302,7 +1297,8 @@ public final class Clients {
             final Map<String, Object>... additionalProperties) {
 
         ClientBuilder builder =
-                Clients.builder(domainId, serviceId, bootstrapServers, schemaRegistryUrl);
+                Clients.builder(domainId, serviceId, bootstrapServers, schemaRegistryUrl)
+                        .withProp(AbstractKafkaSchemaSerDeConfig.SCHEMA_REFLECTION_CONFIG, true);
 
         for (final Map<String, Object> additional : additionalProperties) {
             builder = builder.withProps(additional);
