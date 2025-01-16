@@ -146,7 +146,7 @@ subprojects {
             removeUnusedImports()
             trimTrailingWhitespace()
             endWithNewline()
-            targetExclude("**/build/generated/source*/**/*.*")
+            targetExclude("**/build/**/*.*")
         }
     }
 

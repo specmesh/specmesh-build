@@ -327,6 +327,7 @@ class StorageConsumptionFunctionalTest {
                         .withProp(
                                 CommonClientConfigs.GROUP_ID_CONFIG, OWNER_USER + ":" + "testGroup")
                         .withProp(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false)
+                        .withProp(AbstractKafkaSchemaSerDeConfig.SCHEMA_REFLECTION_CONFIG, true)
                         .consumer()
                         .withKeyType(Long.class)
                         .withValueDeserializerType(KafkaAvroDeserializer.class, UserSignedUp.class)
@@ -343,6 +344,7 @@ class StorageConsumptionFunctionalTest {
                         KAFKA_ENV.kafkaBootstrapServers(),
                         KAFKA_ENV.schemaRegistryServer())
                 .withProps(Clients.clientSaslAuthProperties(OWNER_USER, OWNER_USER + "-secret"))
+                .withProp(AbstractKafkaSchemaSerDeConfig.SCHEMA_REFLECTION_CONFIG, true)
                 .producer()
                 .withKeyType(Long.class)
                 .withValueSerializerType(KafkaAvroSerializer.class, UserSignedUp.class)

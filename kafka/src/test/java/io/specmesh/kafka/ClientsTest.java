@@ -94,8 +94,6 @@ class ClientsTest {
                         SCHEMA_REG_URL,
                         AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS,
                         false,
-                        KafkaAvroSerializerConfig.SCHEMA_REFLECTION_CONFIG,
-                        true,
                         KafkaAvroSerializerConfig.USE_LATEST_VERSION,
                         true);
         assertThat(props.asMap(), is(expected));
@@ -202,9 +200,7 @@ class ClientsTest {
                         ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
                         VAL_DESERIALIZER_TYPE,
                         AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG,
-                        SCHEMA_REG_URL,
-                        AbstractKafkaSchemaSerDeConfig.SCHEMA_REFLECTION_CONFIG,
-                        true);
+                        SCHEMA_REG_URL);
         assertThat(props.asMap(), is(expected));
     }
 
@@ -293,24 +289,27 @@ class ClientsTest {
 
         // Then:
         final Map<String, ?> expected =
-                Map.ofEntries(
-                        Map.entry(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS),
-                        Map.entry(
-                                StreamsConfig.APPLICATION_ID_CONFIG,
-                                DOMAIN_ID + "._private." + SERVICE_ID),
-                        Map.entry(
-                                StreamsConfig.CLIENT_ID_CONFIG,
-                                DOMAIN_ID + "." + SERVICE_ID + ".client"),
-                        Map.entry(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, KEY_SERDE_TYPE),
-                        Map.entry(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, VAL_SERDE_TYPE),
-                        Map.entry(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 10 * 1000L),
-                        Map.entry(ProducerConfig.ACKS_CONFIG, "all"),
-                        Map.entry(
-                                AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG,
-                                SCHEMA_REG_URL),
-                        Map.entry(AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS, false),
-                        Map.entry(KafkaAvroSerializerConfig.SCHEMA_REFLECTION_CONFIG, true),
-                        Map.entry(KafkaAvroSerializerConfig.USE_LATEST_VERSION, true));
+                Map.of(
+                        CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG,
+                        BOOTSTRAP_SERVERS,
+                        StreamsConfig.APPLICATION_ID_CONFIG,
+                        DOMAIN_ID + "._private." + SERVICE_ID,
+                        StreamsConfig.CLIENT_ID_CONFIG,
+                        DOMAIN_ID + "." + SERVICE_ID + ".client",
+                        StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG,
+                        KEY_SERDE_TYPE,
+                        StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG,
+                        VAL_SERDE_TYPE,
+                        StreamsConfig.COMMIT_INTERVAL_MS_CONFIG,
+                        10 * 1000L,
+                        ProducerConfig.ACKS_CONFIG,
+                        "all",
+                        AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG,
+                        SCHEMA_REG_URL,
+                        AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS,
+                        false,
+                        KafkaAvroSerializerConfig.USE_LATEST_VERSION,
+                        true);
         assertThat(props.asMap(), is(expected));
     }
 
