@@ -125,6 +125,59 @@ public final class SchemaMutators {
         }
     }
 
+    /** Ensures any topic schema owned by another domain are already registered */
+    private static final class EnsureSharedRegistered implements SchemaMutator {
+
+        private final String domainId;
+        private final SchemaRegistryClient client;
+
+        private EnsureSharedRegistered(final String domainId, final SchemaRegistryClient client) {
+            this.domainId = domainId;
+            this.client = client;
+        }
+
+        /**
+         * Write updated schemas
+         *
+         * @param schemas to write
+         * @return updated set of schemas
+         */
+        @Override
+        public List<Schema> mutate(final Collection<Schema> schemas) {
+            return schemas.stream()
+                    .filter(Schema::topicSchema)
+                    .filter(this::notOwnedByDomain)
+                    .filter(
+                            schema ->
+                                    schema.state().equals(STATE.CREATE)
+                                            || schema.state().equals(STATE.UPDATE))
+                    .map(this::failIfNotRegistered)
+                    .filter(schema -> schema.state().equals(STATE.FAILED))
+                    .collect(Collectors.toList());
+        }
+
+        private boolean notOwnedByDomain(final Schema schema) {
+            return !SchemaOwnership.schemaOwnedByDomain(schema, domainId);
+        }
+
+        private Schema failIfNotRegistered(final Schema schema) {
+            final String name = schema.schema().name();
+            try {
+                final int id = client.getId(name, schema.schema());
+                schema.messages(schema.messages() + "\nSchema registered with id:" + id);
+            } catch (Exception e) {
+                schema.exception(
+                        new ProvisioningException(
+                                "Topic schema that are not owned by the domain must already be"
+                                        + " registered under subject matching fully qualified name."
+                                        + " name: "
+                                        + name,
+                                e));
+            }
+            return schema;
+        }
+    }
+
     /** Updates */
     public static final class UpdateMutator implements SchemaMutator {
 
@@ -275,7 +328,7 @@ public final class SchemaMutators {
      *
      * @return builder
      */
-    public static SchemaMutatorBuilder builder() {
+    static SchemaMutatorBuilder builder() {
         return SchemaMutatorBuilder.builder();
     }
 
@@ -283,7 +336,7 @@ public final class SchemaMutators {
     @SuppressFBWarnings(
             value = "EI_EXPOSE_REP2",
             justification = "adminClient() passed as param to prevent API pollution")
-    public static final class SchemaMutatorBuilder {
+    static final class SchemaMutatorBuilder {
         private SchemaRegistryClient client;
         private boolean dryRun;
         private boolean cleanUnspecified;
@@ -338,14 +391,17 @@ public final class SchemaMutators {
          *
          * @return the specified the right kind of mutator
          */
-        public SchemaMutator build() {
+        SchemaMutator build(final String domainId) {
             if (cleanUnspecified) {
                 return new CleanUnspecifiedMutator(dryRun, client);
             } else if (dryRun) {
                 return new NoopSchemaMutator();
             } else {
                 return new CollectiveMutator(
-                        new UpdateMutator(client), new WriteMutator(client), new IgnoredMutator());
+                        new EnsureSharedRegistered(domainId, client),
+                        new UpdateMutator(client),
+                        new WriteMutator(client),
+                        new IgnoredMutator());
             }
         }
     }

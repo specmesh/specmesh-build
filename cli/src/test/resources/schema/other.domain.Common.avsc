@@ -3,6 +3,6 @@
   "namespace": "other.domain",
   "name": "Common",
   "fields": [
-    {"name": "thing", "type": "string"}
+    {"name": "other", "type": "other.domain.CommonOther", "subject": "other.domain.CommonOther"}
   ]
 }

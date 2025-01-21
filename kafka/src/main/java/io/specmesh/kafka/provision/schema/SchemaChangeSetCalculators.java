@@ -159,12 +159,9 @@ final class SchemaChangeSetCalculators {
         }
 
         private Schema markIgnoredIfOutsideDomain(final Schema schema, final String domainId) {
-            if (schema.schema() instanceof AvroSchema) {
-                final AvroSchema avroSchema = (AvroSchema) schema.schema();
-                if (!avroSchema.rawSchema().getNamespace().equals(domainId)) {
-                    return schema.state(Status.STATE.IGNORED)
-                            .messages("\n ignored as it does not belong to the domain");
-                }
+            if (!schema.topicSchema() && !SchemaOwnership.schemaOwnedByDomain(schema, domainId)) {
+                return schema.state(Status.STATE.IGNORED)
+                        .messages("\n ignored as it does not belong to the domain");
             }
 
             return schema;

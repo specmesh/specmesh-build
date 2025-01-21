@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "namespace": "other.domain",
+  "name": "CommonKey",
+  "fields": [
+    {"name": "id", "type": "long"}
+  ]
+}

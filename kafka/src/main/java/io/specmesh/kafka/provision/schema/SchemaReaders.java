@@ -111,7 +111,12 @@ public final class SchemaReaders {
 
             final Map<String, String> resolvedReferences =
                     schema.references().stream()
-                            .collect(toMap(DetectedSchema::subject, DetectedSchema::content));
+                            .collect(
+                                    toMap(
+                                            DetectedSchema::subject,
+                                            DetectedSchema::content,
+                                            (s1, s2) -> s1,
+                                            LinkedHashMap::new));
 
             return new AvroSchema(schema.content(), references, resolvedReferences, -1);
         }
