@@ -107,10 +107,7 @@ public final class CommonSchema {
 
                     final AvroSchema schema =
                             new AvroSchema(
-                                    readLocalSchema(subject, cache),
-                                    references,
-                                    resolvedReferences,
-                                    -1);
+                                    readLocalSchema(subject), references, resolvedReferences, -1);
                     try {
                         final int id = srClient.register(subject, schema);
                         System.out.println("Registered " + subject + " with id " + id);
@@ -121,8 +118,7 @@ public final class CommonSchema {
                 });
     }
 
-    private static String readLocalSchema(
-            final String subject, final Map<String, AvroSchema> cache) {
+    private static String readLocalSchema(final String subject) {
         final Path path = SCHEMA_ROOT.resolve(subject + ".avsc");
         try {
             return Files.readString(path);
