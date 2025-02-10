@@ -18,8 +18,8 @@ plugins {
     java
     `maven-publish`
     signing
-    id("com.github.spotbugs") version "6.0.27"
-    id("com.diffplug.spotless") version "6.25.0"
+    id("com.github.spotbugs") version "6.1.3"
+    id("com.diffplug.spotless") version "7.0.2"
     id("pl.allegro.tech.build.axion-release") version "1.18.16"
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
     id("com.bmuschko.docker-remote-api") version "9.4.0" apply false
@@ -77,9 +77,9 @@ subprojects {
         set("protobufVersion", "3.25.5")
         set("medeiaValidatorVersion", "1.1.0")
         set("junitVersion", "5.11.4")
-        set("mockitoVersion", "5.14.2")
+        set("mockitoVersion", "5.15.2")
         set("junitPioneerVersion", "2.3.0")
-        set("spotBugsVersion", "4.8.6")
+        set("spotBugsVersion", "4.9.0")
         set("hamcrestVersion", "1.3")
         set("log4jVersion", "2.24.3")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
         set("classGraphVersion", "4.8.21")
