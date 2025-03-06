@@ -267,11 +267,11 @@ public final class SchemaMutators {
                                             client.register(schema.subject(), schema.schema());
                                     client.updateCompatibility(schema.subject(), DEFAULT_EVOLUTION);
                                     schema.messages(
-                                            "Subject:"
+                                            "Subject: "
                                                     + schema.subject()
-                                                    + "Created with id: "
+                                                    + ", created with id: "
                                                     + schemaId
-                                                    + ", evolution set to:"
+                                                    + ", evolution set to: "
                                                     + DEFAULT_EVOLUTION);
                                     schema.state(CREATED);
                                 } catch (IOException | RestClientException e) {

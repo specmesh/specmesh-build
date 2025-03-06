@@ -21,11 +21,13 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
 /** Pojo for holding data about a schema that is registered with the schema registry. */
+@Builder
 @Value
 @Accessors(fluent = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
