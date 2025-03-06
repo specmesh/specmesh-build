@@ -23,6 +23,9 @@ import io.specmesh.apiparser.AsyncApiParser.APIParserException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
@@ -32,8 +35,10 @@ import lombok.experimental.Accessors;
  * @see <a href= "https://www.asyncapi.com/docs/reference/specification/v2.4.0#messageObject">spec
  *     docs</a>
  */
+@Builder
 @Value
 @Accessors(fluent = true)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @SuppressFBWarnings
 @SuppressWarnings({"unchecked", "rawtypes"})

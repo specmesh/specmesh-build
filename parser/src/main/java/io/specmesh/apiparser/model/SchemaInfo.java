@@ -19,11 +19,13 @@ package io.specmesh.apiparser.model;
 import static java.util.Objects.requireNonNull;
 
 import java.util.Optional;
+import lombok.Builder;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
 /** Pojo representing a schmea */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+@Builder
 @Value
 @Accessors(fluent = true)
 public class SchemaInfo {

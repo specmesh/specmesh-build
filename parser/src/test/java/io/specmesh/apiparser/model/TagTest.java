@@ -16,24 +16,20 @@
 
 package io.specmesh.apiparser.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.Value;
-import lombok.experimental.Accessors;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
-/** Pojo representing a tag */
-@Builder
-@Value
-@Accessors(fluent = true)
-@JsonIgnoreProperties(ignoreUnknown = true)
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-@NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
-public class Tag {
-    @JsonProperty String name;
+import org.junit.jupiter.api.Test;
 
-    @JsonProperty String description;
+class TagTest {
+
+    @Test
+    void shouldBeAbleToConstructPopulatedTag() {
+        // When:
+        final Tag tag = Tag.builder().name("name").description("description").build();
+
+        // Then:
+        assertThat(tag.name(), is("name"));
+        assertThat(tag.description(), is("description"));
+    }
 }
