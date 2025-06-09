@@ -84,7 +84,7 @@ subprojects {
         set("log4jVersion", "2.24.3")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
         set("classGraphVersion", "4.8.21")
         set("testcontainersVersion", "1.20.1")
-        set("lombokVersion", "1.18.36")
+        set("lombokVersion", "1.18.38")
     }
 
     val junitVersion: String by extra
