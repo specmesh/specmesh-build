@@ -23,7 +23,6 @@ import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.json.JsonSchemaProvider;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
 import io.specmesh.kafka.schema.SchemaRegistryContainer;
-import java.io.Closeable;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
