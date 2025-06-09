@@ -29,7 +29,7 @@ dependencies {
     api(project(":parser"))
     api(project(":kafka"))
     api("org.junit.jupiter:junit-jupiter-api:$junitVersion")
-    implementation("org.testcontainers:testcontainers:$testcontainersVersion")
+    api("org.testcontainers:testcontainers:$testcontainersVersion")
     implementation("org.testcontainers:kafka:$testcontainersVersion")
 
     compileOnly("org.projectlombok:lombok:$lombokVersion")

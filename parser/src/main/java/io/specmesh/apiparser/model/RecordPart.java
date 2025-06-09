@@ -55,6 +55,7 @@ public interface RecordPart {
     // Types supported by for standard Kafka serializers:
     enum KafkaType {
         UUID("uuid"),
+        Boolean("boolean"),
         Long("long"),
         Int("int"),
         Short("short"),
