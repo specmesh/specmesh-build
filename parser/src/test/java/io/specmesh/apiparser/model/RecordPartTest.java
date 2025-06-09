@@ -129,8 +129,8 @@ class RecordPartTest {
         assertThat(
                 e.getMessage(),
                 containsString(
-                        "Unknown KafkaType: not-valid. Valid values are: "
-                                + "[uuid, long, int, short, float, double, string, bytes, void]"));
+                        "Unknown KafkaType: not-valid. Valid values are: [uuid, boolean, long, int,"
+                                + " short, float, double, string, bytes, void]"));
     }
 
     @ParameterizedTest
