@@ -16,7 +16,7 @@
 
 plugins {
     `java-library`
-    id("com.google.protobuf") version "0.9.4"
+    id("com.google.protobuf") version "0.9.5"
     id("com.github.davidmc24.gradle.plugin.avro") version "1.9.1"
 }
 
@@ -29,7 +29,7 @@ dependencies {
     api(project(":parser"))
     api(project(":kafka"))
     api("org.junit.jupiter:junit-jupiter-api:$junitVersion")
-    implementation("org.testcontainers:testcontainers:$testcontainersVersion")
+    api("org.testcontainers:testcontainers:$testcontainersVersion")
     implementation("org.testcontainers:kafka:$testcontainersVersion")
 
     compileOnly("org.projectlombok:lombok:$lombokVersion")
