@@ -74,7 +74,7 @@ subprojects {
         set("guavaVersion", "33.4.8-jre")
         set("confluentVersion", "7.9.1")
         set("jacksonVersion", "2.19.0")
-        set("protobufVersion", "3.25.5")
+        set("protobufVersion", "4.31.1")
         set("medeiaValidatorVersion", "1.1.0")
         set("junitVersion", "5.13.1")
         set("mockitoVersion", "5.18.0")
