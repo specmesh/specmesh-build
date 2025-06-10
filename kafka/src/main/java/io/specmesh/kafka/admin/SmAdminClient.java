@@ -95,7 +95,6 @@ public interface SmAdminClient {
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     @Accessors(fluent = true)
-    @SuppressFBWarnings
     @EqualsAndHashCode(onlyExplicitlyIncluded = true)
     class Member {
         @EqualsAndHashCode.Include private String id;
@@ -108,7 +107,6 @@ public interface SmAdminClient {
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     @Accessors(fluent = true)
-    @SuppressFBWarnings
     @EqualsAndHashCode(onlyExplicitlyIncluded = true)
     class Partition {
         @EqualsAndHashCode.Include private int id;

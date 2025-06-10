@@ -99,7 +99,7 @@ public final class DockerKafkaEnvironment
     private Network network;
     private KafkaContainer kafkaBroker;
     private SchemaRegistryContainer schemaRegistry;
-    private boolean invokedStatically = false;
+    private volatile boolean invokedStatically = false;
     private final AtomicInteger setUpCount = new AtomicInteger(0);
 
     /**

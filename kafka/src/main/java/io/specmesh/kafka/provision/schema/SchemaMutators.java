@@ -333,9 +333,6 @@ public final class SchemaMutators {
     }
 
     /** Mutator builder */
-    @SuppressFBWarnings(
-            value = "EI_EXPOSE_REP2",
-            justification = "adminClient() passed as param to prevent API pollution")
     static final class SchemaMutatorBuilder {
         private SchemaRegistryClient client;
         private boolean dryRun;

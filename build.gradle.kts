@@ -18,7 +18,7 @@ plugins {
     java
     `maven-publish`
     signing
-    id("com.github.spotbugs") version "6.1.6"
+    id("com.github.spotbugs") version "6.2.0"
     id("com.diffplug.spotless") version "7.0.4"
     id("pl.allegro.tech.build.axion-release") version "1.18.18"
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
@@ -141,7 +141,7 @@ subprojects {
     spotless {
         java {
             googleJavaFormat("1.15.0").aosp().reflowLongStrings()
-            indentWithSpaces()
+            leadingTabsToSpaces()
             importOrder()
             removeUnusedImports()
             trimTrailingWhitespace()
