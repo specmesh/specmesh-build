@@ -141,7 +141,7 @@ subprojects {
     spotless {
         java {
             googleJavaFormat("1.15.0").aosp().reflowLongStrings()
-            indentWithSpaces()
+            leadingTabsToSpaces()
             importOrder()
             removeUnusedImports()
             trimTrailingWhitespace()

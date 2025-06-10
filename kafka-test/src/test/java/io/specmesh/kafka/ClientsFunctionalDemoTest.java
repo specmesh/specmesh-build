@@ -31,7 +31,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThrows;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
@@ -333,7 +332,6 @@ class ClientsFunctionalDemoTest {
         }
     }
 
-    @SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT")
     private static <K> Clients.ConsumerBuilder<K, Void> consumerBuilder(
             final Class<K> keyClass, final String userName, final Map<String, ?> additionalProps) {
 

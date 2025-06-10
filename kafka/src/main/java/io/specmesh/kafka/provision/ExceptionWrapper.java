@@ -16,11 +16,9 @@
 
 package io.specmesh.kafka.provision;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-@SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "exception copy")
 public class ExceptionWrapper extends RuntimeException {
 
     public ExceptionWrapper(final Exception exception) {

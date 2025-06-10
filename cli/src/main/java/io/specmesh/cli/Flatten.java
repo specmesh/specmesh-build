@@ -21,7 +21,6 @@ import static picocli.CommandLine.Command;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.apiparser.parse.SpecMapper;
 import io.specmesh.kafka.KafkaApiSpec;
 import java.io.FileOutputStream;
@@ -41,7 +40,6 @@ import picocli.CommandLine.Option;
 @Getter
 @Accessors(fluent = true)
 @Builder
-@SuppressFBWarnings
 public class Flatten implements Callable<Integer> {
 
     /**
