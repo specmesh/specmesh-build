@@ -23,7 +23,6 @@ import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.json.JsonSchemaProvider;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
 import io.specmesh.kafka.schema.SchemaRegistryContainer;
-import java.io.Closeable;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
@@ -82,7 +81,7 @@ public final class DockerKafkaEnvironment
                 BeforeEachCallback,
                 AfterEachCallback,
                 AfterAllCallback,
-                Closeable {
+                Startable {
 
     /** The port to use when connecting to Kafka from inside the Docker network */
     public static final int KAFKA_DOCKER_NETWORK_PORT = 9092;
@@ -153,12 +152,12 @@ public final class DockerKafkaEnvironment
             return;
         }
 
-        close();
+        stop();
     }
 
     @Override
     public void afterAll(final ExtensionContext context) {
-        close();
+        stop();
     }
 
     /**
@@ -277,7 +276,7 @@ public final class DockerKafkaEnvironment
     }
 
     @Override
-    public void close() {
+    public void stop() {
         if (setUpCount.decrementAndGet() != 0) {
             return;
         }
@@ -300,6 +299,11 @@ public final class DockerKafkaEnvironment
         }
 
         invokedStatically = false;
+    }
+
+    @Override
+    public void close() {
+        stop();
     }
 
     private void installAcls() {

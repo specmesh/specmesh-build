@@ -129,8 +129,8 @@ class RecordPartTest {
         assertThat(
                 e.getMessage(),
                 containsString(
-                        "Unknown KafkaType: not-valid. Valid values are: "
-                                + "[uuid, long, int, short, float, double, string, bytes, void]"));
+                        "Unknown KafkaType: not-valid. Valid values are: [uuid, boolean, long, int,"
+                                + " short, float, double, string, bytes, void]"));
     }
 
     @ParameterizedTest
@@ -178,5 +178,23 @@ class RecordPartTest {
         // Then:
         assertThat(result, is(instanceOf(RecordPart.OtherPart.class)));
         assertThat(result.schemaRef(), is(Optional.empty()));
+    }
+
+    @ParameterizedTest
+    @EnumSource(KafkaType.class)
+    void shouldHaveSerializerForEachKafkaType(final KafkaType keyType) throws Exception {
+        // Given:
+        final String typeName =
+                keyType == KafkaType.Int
+                        ? "Integer"
+                        : keyType.name().substring(0, 1).toUpperCase()
+                                + keyType.name().substring(1);
+        final String serializerClassName =
+                "org.apache.kafka.common.serialization." + typeName + "Serializer";
+
+        // When:
+        getClass().getClassLoader().loadClass(serializerClassName);
+
+        // Then: did not throw.
     }
 }
