@@ -133,7 +133,6 @@ final class AvroReferenceFinder {
 
         final List<DetectedSchema> detected =
                 schema.nestedTypes.stream()
-                        .filter(nested -> visited.add(nested.name))
                         .map(
                                 nested ->
                                         findReferences(
