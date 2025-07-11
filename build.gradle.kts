@@ -76,7 +76,7 @@ subprojects {
         set("jacksonVersion", "2.19.1")
         set("protobufVersion", "3.25.5")
         set("medeiaValidatorVersion", "1.1.0")
-        set("junitVersion", "5.13.1")
+        set("junitVersion", "5.13.2")
         set("mockitoVersion", "5.18.0")
         set("junitPioneerVersion", "2.3.0")
         set("spotBugsVersion", "4.9.3")
@@ -266,8 +266,8 @@ subprojects {
 nexusPublishing {
     repositories {
         sonatype {
-            nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
-            snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
+            nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
 
             if (project.hasProperty("SONA_USERNAME")) {
                 username.set(project.property("SONA_USERNAME").toString())
