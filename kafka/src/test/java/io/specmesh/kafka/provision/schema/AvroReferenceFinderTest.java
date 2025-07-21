@@ -255,10 +255,77 @@ class AvroReferenceFinderTest {
         when(schemaLoader.load("TypeB")).thenReturn(b);
 
         // When:
-        refFinder.findReferences(a);
+        final List<DetectedSchema> result = refFinder.findReferences(a);
 
         // Then:
         verify(schemaLoader, times(1)).load(any());
+
+        final DetectedSchema schemaB = new DetectedSchema("TypeB", "type.b.subject", b, List.of());
+        final DetectedSchema schemaA = new DetectedSchema("TypeA", "", a, List.of(schemaB));
+        assertThat(result, contains(schemaB, schemaA));
+    }
+
+    @Test
+    void shouldNotRevisitSameNestedSchemaTwice() {
+        // Given: a -> b -> d
+        //        | -> c -> |
+        final String a =
+                "{\n"
+                        + "  \"type\": \"record\",\n"
+                        + "  \"name\": \"TypeA\",\n"
+                        + "  \"fields\": [\n"
+                        + "    {\"name\": \"f1\", \"type\": \"TypeB\","
+                        + " \"subject\":\"type.b.subject\"},\n"
+                        + "    {\"name\": \"f2\", \"type\": \"TypeC\","
+                        + " \"subject\":\"type.c.subject\"}\n"
+                        + "  ]\n"
+                        + "}";
+
+        final String b =
+                "{\n"
+                        + "  \"type\": \"record\",\n"
+                        + "  \"name\": \"TypeB\",\n"
+                        + "  \"fields\": [\n"
+                        + "    {\"name\": \"f1\", \"type\": \"TypeD\","
+                        + " \"subject\":\"type.d.subject\"}\n"
+                        + "  ]\n"
+                        + "}";
+
+        final String c =
+                "{\n"
+                        + "  \"type\": \"record\",\n"
+                        + "  \"name\": \"TypeC\",\n"
+                        + "  \"fields\": [\n"
+                        + "    {\"name\": \"f1\", \"type\": \"TypeD\","
+                        + " \"subject\":\"type.d.subject\"}\n"
+                        + "  ]\n"
+                        + "}";
+
+        final String d =
+                "{\n"
+                        + "  \"type\": \"record\",\n"
+                        + "  \"name\": \"TypeD\",\n"
+                        + "  \"fields\": [\n"
+                        + "    {\"name\": \"f1\", \"type\": \"string\"}\n"
+                        + "  ]\n"
+                        + "}";
+
+        when(schemaLoader.load("TypeB")).thenReturn(b);
+        when(schemaLoader.load("TypeC")).thenReturn(c);
+        when(schemaLoader.load("TypeD")).thenReturn(d);
+
+        // When:
+        final List<DetectedSchema> result = refFinder.findReferences(a);
+
+        // Then:
+        final DetectedSchema schemaD = new DetectedSchema("TypeD", "type.d.subject", d, List.of());
+        final DetectedSchema schemaC =
+                new DetectedSchema("TypeC", "type.c.subject", c, List.of(schemaD));
+        final DetectedSchema schemaB =
+                new DetectedSchema("TypeB", "type.b.subject", b, List.of(schemaD));
+        final DetectedSchema schemaA =
+                new DetectedSchema("TypeA", "", a, List.of(schemaD, schemaB, schemaC));
+        assertThat(result, contains(schemaD, schemaB, schemaC, schemaA));
     }
 
     @Test
