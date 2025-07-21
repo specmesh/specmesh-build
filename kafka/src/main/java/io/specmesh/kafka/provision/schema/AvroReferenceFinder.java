@@ -124,7 +124,6 @@ final class AvroReferenceFinder {
         return findReferences(schema, visited);
     }
 
-    // Todo: Return stream?
     private List<DetectedSchema> findReferences(
             final ParsedSchema schema, final Map<String, List<DetectedSchema>> visited) {
         final String type = schema.type.orElse("");
