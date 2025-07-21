@@ -22,11 +22,11 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -118,14 +118,14 @@ final class AvroReferenceFinder {
         final String namespace = schema.namespace.orElse("");
         final String fullyQualifiedName = namespace.isEmpty() ? name : namespace + "." + name;
 
-        final Set<String> visited = new HashSet<>();
-        visited.add(fullyQualifiedName);
+        final Map<String, List<DetectedSchema>> visited = new ConcurrentHashMap<>();
+        visited.put(fullyQualifiedName, List.of());
 
         return findReferences(schema, visited);
     }
 
     private List<DetectedSchema> findReferences(
-            final ParsedSchema schema, final Set<String> visited) {
+            final ParsedSchema schema, final Map<String, List<DetectedSchema>> visited) {
         final String type = schema.type.orElse("");
         if (!"record".equals(type)) {
             return List.of(new DetectedSchema(schema, List.of()));
@@ -133,16 +133,27 @@ final class AvroReferenceFinder {
 
         final List<DetectedSchema> detected =
                 schema.nestedTypes.stream()
-                        .filter(nested -> visited.add(nested.name))
                         .map(
-                                nested ->
-                                        findReferences(
-                                                ParsedSchema.create(
-                                                        nested.name,
-                                                        nested.subject,
-                                                        loadSchema(nested.name)),
-                                                visited))
+                                nested -> {
+                                    final List<DetectedSchema> existing = visited.get(nested.name);
+                                    if (existing != null) {
+                                        return existing;
+                                    }
+
+                                    visited.put(nested.name, List.of());
+
+                                    return visited.compute(
+                                            nested.name,
+                                            (k, v) ->
+                                                    findReferences(
+                                                            ParsedSchema.create(
+                                                                    nested.name,
+                                                                    nested.subject,
+                                                                    loadSchema(nested.name)),
+                                                            visited));
+                                })
                         .flatMap(List::stream)
+                        .distinct()
                         .collect(Collectors.toList());
 
         detected.add(new DetectedSchema(schema, detected));
