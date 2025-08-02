@@ -50,7 +50,7 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok:$lombokVersion")
     testCompileOnly("org.projectlombok:lombok:$lombokVersion")
     testAnnotationProcessor("org.projectlombok:lombok:$lombokVersion")
-    testRuntimeOnly("commons-codec:commons-codec:1.18.0")
+    testRuntimeOnly("commons-codec:commons-codec:1.19.0")
 
     testImplementation(project(":kafka-test"))
 }

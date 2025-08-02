@@ -46,7 +46,7 @@ dependencies {
 
     testImplementation("org.testcontainers:testcontainers:$testcontainersVersion")
     testImplementation("org.testcontainers:kafka:$testcontainersVersion")
-    testRuntimeOnly("commons-codec:commons-codec:1.18.0")
+    testRuntimeOnly("commons-codec:commons-codec:1.19.0")
 
     compileOnly("org.projectlombok:lombok:$lombokVersion")
     annotationProcessor("org.projectlombok:lombok:$lombokVersion")
