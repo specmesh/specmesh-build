@@ -55,6 +55,7 @@ public final class Provisioner {
     @Builder.Default private boolean closeAdminClient = false;
     private boolean dryRun;
     private boolean cleanUnspecified;
+    @Builder.Default private double partitionCountFactor = 1.0;
 
     public Status provision() {
         return provision(
@@ -114,7 +115,11 @@ public final class Provisioner {
                 Status.builder()
                         .topics(
                                 topicProvision.provision(
-                                        dryRun, cleanUnspecified, apiSpec, adminClient));
+                                        dryRun,
+                                        cleanUnspecified,
+                                        partitionCountFactor,
+                                        apiSpec,
+                                        adminClient));
         if (!srDisabled) {
             status.schemas(
                     schemaProvision.provision(
@@ -187,7 +192,11 @@ public final class Provisioner {
     @VisibleForTesting
     interface TopicProvision {
         Collection<TopicProvisioner.Topic> provision(
-                boolean dryRun, boolean cleanUnspecified, KafkaApiSpec apiSpec, Admin adminClient);
+                boolean dryRun,
+                boolean cleanUnspecified,
+                double partitionCountFactor,
+                KafkaApiSpec apiSpec,
+                Admin adminClient);
     }
 
     @VisibleForTesting

@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -72,11 +73,11 @@ class ProvisionerTest {
     @Test
     void shouldProvideGetters() {
         // When:
-        final var provision = Provisioner.builder().brokerUrl("borker").aclDisabled(false).build();
+        final var provision = Provisioner.builder().brokerUrl("broker").aclDisabled(false).build();
 
         // Then:
         assertThat(provision.aclDisabled(), is(false));
-        assertThat(provision.brokerUrl(), is("borker"));
+        assertThat(provision.brokerUrl(), is("broker"));
     }
 
     @Test
@@ -206,7 +207,8 @@ class ProvisionerTest {
                 aclProvisioner);
 
         // Then: did not throw, and
-        verify(topicProvisioner).provision(anyBoolean(), anyBoolean(), eq(explicitSpec), any());
+        verify(topicProvisioner)
+                .provision(anyBoolean(), anyBoolean(), anyDouble(), eq(explicitSpec), any());
         verify(schemaProvisioner)
                 .provision(anyBoolean(), anyBoolean(), eq(explicitSpec), any(), any());
         verify(aclProvisioner)
@@ -232,7 +234,7 @@ class ProvisionerTest {
         verify(specLoader).loadFromClassPath("spec-path", Provisioner.class.getClassLoader());
         verify(srClientFactory).schemaRegistryClient("sr-url", null, null);
 
-        verify(topicProvisioner).provision(false, false, spec, adminClient);
+        verify(topicProvisioner).provision(false, false, 1.0, spec, adminClient);
         verify(schemaProvisioner).provision(false, false, spec, "", srClient);
         verify(aclProvisioner).provision(false, false, spec, DOMAIN_ID, adminClient);
     }
@@ -326,7 +328,7 @@ class ProvisionerTest {
                 aclProvisioner);
 
         // Then:
-        verify(topicProvisioner).provision(eq(true), anyBoolean(), any(), any());
+        verify(topicProvisioner).provision(eq(true), anyBoolean(), anyDouble(), any(), any());
         verify(schemaProvisioner).provision(eq(true), anyBoolean(), any(), any(), any());
         verify(aclProvisioner).provision(eq(true), anyBoolean(), any(), any(), any());
     }
@@ -346,7 +348,7 @@ class ProvisionerTest {
                 aclProvisioner);
 
         // Then:
-        verify(topicProvisioner).provision(anyBoolean(), eq(true), any(), any());
+        verify(topicProvisioner).provision(anyBoolean(), eq(true), anyDouble(), any(), any());
         verify(schemaProvisioner).provision(anyBoolean(), eq(true), any(), any(), any());
         verify(aclProvisioner).provision(anyBoolean(), eq(true), any(), any(), any());
     }
@@ -404,7 +406,8 @@ class ProvisionerTest {
                 aclProvisioner);
 
         // Then:
-        verify(topicProvisioner).provision(anyBoolean(), anyBoolean(), any(), eq(userAdmin));
+        verify(topicProvisioner)
+                .provision(anyBoolean(), anyBoolean(), anyDouble(), any(), eq(userAdmin));
         verify(aclProvisioner).provision(anyBoolean(), anyBoolean(), any(), any(), eq(userAdmin));
     }
 
@@ -539,6 +542,27 @@ class ProvisionerTest {
 
         // Then:
         verify(client).close();
+    }
+
+    @Test
+    void shouldPassPartitionCountFactor() {
+        // Given:
+        final double partitionCountFactor = 0.7;
+        final Provisioner provisioner =
+                minimalBuilder().partitionCountFactor(partitionCountFactor).build();
+
+        // When:
+        provisioner.provision(
+                adminFactory,
+                srClientFactory,
+                specLoader,
+                topicProvisioner,
+                schemaProvisioner,
+                aclProvisioner);
+
+        // Then:
+        verify(topicProvisioner)
+                .provision(anyBoolean(), anyBoolean(), eq(partitionCountFactor), any(), any());
     }
 
     private static Provisioner.ProvisionerBuilder minimalBuilder() {

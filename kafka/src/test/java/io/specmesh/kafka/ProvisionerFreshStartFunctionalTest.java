@@ -110,7 +110,8 @@ class ProvisionerFreshStartFunctionalTest {
     void shouldDryRunTopicsFromEmptyCluster() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
-            final var changeset = TopicProvisioner.provision(true, false, API_SPEC, adminClient);
+            final var changeset =
+                    TopicProvisioner.provision(true, false, 1.0, API_SPEC, adminClient);
 
             assertThat(
                     changeset.stream().map(Topic::name).collect(Collectors.toSet()),
@@ -219,7 +220,8 @@ class ProvisionerFreshStartFunctionalTest {
     void shouldProvisionTopicsFromEmptyCluster() throws ExecutionException, InterruptedException {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
-            final var changeSet = TopicProvisioner.provision(false, false, API_SPEC, adminClient);
+            final var changeSet =
+                    TopicProvisioner.provision(false, false, 1.0, API_SPEC, adminClient);
 
             // Verify - changeset
             assertThat(
