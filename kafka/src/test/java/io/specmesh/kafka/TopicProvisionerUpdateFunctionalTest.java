@@ -104,7 +104,7 @@ class TopicProvisionerUpdateFunctionalTest {
     @Order(1)
     void shouldProvisionExistingSpec() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
-            TopicProvisioner.provision(false, false, API_SPEC, adminClient);
+            TopicProvisioner.provision(false, false, 1.0, API_SPEC, adminClient);
         }
     }
 
@@ -115,7 +115,7 @@ class TopicProvisionerUpdateFunctionalTest {
 
             // DRY RUN Test
             final var dryRunChangeset =
-                    TopicProvisioner.provision(true, false, API_UPDATE_SPEC, adminClient);
+                    TopicProvisioner.provision(true, false, 1.0, API_UPDATE_SPEC, adminClient);
 
             assertThat(
                     dryRunChangeset.stream().map(Topic::name).collect(Collectors.toSet()),
@@ -127,7 +127,7 @@ class TopicProvisionerUpdateFunctionalTest {
 
             // REAL Test
             final var changeset =
-                    TopicProvisioner.provision(false, false, API_UPDATE_SPEC, adminClient);
+                    TopicProvisioner.provision(false, false, 1.0, API_UPDATE_SPEC, adminClient);
 
             final var change = changeset.iterator().next();
 
@@ -156,7 +156,7 @@ class TopicProvisionerUpdateFunctionalTest {
 
             // create the unspecified topic
             final var unSpecifiedTopics =
-                    TopicProvisioner.provision(true, true, API_SPEC, adminClient);
+                    TopicProvisioner.provision(true, true, 1.0, API_SPEC, adminClient);
             // 'should.not.be' topic that should not be
             assertThat(unSpecifiedTopics, is(hasSize(1)));
             assertThat(unSpecifiedTopics.iterator().next().state(), is(STATE.DELETE));
@@ -173,7 +173,7 @@ class TopicProvisionerUpdateFunctionalTest {
 
             // create the unspecified topic
             final var unSpecifiedTopics =
-                    TopicProvisioner.provision(false, true, API_SPEC, adminClient);
+                    TopicProvisioner.provision(false, true, 1.0, API_SPEC, adminClient);
 
             // 'should.not.be' topic that should not be
             assertThat(unSpecifiedTopics, is(hasSize(1)));
