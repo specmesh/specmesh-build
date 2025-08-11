@@ -16,6 +16,7 @@
 
 package io.specmesh.kafka.provision;
 
+import com.google.common.base.Preconditions;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.specmesh.kafka.KafkaApiSpec;
 import java.util.Collection;
@@ -40,6 +41,11 @@ public final class TopicProvisioner {
      *
      * @param dryRun test or execute
      * @param cleanUnspecified remove unwanted resources
+     * @param partitionCountFactor Optional factor used to scale the number of partitions used when
+     *     provisioning a topic. Must be 0 &lt; factor &lt;= 1.0. For example, if factor is 0.5,
+     *     then all topics will be created with half the number of partitions specified in the spec.
+     *     Topics with more than 2 or more partition in the spec will always have at least 2
+     *     partitions after scaling.
      * @param apiSpec the api spec.
      * @param adminClient admin client for the Kafka cluster.
      * @return number of topics created
@@ -48,9 +54,10 @@ public final class TopicProvisioner {
     public static Collection<Topic> provision(
             final boolean dryRun,
             final boolean cleanUnspecified,
+            final double partitionCountFactor,
             final KafkaApiSpec apiSpec,
             final Admin adminClient) {
-        final var domain = domainTopicsFromApiSpec(apiSpec);
+        final var domain = domainTopicsFromApiSpec(apiSpec, partitionCountFactor);
         final var existing = reader(apiSpec, adminClient).readall();
         final var changeSet = comparator(cleanUnspecified).calculate(existing, domain);
         return mutate(dryRun, cleanUnspecified, adminClient).mutate(changeSet);
@@ -95,20 +102,18 @@ public final class TopicProvisioner {
         return TopicReaders.TopicsReaderBuilder.builder(adminClient, apiSpec.id()).build();
     }
 
-    /**
-     * Topics from the api spec
-     *
-     * @param apiSpec - spec
-     * @return set of topics from the spec
-     */
-    private static Collection<Topic> domainTopicsFromApiSpec(final KafkaApiSpec apiSpec) {
+    private static Collection<Topic> domainTopicsFromApiSpec(
+            final KafkaApiSpec apiSpec, final double partitionCountFactor) {
         return apiSpec.listDomainOwnedTopics().stream()
                 .map(
                         newTopic ->
                                 Topic.builder()
                                         .name(newTopic.name())
                                         .state(Status.STATE.READ)
-                                        .partitions(newTopic.numPartitions())
+                                        .partitions(
+                                                topicPartitions(
+                                                        newTopic.numPartitions(),
+                                                        partitionCountFactor))
                                         .replication(newTopic.replicationFactor())
                                         .config(newTopic.configs())
                                         .build())
@@ -142,5 +147,14 @@ public final class TopicProvisioner {
             this.state = Status.STATE.FAILED;
             return this;
         }
+    }
+
+    private static int topicPartitions(
+            final int specPartitionCount, final double partitionCountFactor) {
+        Preconditions.checkArgument(
+                0.0 < partitionCountFactor && partitionCountFactor <= 1.0,
+                "0.0 < partitionCountFactor <= 1.0, but was: " + partitionCountFactor);
+        final int min = specPartitionCount < 2 ? 1 : 2;
+        return Math.max(min, (int) (specPartitionCount * partitionCountFactor));
     }
 }

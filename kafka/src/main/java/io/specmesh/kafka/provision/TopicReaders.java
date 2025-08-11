@@ -59,6 +59,9 @@ public final class TopicReaders {
          */
         public Collection<TopicProvisioner.Topic> readall() {
             final var topicList = topicsForPrefix(adminClient, prefix);
+            if (topicList.isEmpty()) {
+                return List.of();
+            }
 
             final var topicDescriptions = topicDescriptions(topicList);
 

@@ -101,6 +101,10 @@ public class TopicMutators {
                             .filter(topic -> topic.state().equals(STATE.UPDATE))
                             .collect(Collectors.toList());
 
+            if (topicsToUpdate.isEmpty()) {
+                return topicsToUpdate;
+            }
+
             final var topicNames = toTopicNames(topicsToUpdate);
             final var describeTopics = adminClient.describeTopics(topicNames).topicNameValues();
 
@@ -290,6 +294,11 @@ public class TopicMutators {
                     topics.stream()
                             .filter(topic -> topic.state().equals(STATE.CREATE))
                             .collect(Collectors.toList());
+
+            if (topicsToCreate.isEmpty()) {
+                return topicsToCreate;
+            }
+
             try {
                 adminClient
                         .createTopics(asNewTopic(topicsToCreate))
