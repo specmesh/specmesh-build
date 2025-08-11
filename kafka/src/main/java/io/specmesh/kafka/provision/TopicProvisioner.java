@@ -42,10 +42,10 @@ public final class TopicProvisioner {
      * @param dryRun test or execute
      * @param cleanUnspecified remove unwanted resources
      * @param partitionCountFactor Optional factor used to scale the number of partitions used when
-     *     provisioning a topic. Must be 0 &lt; factor &lt;= 1.0. For example, if factor is 0.5, then all
-     *     topics will be created with half the number of partitions specified in the spec. Topics
-     *     with more than 2 or more partition in the spec will always have at least 2 partitions
-     *     after scaling.
+     *     provisioning a topic. Must be 0 &lt; factor &lt;= 1.0. For example, if factor is 0.5,
+     *     then all topics will be created with half the number of partitions specified in the spec.
+     *     Topics with more than 2 or more partition in the spec will always have at least 2
+     *     partitions after scaling.
      * @param apiSpec the api spec.
      * @param adminClient admin client for the Kafka cluster.
      * @return number of topics created

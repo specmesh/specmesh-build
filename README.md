@@ -294,6 +294,37 @@ channels:
           $ref: "/schema/com.example.shared.Currency.avsc"
 ```
 
+# Scaling Kafka resources in non-production environments
+
+It's not uncommon for non-production environments to have less resources available for running services. 
+If your lower environments have smaller Kafka clusters and data volumes, then you may wish to provision topics with lower retention and less partitions & replicas.
+(This can be particularly relevant when running Kafka within some cloud platforms where partitions are limited or have an associated cost).
+
+Scaling cluster resources can be achieved by creating per-environment specs. However, it is also possible to roll out the same spec and scale resources as explained below.
+
+## Reducing topic partitions
+
+The `--partition-count-factor` command line parameter and `Provisioner.partitionCountFactor()` method can be used to apply a factor to scale _down_ the partition counts of a spec.
+
+For example, if channel/topic has 20 partitions in the spec, provisioning with either `--partition-count-factor 0.1` or `Provisioner.builder().partitionCountFactor(0.1)`
+will provision the topic with `20 x0 0.1`, i.e. 2 partitions.
+
+Note: topics with multiple partitions will _always_ provision with at least 2 partitions. Only topics with a single partition in the spec will have one partition, regardless of the factor applied.
+This is to ensure partitioning related bugs and issues can be detected in all environments.
+
+For example, a dev cluster can set `--partition-count-factor = 0.00001` to ensure all topics have either 1 or 2 topics, other non-prod clusters `--partition-count-factor = 0.1` to save resources and staging and prod would leave the default `--partition-count-factor = 1`.
+
+## Reducing topic replicas
+
+It is recommended that `replicas` is _not_ set in the spec in most cases. Instead, set the cluster-side `default.replication.factor` config as needed. 
+
+For example, a single-node dev cluster can set `default.replication.factor = 1`, other non-prod clusters `default.replication.factor = 3` and staging and prod may require `default.replication.factor = 4`.
+
+## Reducing topic retention
+
+It is recommended that the `retention.ms` topic config is _not_ set in the spec in most cases. Instead, set the cluster-side `log.retention.ms` (or related) config as needed.
+This allows the cluster, as a whole, to control the _default_ log retention. Only topics that require a specific log retention to meet business requirements need have their retention set in the spec,
+overriding the default.
 
 # Developer Notes
 
