@@ -242,7 +242,6 @@ Trade.avsc references the _Currency_ .avsc schema (the shared schema type)
     {
       "name": "currency",
       "type": "com.example.shared.Currency",
-      "subject": "com.example.shared.Currency",
       "doc": "Currency is from another 'domain'."
     }
   ]

@@ -86,15 +86,18 @@ public final class SchemaReaders {
             final String filename =
                     Optional.ofNullable(filePath.getFileName()).map(Objects::toString).orElse("");
             if (filename.endsWith(".avsc")) {
-                return referenceFinder(filePath).findReferences(schemaContent).stream()
-                        .map(s -> new NamedSchema(s.subject(), toAvroSchema(s)))
+                return referenceFinder(filePath)
+                        .findReferences(filePath.toString(), schemaContent)
+                        .stream()
+                        .map(s -> new NamedSchema(s.name(), toAvroSchema(s)))
                         .collect(Collectors.toList());
             } else if (filename.endsWith(".yml")) {
                 return List.of(new NamedSchema("", new JsonSchema(schemaContent)));
             } else if (filename.endsWith(".proto")) {
                 return List.of(new NamedSchema("", new ProtobufSchema(schemaContent)));
             } else {
-                throw new UnsupportedOperationException("Unsupported schema file: " + filePath);
+                throw new UnsupportedOperationException(
+                        "Unsupported schema file: " + filePath.toAbsolutePath().normalize());
             }
         }
 
@@ -106,14 +109,14 @@ public final class SchemaReaders {
 
             final List<SchemaReference> references =
                     schema.references().stream()
-                            .map(ref -> new SchemaReference(ref.name(), ref.subject(), -1))
+                            .map(ref -> new SchemaReference(ref.name(), ref.name(), -1))
                             .collect(Collectors.toList());
 
             final Map<String, String> resolvedReferences =
                     schema.references().stream()
                             .collect(
                                     toMap(
-                                            DetectedSchema::subject,
+                                            DetectedSchema::name,
                                             DetectedSchema::content,
                                             (s1, s2) -> s1,
                                             LinkedHashMap::new));
@@ -141,12 +144,19 @@ public final class SchemaReaders {
             }
         }
 
+        // Todo: Not sure this works on windows, due to slashes being the wrong way around... needs
+        // a windows build.
         @Override
         AvroReferenceFinder referenceFinder(final Path parentSchema) {
             final Path schemaDir =
                     Optional.ofNullable(parentSchema.getParent()).orElse(Path.of(""));
 
-            return new AvroReferenceFinder(type -> readSchema(schemaDir.resolve(type + ".avsc")));
+            return new AvroReferenceFinder(
+                    type -> {
+                        final Path path = schemaDir.resolve(type + ".avsc");
+                        final String content = readSchema(path);
+                        return new AvroReferenceFinder.LoadedSchema(path.toString(), content);
+                    });
         }
     }
 
@@ -165,7 +175,12 @@ public final class SchemaReaders {
         AvroReferenceFinder referenceFinder(final Path parentSchema) {
             final Path schemaDir = parentSchema.toAbsolutePath().getParent();
 
-            return new AvroReferenceFinder(type -> readSchema(schemaDir.resolve(type + ".avsc")));
+            return new AvroReferenceFinder(
+                    type -> {
+                        final Path path = schemaDir.resolve(type + ".avsc");
+                        final String content = readSchema(path);
+                        return new AvroReferenceFinder.LoadedSchema(path.toString(), content);
+                    });
         }
     }
 

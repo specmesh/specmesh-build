@@ -139,9 +139,11 @@ final class SchemaChangeSetCalculators {
             return required.stream()
                     .filter(
                             schema ->
-                                    !existing.contains(schema)
-                                            && (schema.state().equals(Status.STATE.READ)
-                                                    || schema.state().equals(Status.STATE.CREATE)))
+                                    !SchemaOwnership.schemaOwnedByDomain(schema, domainId)
+                                            || (!existing.contains(schema))
+                                                    && (schema.state().equals(Status.STATE.READ)
+                                                            || schema.state()
+                                                                    .equals(Status.STATE.CREATE)))
                     .map(schema -> schema.state(Status.STATE.CREATE))
                     .peek(schema -> schema.messages(schema.messages() + "\n Create"))
                     .collect(Collectors.toList());
