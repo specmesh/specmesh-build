@@ -26,7 +26,6 @@ import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Calculates a changeset of Schemas to create or update, should also return incompatible changes
@@ -40,12 +39,12 @@ final class SchemaChangeSetCalculators {
     /** Collection based */
     static final class Collective implements ChangeSetCalculator {
 
+        private final IgnorePreprocessor preprocessor;
         private final List<ChangeSetCalculator> calculatorStream;
-        private final IgnoreCalculator finalCalculator;
 
         private Collective(
-                final IgnoreCalculator finalCalculator, final ChangeSetCalculator... writers) {
-            this.finalCalculator = requireNonNull(finalCalculator, "finalCalculator");
+                final IgnorePreprocessor preprocessor, final ChangeSetCalculator... writers) {
+            this.preprocessor = requireNonNull(preprocessor, "preprocessor");
             this.calculatorStream = List.of(writers);
         }
 
@@ -54,12 +53,11 @@ final class SchemaChangeSetCalculators {
                 final Collection<Schema> existing,
                 final Collection<Schema> required,
                 final String domainId) {
-            return finalCalculator.calculate(
-                    calculatorStream.stream()
-                            .map(calculator -> calculator.calculate(existing, required, domainId))
-                            .flatMap(Collection::stream)
-                            .collect(Collectors.toList()),
-                    domainId);
+            final Collection<Schema> preprocessed = preprocessor.calculate(required, domainId);
+            return calculatorStream.stream()
+                    .map(calculator -> calculator.calculate(existing, preprocessed, domainId))
+                    .flatMap(Collection::stream)
+                    .toList();
         }
     }
 
@@ -91,7 +89,7 @@ final class SchemaChangeSetCalculators {
                             schema ->
                                     schema.messages(schema.messages() + "\n Update")
                                             .state(Status.STATE.UPDATE))
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         private boolean hasChanged(final Schema needs, final List<Schema> existingList) {
@@ -115,7 +113,7 @@ final class SchemaChangeSetCalculators {
             final List<SchemaReference> references =
                     avroSchema.references().stream()
                             .map(ref -> new SchemaReference(ref.getName(), ref.getSubject(), -1))
-                            .collect(Collectors.toList());
+                            .toList();
 
             return new AvroSchema(
                     avroSchema.canonicalString(),
@@ -137,27 +135,34 @@ final class SchemaChangeSetCalculators {
                 final Collection<Schema> required,
                 final String domainId) {
             return required.stream()
-                    .filter(
-                            schema ->
-                                    !SchemaOwnership.schemaOwnedByDomain(schema, domainId)
-                                            || (!existing.contains(schema))
-                                                    && (schema.state().equals(Status.STATE.READ)
-                                                            || schema.state()
-                                                                    .equals(Status.STATE.CREATE)))
+                    .filter(schema -> needsToBeCreated(schema, existing, domainId))
                     .map(schema -> schema.state(Status.STATE.CREATE))
                     .peek(schema -> schema.messages(schema.messages() + "\n Create"))
-                    .collect(Collectors.toList());
+                    .toList();
+        }
+
+        private static boolean needsToBeCreated(
+                final Schema schema, final Collection<Schema> existing, final String domainId) {
+            if (!schema.state().equals(Status.STATE.READ)
+                    && !schema.state().equals(Status.STATE.CREATE)) {
+                return false;
+            }
+            if (!schema.topicSchema() && !SchemaOwnership.schemaOwnedByDomain(schema, domainId)) {
+                return false;
+            }
+
+            return !existing.contains(schema);
         }
     }
 
     /** Ignores schemas from outside the domain */
-    static final class IgnoreCalculator {
+    static final class IgnorePreprocessor {
 
         public Collection<Schema> calculate(
                 final Collection<Schema> required, final String domainId) {
             return required.stream()
                     .map(schema -> markIgnoredIfOutsideDomain(schema, domainId))
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         private Schema markIgnoredIfOutsideDomain(final Schema schema, final String domainId) {
@@ -167,6 +172,20 @@ final class SchemaChangeSetCalculators {
             }
 
             return schema;
+        }
+    }
+
+    /** Allows ignored schema to flow through to response. */
+    static final class IgnoreCalculator implements ChangeSetCalculator {
+
+        @Override
+        public Collection<Schema> calculate(
+                final Collection<Schema> existing,
+                final Collection<Schema> required,
+                final String domainId) {
+            return required.stream()
+                    .filter(schema -> schema.state().equals(Status.STATE.IGNORED))
+                    .toList();
         }
     }
 
@@ -221,7 +240,10 @@ final class SchemaChangeSetCalculators {
 
             } else {
                 return new Collective(
-                        new IgnoreCalculator(), new UpdateCalculator(), new CreateCalculator());
+                        new IgnorePreprocessor(),
+                        new IgnoreCalculator(),
+                        new UpdateCalculator(),
+                        new CreateCalculator());
             }
         }
     }

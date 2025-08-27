@@ -167,7 +167,7 @@ public final class SchemaReaders {
                 return Files.readString(path, StandardCharsets.UTF_8);
             } catch (IOException e) {
                 throw new SchemaProvisioningException(
-                        "Failed to read schema at path:" + path.toAbsolutePath(), e);
+                        "Failed to read schema at path:" + path.toAbsolutePath().normalize(), e);
             }
         }
 

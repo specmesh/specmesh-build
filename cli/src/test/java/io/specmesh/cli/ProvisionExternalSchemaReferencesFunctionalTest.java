@@ -88,7 +88,7 @@ class ProvisionExternalSchemaReferencesFunctionalTest {
                         .map(SchemaProvisioner.Schema::subject)
                         .toList(),
                 containsInAnyOrder(
-                        "schema.reference.demo.Entity",
+                        "schema.reference.demo._public.entity-value",
                         "schema.reference.demo.ThingA",
                         "schema.reference.demo.ThingB",
                         "schema.reference.demo.ThingC",

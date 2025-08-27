@@ -169,7 +169,7 @@ public final class SchemaProvisioner {
             final List<NamedSchema> schemas =
                     new SchemaReaders.LocalSchemaReader().read(schemaPath);
 
-            final NamedSchema topicSchema = schemas.get(schemas.size() -1 );
+            final NamedSchema topicSchema = schemas.get(schemas.size() - 1);
             return schemas.stream()
                     .map(
                             ns -> {
