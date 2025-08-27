@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build-linux:
     permissions:
       packages: write
     runs-on: ubuntu-latest
@@ -61,10 +61,30 @@ jobs:
       - name: Push Docker images
         if: startsWith(github.ref, 'refs/tags/')
         run: ./gradlew pushAppImage
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: gradle/wrapper-validation-action@f9c9c575b8b21b6485636a91ffecd10e558c62f6 # v3.5.0
+      - name: Set up JDK
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          java-version: 17
+          distribution: 'temurin'
+          cache: gradle
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify protoc
+        shell: bash
+        run: protoc --version
+      - name: Build
+        run: ./gradlew build
 
   create-gh-release:
     if: startsWith(github.ref, 'refs/tags/') && !endsWith(github.ref, '-alpha')
-    needs: build
+    needs: build-linux
     runs-on: ubuntu-latest
     permissions:
       contents: write
