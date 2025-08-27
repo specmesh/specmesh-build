@@ -151,6 +151,3 @@ class ProvisionExternalSchemaReferencesFunctionalTest {
         }
     }
 }
-
-// Todo: Add decent tdocs
-// Todo: clean down unused schema.

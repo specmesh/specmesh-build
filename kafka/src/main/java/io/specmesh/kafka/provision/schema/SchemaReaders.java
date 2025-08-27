@@ -144,8 +144,6 @@ public final class SchemaReaders {
             }
         }
 
-        // Todo: Not sure this works on windows, due to slashes being the wrong way around... needs
-        // a windows build.
         @Override
         AvroReferenceFinder referenceFinder(final Path parentSchema) {
             final Path schemaDir =
