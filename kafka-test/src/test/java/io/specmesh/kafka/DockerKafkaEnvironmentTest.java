@@ -18,7 +18,6 @@ package io.specmesh.kafka;
 
 import java.time.Duration;
 import java.util.function.Consumer;
-
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
