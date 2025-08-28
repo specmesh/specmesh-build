@@ -34,6 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -43,6 +44,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
  * schemaLookupStrategy: "RecordNameStrategy" so Trade can reference the subject like that
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@Tag("ContainerisedTest")
 class SchemaProvisionerReferenceTest {
 
     private static final KafkaApiSpec COMMON_API_SPEC =

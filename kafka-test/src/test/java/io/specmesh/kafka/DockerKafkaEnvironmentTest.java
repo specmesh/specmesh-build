@@ -18,8 +18,10 @@ package io.specmesh.kafka;
 
 import java.time.Duration;
 import java.util.function.Consumer;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag("ContainerisedTest")
 class DockerKafkaEnvironmentTest {
 
     private static final int STARTUP_ATTEMPTS = 1;

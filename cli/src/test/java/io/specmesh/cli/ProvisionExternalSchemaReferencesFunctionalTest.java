@@ -33,11 +33,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import picocli.CommandLine;
 
 /** Functional test of specs that use schema files that reference other schema files. */
+@Tag("ContainerisedTest")
 class ProvisionExternalSchemaReferencesFunctionalTest {
 
     private static final String DOMAIN_USER = "schema.reference.demo";

@@ -49,6 +49,7 @@ import org.apache.kafka.common.resource.ResourcePattern;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -61,6 +62,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
         value = "IC_INIT_CIRCULARITY",
         justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positive")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@Tag("ContainerisedTest")
 class TopicProvisionerUpdateFunctionalTest {
 
     private static final KafkaApiSpec API_SPEC =
