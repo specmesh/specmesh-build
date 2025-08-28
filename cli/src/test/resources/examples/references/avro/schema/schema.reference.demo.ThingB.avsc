@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "ThingB",
+  "namespace": "schema.reference.demo",
+  "fields": [
+    {"name": "d", "type": {
+      "type": "map",
+      "values": "schema.reference.demo.ThingD"
+    }},
+    {"name": "e", "type": "schema.reference.demo.ThingE"},
+    {"name": "sub", "type": "schema.reference.demo.sub.domain.SubThing"},
+    {"name": "shared", "type": "shared.SharedThing"}
+  ]
+}

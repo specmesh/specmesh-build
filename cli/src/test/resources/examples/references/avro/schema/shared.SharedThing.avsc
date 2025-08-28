@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "name": "SharedThing",
+  "namespace": "shared",
+  "fields": [
+    {"name": "name", "type": "string", "default": ""}
+  ]
+}

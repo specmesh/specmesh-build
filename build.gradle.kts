@@ -60,7 +60,7 @@ subprojects {
 
     java {
         toolchain {
-            languageVersion.set(JavaLanguageVersion.of(11))
+            languageVersion.set(JavaLanguageVersion.of(17))
         }
 
         withSourcesJar()
@@ -133,7 +133,7 @@ subprojects {
             (options as StandardJavadocDocletOptions).apply {
                 addBooleanOption("html5", true)
                 // Why -quite? See: https://github.com/gradle/gradle/issues/2354
-                addStringOption("Xwerror", "-quiet")
+                addStringOption("Xdoclint:none", "-quiet")
             }
         }
     }

@@ -141,56 +141,135 @@ channels:
       ]
 ```
 
-## Schema References (AVRO)
+## Shared Schemas
 
-Schema References are supported only by the Confluent Avro Serde. Common/Shared schemas are configured to be shared using the 'subject' as the full Record name (namespace+name). For example: com.example.shared.Currency - as opposed to the topic name (default schema subject). The way in which the schema is registered will follow the conventions defined below. It is configured as an attribute on the owning app.yml specificiation. As follows:
-```yaml
-        bindings:
-          kafka:
-            schemaIdLocation: "header"
-            schemaLookupStrategy: "RecordNameStrategy"
-            key:
-              type: string
-        payload:
-          $ref: "/schema/com.example.shared.Currency.avsc"
+Using shared schemas between different business functions is seen by many as an anti-pattern and can easily lead to schema-dependency-hell.
+
+However, there are a limited number of use-cases where using cross-domain schemas are useful, and therefore the pattern is supported by SpecMesh.
+
+For example, an organisation may need a shared `User` type:
+
+```json
+{
+  "type": "record",
+  "name": "User",
+  "namespace": "acme.sales",
+  "fields" : [
+    {"name":  "id", "type":  "long"},
+    {"name":  "name", "type":  "string"}
+  ]
+}
 ```
 
-More detail is provided below.
+**Note** Currently, only shared Avro schemas are supported.
 
-### **Confluent Schema Registry** conventions
+### Registering shared schema
 
-https://docs.confluent.io/platform/6.2/schema-registry/serdes-develop/index.html#subject-name-strategy
+Util [#453](https://github.com/specmesh/specmesh-build/issues/453) is done, you'll need to register your shared schemas yourself.
 
-**TopicNameStrategy** - Derives subject name from topic name. (This is the default.)
+Shared schemas should registered with a subject name that matches the fully qualified name of the Avro type.
+For example, `acme.sales.User` in for the above example record type.
 
-**RecordNameStrategy** - Derives subject name from record name, and provides a way to group logically related events that may have different data structures under a subject.
+As the subject needs to match the fully qualified name of the Avro type, only _named Avro typed_ can be registered separately i.e. `record`, `enum` and `fixed` types.
 
-**TopicRecordNameStrategy** -	Derives the subject name from topic and record name, as a way to group logically related events that may have different data structures under a subject.
+**WARNING**: add a value to an `enum` or changing a `fixed`'s size are _non-evolvable changes_ that require very careful management.
 
+#### Using RecordNameStrategy to register shared schema
 
-### **APICurio** conventions
+It is possible to register a shared schema under the subject name required for sharing by provisioning a spec with a dummy channel
+that uses a `RecordNameStrategy` naming strategy. For example:
 
-https://github.com/asyncapi/bindings/blob/master/kafka/README.md
-https://www.apicur.io/registry/docs/apicurio-registry/2.2.x/getting-started/assembly-using-kafka-client-serdes.html#registry-serdes-concepts-strategy_registry
+```yaml
+  _private.dummy.user:
+    publish:
+      operationId: publishUser
+      message:
+        bindings:
+          kafka:
+            schemaLookupStrategy: RecordNameStrategy
+            key:
+              type: long
+        payload:
+          $ref: schema/acme.sales.User.avsc
+```
 
-**RecordIdStrategy** - Avro-specific strategy that uses the full name of the schema.
+**NOTE**: Note, this will provision an unnecessary Kafka topic (`acme.sales._private.dummy.user`).
+As such, this is a temporary work around until [#453](https://github.com/specmesh/specmesh-build/issues/453) is done.
 
-**TopicRecordIdStrategy** - Avro-specific strategy that uses the topic name and the full name of the schema.
+### Using shared schema
 
-**TopicIdStrategy** - Default strategy that uses the topic name and key or value suffix.
+#### Using shared schema for topic schema
 
-**SimpleTopicIdStrategy** - Simple strategy that only uses the topic name.
+A shared schema can be used as the key or value schema for a channel / topic in a spec simply by referencing the schema file in the spec:
+
+```yaml
+  _public.user:
+    publish:
+      message:
+        bindings:
+          kafka:
+            key: long
+        payload:
+          $ref: /schema/acme.sales.User.avsc
+```
+
+When provisioning such a spec, the `acme.sales.User` type must already be registered. 
+SpecMesh will only register the required `<topic>-key` and `<topic>-value` subjects, e.g. `<domain.id>._public.user-value` for the example above.
+
+#### Using shared schema in references
+
+Shared schema, i.e. schema belonging to a different domain, can be used via schema references. See below for more info. 
+
+## Schema References (AVRO)
+
+SpecMesh supports Avro schema references, both to types defined within the same and different schema files.
+
+When SpecMesh encounters a schema reference to a type not already defined within the current schema file, 
+it will attempt to load the file.
+
+For example:
+
+Consider the following Avro record definition:
+
+```json
+{
+  "type": "record",
+  "name": "ThingA",
+  "namespace": "acme.sales",
+  "fields": [
+    {
+      "name": "a", 
+      "type": {
+        "type": "type",
+        "name": "ThingB",
+        "fields": []
+      }
+    },
+    {"name": "d", "type": "ThingB"},
+    {"name": "c", "type": "ThingC"},
+    {"name": "d", "type": "other.domain.ThingD"}
+  ]
+}
+```
+
+Upon encountering such a schema, SpecMesh will attempt to load schemas for types `acme.sales.ThingC` and `other.domain.ThingD`.
+(`acme.sales.ThingB` is defined within the scope of the schema).
+It will attempt to load the schemas from `acme.sales.ThingC.avsc` and `other.domain.ThingD.avsc` _in the same directory as the current schema_.
+
+If either `ThingC` or `ThingD` reference other external types, those schema files will also be loaded, etc.
+
+**NOTE**: Schema types that belong to other domains must be registered _before_ the spec can be provisioned. 
+See [Shared Schema](#shared-schemas) above for more info.
 
 ### Worked example
 
 See code: kafka/src/test/resources/schema-ref (specs + schemas)
 
-Note - the developers of the _com.example.trading-api.yml_ will be required to download a copy of the Currency avsc for the
-development purposes, their spec is dependent upon the common (Currency) schema being available (published) in the
-environment, otherwise the schema.provisioning process will fail because SchemaRegistry cannot resolve references upon being uploaded.
+Note - the developers of the _com.example.trading-api.yml_ require a copy of the Currency avsc, as it is required when provisioning their spec.
+It is recommended that upstream teams publish a _versioned jar_ that contains their spec and schemas (and optionally generated Java POJOs).
+This allows downstream teams to depend on version artifacts.
 
-
-Source: com.example.trading-api.yml  (spec)
+Source: com.example.trading-api.yml (spec)
 
 ```yaml
   _public.trade:
@@ -242,7 +321,6 @@ Trade.avsc references the _Currency_ .avsc schema (the shared schema type)
     {
       "name": "currency",
       "type": "com.example.shared.Currency",
-      "subject": "com.example.shared.Currency",
       "doc": "Currency is from another 'domain'."
     }
   ]
@@ -250,11 +328,7 @@ Trade.avsc references the _Currency_ .avsc schema (the shared schema type)
 ```
 
 Share schemas are published by the owner. The spec: com.example.shared-api.yml will
-- reference the 'owned' schemas for publishing
-- specify the _schemaLookupStrategy_: "RecordNameStrategy"
 
-**RecordNameStrategy** sets the _schema-subject_ as the full record name: _com.example.shared.Currency_. 
-If not used then the default rules apply above (i.e. topic-name '-' - value) and it cannot be shared
 
 Below: com.example.shared-api.yml (api spec) 
 ```yaml
@@ -286,8 +360,6 @@ channels:
         contentType: "application/octet-stream"
         bindings:
           kafka:
-            schemaIdLocation: "header"
-            schemaLookupStrategy: "RecordNameStrategy"
             key:
               type: string
         payload:

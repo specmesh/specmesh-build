@@ -169,13 +169,14 @@ public final class SchemaProvisioner {
             final List<NamedSchema> schemas =
                     new SchemaReaders.LocalSchemaReader().read(schemaPath);
 
+            final NamedSchema topicSchema = schemas.get(schemas.size() - 1);
             return schemas.stream()
                     .map(
                             ns -> {
                                 final ParsedSchema schema = ns.schema();
-                                final boolean topicSchema = ns.subject().isEmpty();
+                                final boolean isTopicSchema = ns.equals(topicSchema);
                                 final String subject =
-                                        topicSchema
+                                        isTopicSchema
                                                 ? resolveSubjectName(
                                                         topicName, schema, si, partName)
                                                 : ns.subject();
@@ -185,7 +186,7 @@ public final class SchemaProvisioner {
                                         .type(schema.schemaType())
                                         .subject(subject)
                                         .state(CREATE)
-                                        .topicSchema(topicSchema)
+                                        .topicSchema(isTopicSchema)
                                         .build();
                             });
         } catch (ProvisioningException ex) {

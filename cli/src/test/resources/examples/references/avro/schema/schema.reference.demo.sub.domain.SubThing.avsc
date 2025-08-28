@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "name": "SubThing",
+  "namespace": "schema.reference.demo.sub.domain",
+  "fields": [
+    {"name": "name", "type": "string", "default": ""}
+  ]
+}

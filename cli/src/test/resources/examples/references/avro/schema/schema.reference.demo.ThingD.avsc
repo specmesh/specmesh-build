@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "name": "ThingD",
+  "namespace": "schema.reference.demo",
+  "fields": [
+    {"name": "name", "type": "string", "default": ""}
+  ]
+}

@@ -20,39 +20,42 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
+import io.confluent.kafka.schemaregistry.avro.AvroSchema;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
-import io.specmesh.cli.util.CommonSchema;
 import io.specmesh.kafka.DockerKafkaEnvironment;
 import io.specmesh.kafka.KafkaEnvironment;
 import io.specmesh.kafka.provision.Status;
 import io.specmesh.kafka.provision.TopicProvisioner.Topic;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import picocli.CommandLine;
 
-/** Functional test of specs that use schema that reference other schema. */
-class ProvisionNestedSchemaFunctionalTest {
+/** Functional test of specs that use schema files that reference other schema files. */
+class ProvisionExternalSchemaReferencesFunctionalTest {
 
-    private static final String OWNER_USER = "simple.schema_demo";
+    private static final String DOMAIN_USER = "schema.reference.demo";
+    private static final Path SCHEMA_ROOT =
+            Path.of("./src/test/resources/examples/references/avro/schema");
 
     @RegisterExtension
     private static final KafkaEnvironment KAFKA_ENV =
             DockerKafkaEnvironment.builder()
                     .withSaslAuthentication(
-                            "admin", "admin-secret", OWNER_USER, OWNER_USER + "-secret")
+                            "admin", "admin-secret", DOMAIN_USER, DOMAIN_USER + "-secret")
                     .withKafkaAcls()
                     .build();
 
     @Test
     void shouldProvisionTopicsAndAclResourcesWithNestedSchemasAndRepublishCorrectly() {
         // Given:
-        givenCommonSchemaRegistered();
+        givenSchemaFromOtherDomainsAreRegistered();
 
         final Provision provision = new Provision();
 
@@ -60,12 +63,13 @@ class ProvisionNestedSchemaFunctionalTest {
                 .parseArgs(
                         ("--bootstrap-server "
                                         + KAFKA_ENV.kafkaBootstrapServers()
-                                        + " --spec nested_schema_demo-api.yaml"
-                                        + " --username admin"
-                                        + " --secret admin-secret"
+                                        + " --spec"
+                                        + " examples/references/avro/schema-reference-demo.spec.yaml"
+                                        + " --username admin --secret admin-secret"
                                         + " --schema-registry "
                                         + KAFKA_ENV.schemaRegistryServer()
-                                        + " --schema-path ./src/test/resources")
+                                        + " --schema-path"
+                                        + " ./src/test/resources/examples/references/avro")
                                 .split(" "));
 
         // When:
@@ -75,26 +79,29 @@ class ProvisionNestedSchemaFunctionalTest {
         assertThat(status.failed(), is(false));
 
         assertThat(
-                status.topics().stream().map(Topic::name).collect(Collectors.toSet()),
-                is(contains("simple.schema_demo._public.super_user_signed_up")));
+                status.topics().stream().map(Topic::name).toList(),
+                contains("schema.reference.demo._public.entity"));
 
         assertThat(
                 status.schemas().stream()
                         .filter(s -> s.state() == Status.STATE.CREATED)
                         .map(SchemaProvisioner.Schema::subject)
-                        .collect(Collectors.toList()),
+                        .toList(),
                 containsInAnyOrder(
-                        "simple.schema_demo._public.super_user_signed_up-value",
-                        "simple.schema_demo._public.UserSignedUp"));
+                        "schema.reference.demo._public.entity-value",
+                        "schema.reference.demo.ThingA",
+                        "schema.reference.demo.ThingB",
+                        "schema.reference.demo.ThingC",
+                        "schema.reference.demo.ThingD",
+                        "schema.reference.demo.ThingE"));
 
         assertThat(
                 status.schemas().stream()
                         .filter(s -> s.state() == Status.STATE.IGNORED)
                         .map(SchemaProvisioner.Schema::subject)
-                        .collect(Collectors.toList()),
-                containsInAnyOrder("other.domain.Common", "other.domain.CommonOther"));
-
-        assertThat(status.acls(), hasSize(12));
+                        .toList(),
+                containsInAnyOrder(
+                        "shared.SharedThing", "schema.reference.demo.sub.domain.SubThing"));
 
         // When:
         final var statusRepublish = provision.run();
@@ -107,16 +114,40 @@ class ProvisionNestedSchemaFunctionalTest {
         final List<?> schemas =
                 statusRepublish.schemas().stream()
                         .filter(s -> s.state() != Status.STATE.IGNORED)
-                        .collect(Collectors.toList());
+                        .toList();
 
         assertThat(schemas, is(empty()));
     }
 
-    private void givenCommonSchemaRegistered() {
+    private void givenSchemaFromOtherDomainsAreRegistered() {
+        // Common schema registration covered by
+        // https://github.com/specmesh/specmesh-build/issues/453.
+        // Until then, handle manually:
+
         try (SchemaRegistryClient srClient = KAFKA_ENV.srClient()) {
-            CommonSchema.registerCommonSchema(srClient);
+            registerSchema("schema.reference.demo.sub.domain.SubThing", srClient);
+            registerSchema("shared.SharedThing", srClient);
         } catch (Exception e) {
             throw new AssertionError("failed to close client", e);
+        }
+    }
+
+    public static void registerSchema(final String name, final SchemaRegistryClient srClient) {
+        final AvroSchema schema = new AvroSchema(readLocalSchema(name));
+        try {
+            final int id = srClient.register(name, schema);
+            System.out.println("Registered " + name + " with id " + id);
+        } catch (Exception e) {
+            throw new AssertionError("failed to register common schema", e);
+        }
+    }
+
+    private static String readLocalSchema(final String subject) {
+        final Path path = SCHEMA_ROOT.resolve(subject + ".avsc").normalize();
+        try {
+            return Files.readString(path);
+        } catch (IOException e) {
+            throw new AssertionError("Failed to read schema: " + path.toAbsolutePath(), e);
         }
     }
 }
