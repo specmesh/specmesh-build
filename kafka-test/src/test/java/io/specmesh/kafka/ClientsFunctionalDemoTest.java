@@ -86,12 +86,14 @@ import org.apache.kafka.streams.state.Stores;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import simple.schema_demo.UserSignedUp;
 import simple.schema_demo.UserSignedUpPojo;
 
 @SuppressWarnings("unchecked")
+@Tag("ContainerisedTest")
 class ClientsFunctionalDemoTest {
 
     private static final KafkaApiSpec API_SPEC =

@@ -39,10 +39,12 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.LongSerializer;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import simple.schema_demo.UserSignedUp;
 
+@Tag("ContainerisedTest")
 class SimpleAdminClientTest {
 
     private static final String OWNER_USER = "simple.schema_demo";

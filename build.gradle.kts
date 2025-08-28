@@ -116,7 +116,11 @@ subprojects {
     }
 
     tasks.test {
-        useJUnitPlatform()
+        useJUnitPlatform() {
+            if (project.hasProperty("excludeContainerised")) {
+                excludeTags("ContainerisedTest")
+            }
+        }
         setForkEvery(1)
         maxParallelForks = 2
         testLogging {
