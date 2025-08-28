@@ -17,13 +17,11 @@
     {
       "name": "currency",
       "type": "com.example.shared.Currency",
-      "subject": "com.example.shared.Currency",
       "doc": "Currency is from another 'domain'."
     },
     {
       "name": "info",
-      "type": "TradeInfo",
-      "subject": "com.example.trading.TradeInfo"
+      "type": "TradeInfo"
     }
   ]
 }

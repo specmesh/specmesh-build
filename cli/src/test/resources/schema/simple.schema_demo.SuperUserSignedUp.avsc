@@ -4,7 +4,7 @@
   "name": "SuperUserSignedUp",
   "fields": [
     {"name": "role", "type": "string"},
-    {"name": "user", "type": "simple.schema_demo.UserSignedUp", "subject": "simple.schema_demo._public.UserSignedUp"},
-    {"name": "common", "type": "other.domain.Common", "subject": "other.domain.Common"}
+    {"name": "user", "type": "simple.schema_demo.UserSignedUp"},
+    {"name": "common", "type": "other.domain.Common"}
   ]
 }
