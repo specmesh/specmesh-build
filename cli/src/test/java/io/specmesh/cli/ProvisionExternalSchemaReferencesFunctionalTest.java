@@ -38,6 +38,7 @@ import java.util.List;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -45,6 +46,7 @@ import picocli.CommandLine;
 
 /** Functional test of specs that use schema files that reference other schema files. */
 @TestMethodOrder(OrderAnnotation.class)
+@Tag("ContainerisedTest")
 class ProvisionExternalSchemaReferencesFunctionalTest {
 
     private static final String DOMAIN_USER = "schema.reference.demo";

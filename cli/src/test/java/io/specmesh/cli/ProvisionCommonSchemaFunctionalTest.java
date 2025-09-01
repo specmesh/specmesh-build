@@ -40,12 +40,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import org.apache.kafka.clients.admin.Admin;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
  * Functional test for using common schema, i.e. shares schema that are registered by another domain
  */
+@Tag("ContainerisedTest")
 class ProvisionCommonSchemaFunctionalTest {
 
     private static final String OWNER_USER = "simple.schema_demo";

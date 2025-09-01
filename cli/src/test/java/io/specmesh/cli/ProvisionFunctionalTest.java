@@ -34,10 +34,12 @@ import org.apache.kafka.clients.admin.ListTopicsResult;
 import org.apache.kafka.common.config.ConfigResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import picocli.CommandLine;
 
+@Tag("ContainerisedTest")
 class ProvisionFunctionalTest {
 
     private static final String OWNER_USER = "simple.schema_demo";
