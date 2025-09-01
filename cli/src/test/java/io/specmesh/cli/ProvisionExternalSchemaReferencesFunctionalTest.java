@@ -19,8 +19,10 @@ package io.specmesh.cli;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 
 import io.confluent.kafka.schemaregistry.avro.AvroSchema;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
@@ -33,11 +35,16 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import org.hamcrest.Matcher;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import picocli.CommandLine;
 
 /** Functional test of specs that use schema files that reference other schema files. */
+@TestMethodOrder(OrderAnnotation.class)
 class ProvisionExternalSchemaReferencesFunctionalTest {
 
     private static final String DOMAIN_USER = "schema.reference.demo";
@@ -52,25 +59,54 @@ class ProvisionExternalSchemaReferencesFunctionalTest {
                     .withKafkaAcls()
                     .build();
 
-    @Test
-    void shouldProvisionTopicsAndAclResourcesWithNestedSchemasAndRepublishCorrectly() {
-        // Given:
+    @BeforeAll
+    static void beforeAll() {
         givenSchemaFromOtherDomainsAreRegistered();
+    }
 
+    @Order(1)
+    @Test
+    void shouldProvisionTopLevelRecord() {
+        testProvision("record", true, true);
+    }
+
+    @Test
+    void shouldProvisionTopLevelUnion() {
+        testProvision("union", false, true);
+    }
+
+    @Test
+    void shouldProvisionTopLevelMap() {
+        testProvision("map", false, true);
+    }
+
+    @Test
+    void shouldProvisionTopLevelArray() {
+        testProvision("array", false, true);
+    }
+
+    @Test
+    void shouldProvisionTopLevelPrimitive() {
+        testProvision("primitive", false, false);
+    }
+
+    private static void testProvision(
+            final String rootType, final boolean requireShared, final boolean expectShared) {
         final Provision provision = new Provision();
-
         new CommandLine(provision)
                 .parseArgs(
-                        ("--bootstrap-server "
-                                        + KAFKA_ENV.kafkaBootstrapServers()
-                                        + " --spec"
-                                        + " examples/references/avro/schema-reference-demo.spec.yaml"
-                                        + " --username admin --secret admin-secret"
-                                        + " --schema-registry "
-                                        + KAFKA_ENV.schemaRegistryServer()
-                                        + " --schema-path"
-                                        + " ./src/test/resources/examples/references/avro")
-                                .split(" "));
+                        "--bootstrap-server",
+                        KAFKA_ENV.kafkaBootstrapServers(),
+                        "--spec",
+                        "examples/references/avro/" + rootType + ".spec.yaml",
+                        "--username",
+                        "admin",
+                        "--secret",
+                        "admin-secret",
+                        "--schema-registry",
+                        KAFKA_ENV.schemaRegistryServer(),
+                        "--schema-path",
+                        "./src/test/resources/examples/references/avro");
 
         // When:
         final var status = provision.run();
@@ -80,28 +116,25 @@ class ProvisionExternalSchemaReferencesFunctionalTest {
 
         assertThat(
                 status.topics().stream().map(Topic::name).toList(),
-                contains("schema.reference.demo._public.entity"));
+                contains("schema.reference.demo._public." + rootType));
 
         assertThat(
                 status.schemas().stream()
                         .filter(s -> s.state() == Status.STATE.CREATED)
                         .map(SchemaProvisioner.Schema::subject)
                         .toList(),
-                containsInAnyOrder(
-                        "schema.reference.demo._public.entity-value",
-                        "schema.reference.demo.ThingA",
-                        "schema.reference.demo.ThingB",
-                        "schema.reference.demo.ThingC",
-                        "schema.reference.demo.ThingD",
-                        "schema.reference.demo.ThingE"));
+                expectedCreatedSchemaSubjects(
+                        "schema.reference.demo._public." + rootType + "-value", requireShared));
 
-        assertThat(
-                status.schemas().stream()
-                        .filter(s -> s.state() == Status.STATE.IGNORED)
-                        .map(SchemaProvisioner.Schema::subject)
-                        .toList(),
-                containsInAnyOrder(
-                        "shared.SharedThing", "schema.reference.demo.sub.domain.SubThing"));
+        if (expectShared) {
+            assertThat(
+                    status.schemas().stream()
+                            .filter(s -> s.state() == Status.STATE.IGNORED)
+                            .map(SchemaProvisioner.Schema::subject)
+                            .toList(),
+                    containsInAnyOrder(
+                            "shared.SharedThing", "schema.reference.demo.sub.domain.SubThing"));
+        }
 
         // When:
         final var statusRepublish = provision.run();
@@ -119,7 +152,25 @@ class ProvisionExternalSchemaReferencesFunctionalTest {
         assertThat(schemas, is(empty()));
     }
 
-    private void givenSchemaFromOtherDomainsAreRegistered() {
+    private static Matcher<Iterable<? extends String>> expectedCreatedSchemaSubjects(
+            final String entitySubject, final boolean requireShared) {
+        final Matcher<Iterable<? extends String>> all =
+                containsInAnyOrder(
+                        entitySubject,
+                        "schema.reference.demo.ThingA",
+                        "schema.reference.demo.ThingB",
+                        "schema.reference.demo.ThingC",
+                        "schema.reference.demo.ThingD",
+                        "schema.reference.demo.ThingE");
+
+        if (requireShared) {
+            return all;
+        }
+
+        return either(contains(entitySubject)).or(all);
+    }
+
+    private static void givenSchemaFromOtherDomainsAreRegistered() {
         // Common schema registration covered by
         // https://github.com/specmesh/specmesh-build/issues/453.
         // Until then, handle manually:
