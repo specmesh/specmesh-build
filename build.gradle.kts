@@ -68,7 +68,7 @@ subprojects {
     }
 
     extra.apply {
-        set("kafkaVersion", "7.9.1-ce")
+        set("kafkaVersion", "8.0.0-ce")
         set("openTracingVersion", "0.33.0")
         set("observabilityVersion", "1.1.8")
         set("guavaVersion", "33.4.8-jre")
