@@ -174,24 +174,40 @@ As the subject needs to match the fully qualified name of the Avro type, only _n
 
 **WARNING**: add a value to an `enum` or changing a `fixed`'s size are _non-evolvable changes_ that require very careful management.
 
-#### Using RecordNameStrategy to register shared schema
+#### Using a dummy channel to register shared schema
 
-It is possible to register a shared schema under the subject name required for sharing by provisioning a spec with a dummy channel
-that uses a `RecordNameStrategy` naming strategy. For example:
+It is possible to register shared schema adding a dummy channel to a spec.  For example:
 
 ```yaml
-  _private.dummy.user:
+  _private.shared-schema:
     publish:
       operationId: publishUser
       message:
         bindings:
           kafka:
-            schemaLookupStrategy: RecordNameStrategy
             key:
-              type: long
+              type: void
         payload:
-          $ref: schema/acme.sales.User.avsc
+          $ref: schema/acme.sales.Shared.avsc
 ```
+
+The dummy channel's schema, `acme.sales.Shared.avsc` in the example above, should be a `record` schema. Add one, optional, `field` for each shared schema:  
+
+```json
+{
+  "type": "record",
+  "name": "Shared",
+  "namespace": "acme.sales",
+  "fields" : [
+    {"name":  "user", "type": ["null", "acme.sales.User"], "default": null}
+  ]
+}
+```
+
+**NOTE**: Optional fields are used so that a shared schema can be removed in the future, as an evolvable change.
+
+**WARNING**: Use a `record`, not a `union` for registering the shared schema. 
+Changing the types in a `union` is _not_ an evolvable change...
 
 **NOTE**: Note, this will provision an unnecessary Kafka topic (`acme.sales._private.dummy.user`).
 As such, this is a temporary work around until [#453](https://github.com/specmesh/specmesh-build/issues/453) is done.
@@ -365,6 +381,45 @@ channels:
         payload:
           $ref: "/schema/com.example.shared.Currency.avsc"
 ```
+
+# Schema subject naming strategy and location
+
+By default, topic schema are registered using the `TopicNameStrategy` and the schema Id location defaults to `body`.
+However, this can be customised in the kafka bindings in the spec:
+
+```yaml
+        bindings:
+          kafka:
+            schemaIdLocation: "header"
+            schemaLookupStrategy: "RecordNameStrategy"
+            key:
+              type: string
+        payload:
+          $ref: "/schema/com.example.shared.Currency.avsc"
+```
+
+### **Confluent Schema Registry** conventions
+
+**TopicNameStrategy** - Derives subject name from topic name. (This is the default.)
+
+**RecordNameStrategy** - Derives subject name from record name. Useful if multiple topics _must_ share the same sequence of evolvable schema versions.
+
+**TopicRecordNameStrategy** -	Derives the subject name from topic and record name.
+
+See confluent docs for more info: https://docs.confluent.io/platform/6.2/schema-registry/serdes-develop/index.html#subject-name-strategy
+
+### **APICurio** conventions
+
+https://github.com/asyncapi/bindings/blob/master/kafka/README.md
+https://www.apicur.io/registry/docs/apicurio-registry/2.2.x/getting-started/assembly-using-kafka-client-serdes.html#registry-serdes-concepts-strategy_registry
+
+**RecordIdStrategy** - Avro-specific strategy that uses the full name of the schema.
+
+**TopicRecordIdStrategy** - Avro-specific strategy that uses the topic name and the full name of the schema.
+
+**TopicIdStrategy** - Default strategy that uses the topic name and key or value suffix.
+
+**SimpleTopicIdStrategy** - Simple strategy that only uses the topic name.
 
 # Scaling Kafka resources in non-production environments
 
