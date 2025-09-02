@@ -22,6 +22,10 @@
  * Detailed information about configuring a multi-project build in Gradle can be found
  * in the user manual at https://docs.gradle.org/6.5.1/userguide/multi_project_builds.html
  */
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention").version("1.0.0")
+}
+
 rootProject.name = "specmesh-build"
 
 include("cli", "parser", "kafka", "kafka-test")

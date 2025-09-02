@@ -115,6 +115,10 @@ subprojects {
         options.compilerArgs.add("-Werror")
     }
 
+    tasks.withType<JavaCompile>().configureEach {
+        options.release = 17
+    }
+
     tasks.test {
         useJUnitPlatform() {
             if (project.hasProperty("excludeContainerised")) {
