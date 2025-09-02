@@ -688,39 +688,39 @@ class AvroReferenceFinderTest {
         final String c =
                 ensureValidAvro(
                         """
-                {
-                  "type": "record",
-                  "name": "TypeC",
-                  "namespace": "ns.one",
-                  "fields": [
-                    {"name": "f4", "type": "string"}
-                  ]
-                }
-                """);
+                        {
+                          "type": "record",
+                          "name": "TypeC",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {"name": "f4", "type": "string"}
+                          ]
+                        }
+                        """);
 
         final String b =
                 ensureValidAvro(
                         """
-                {
-                  "type": "record",
-                  "name": "TypeB",
-                  "namespace": "ns.one",
-                  "fields": [
-                    {"name": "f3", "type": "string"}
-                  ]
-                }
-                """);
+                        {
+                          "type": "record",
+                          "name": "TypeB",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {"name": "f3", "type": "string"}
+                          ]
+                        }
+                        """);
 
         final String a =
                 ensureValidAvro(
                         c,
                         b,
                         """
-                [
-                  "ns.one.TypeB",
-                  "ns.one.TypeC"
-                ]
-                """);
+                        [
+                          "ns.one.TypeB",
+                          "ns.one.TypeC"
+                        ]
+                        """);
 
         when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
         when(schemaLoader.load("ns.one.TypeC")).thenReturn(loadedSchema(c));
@@ -741,25 +741,25 @@ class AvroReferenceFinderTest {
         final String b =
                 ensureValidAvro(
                         """
-                {
-                  "type": "record",
-                  "name": "TypeB",
-                  "namespace": "ns.one",
-                  "fields": [
-                    {"name": "f3", "type": "string"}
-                  ]
-                }
-                """);
+                        {
+                          "type": "record",
+                          "name": "TypeB",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {"name": "f3", "type": "string"}
+                          ]
+                        }
+                        """);
 
         final String a =
                 ensureValidAvro(
                         b,
                         """
-                {
-                  "type": "map",
-                  "values": "ns.one.TypeB"
-                }
-                """);
+                        {
+                          "type": "map",
+                          "values": "ns.one.TypeB"
+                        }
+                        """);
 
         when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
 
@@ -778,25 +778,25 @@ class AvroReferenceFinderTest {
         final String b =
                 ensureValidAvro(
                         """
-                {
-                  "type": "record",
-                  "name": "TypeB",
-                  "namespace": "ns.one",
-                  "fields": [
-                    {"name": "f3", "type": "string"}
-                  ]
-                }
-                """);
+                        {
+                          "type": "record",
+                          "name": "TypeB",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {"name": "f3", "type": "string"}
+                          ]
+                        }
+                        """);
 
         final String a =
                 ensureValidAvro(
                         b,
                         """
-                {
-                  "type": "array",
-                  "items": "ns.one.TypeB"
-                }
-                """);
+                        {
+                          "type": "array",
+                          "items": "ns.one.TypeB"
+                        }
+                        """);
 
         when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
 
@@ -815,11 +815,11 @@ class AvroReferenceFinderTest {
         final String b =
                 ensureValidAvro(
                         """
-                {
-                  "type": "array",
-                  "items": "string"
-                }
-                """);
+                        {
+                          "type": "array",
+                          "items": "string"
+                        }
+                        """);
 
         final String a =
                 """
@@ -856,27 +856,27 @@ class AvroReferenceFinderTest {
         final String b =
                 ensureValidAvro(
                         """
-                {
-                  "type": "record",
-                  "name": "TypeC",
-                  "namespace": "ns.one",
-                  "fields": [
-                    {"name": "f3", "type": "string"}
-                  ]
-                }
-                """);
+                        {
+                          "type": "record",
+                          "name": "TypeC",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {"name": "f3", "type": "string"}
+                          ]
+                        }
+                        """);
 
         final String a =
                 """
-        {
-          "type": "record",
-          "name": "TypeA",
-          "namespace": "ns.one",
-          "fields": [
-            {"name": "f3", "type": "TypeB"}
-          ]
-        }
-        """;
+                {
+                  "type": "record",
+                  "name": "TypeA",
+                  "namespace": "ns.one",
+                  "fields": [
+                    {"name": "f3", "type": "TypeB"}
+                  ]
+                }
+                """;
 
         when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
 
