@@ -18,7 +18,7 @@ plugins {
     java
     `maven-publish`
     signing
-    id("com.github.spotbugs") version "6.2.2"
+    id("com.github.spotbugs") version "6.2.6"
     id("com.diffplug.spotless") version "7.2.1"
     id("pl.allegro.tech.build.axion-release") version "1.19.0"
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
@@ -115,6 +115,10 @@ subprojects {
         options.compilerArgs.add("-Werror")
     }
 
+    tasks.withType<JavaCompile>().configureEach {
+        options.release = 17
+    }
+
     tasks.test {
         useJUnitPlatform() {
             if (project.hasProperty("excludeContainerised")) {
@@ -144,7 +148,7 @@ subprojects {
 
     spotless {
         java {
-            googleJavaFormat("1.15.0").aosp().reflowLongStrings()
+            googleJavaFormat("1.28.0").aosp().reflowLongStrings()
             leadingTabsToSpaces()
             importOrder()
             removeUnusedImports()
@@ -170,16 +174,11 @@ subprojects {
         dependsOn("checkstyle", "spotbugs")
     }
 
+
     spotbugs {
         excludeFilter.set(rootProject.file("config/spotbugs/suppressions.xml"))
 
-        tasks.spotbugsMain {
-            reports.create("html") {
-                required.set(true)
-                setStylesheet("fancy-hist.xsl")
-            }
-        }
-        tasks.spotbugsTest {
+        tasks.withType<com.github.spotbugs.snom.SpotBugsTask> {
             reports.create("html") {
                 required.set(true)
                 setStylesheet("fancy-hist.xsl")
@@ -212,7 +211,7 @@ subprojects {
                 pom {
                     name.set("${project.group}:${artifactId}")
 
-                    description.set("Specmesh ${project.name.capitalize()} library".replace("-", " "))
+                    description.set("Specmesh ${project.name} library".replace("-", " "))
 
                     url.set("https://www.specmesh.io")
 

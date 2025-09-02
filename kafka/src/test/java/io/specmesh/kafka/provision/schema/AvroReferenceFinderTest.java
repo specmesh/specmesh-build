@@ -85,7 +85,8 @@ class AvroReferenceFinderTest {
                   "fields": [
                     {"name": "f1", "type": "TypeB"}
                   ]
-                }""";
+                }\
+                """;
 
         when(schemaLoader.load(any())).thenReturn(loadedSchema("invalid-schema"));
 
@@ -122,10 +123,10 @@ class AvroReferenceFinderTest {
         final String schema =
                 ensureValidAvro(
                         """
-                {
-                  "type": "int"
-                }
-                """);
+                        {
+                          "type": "int"
+                        }
+                        """);
 
         // When:
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, schema);
@@ -140,13 +141,14 @@ class AvroReferenceFinderTest {
         final String schema =
                 ensureValidAvro(
                         """
-            {
-              "type": "record",
-              "name": "SomeType",
-              "fields": [
-                {"name": "f", "type": "string"}
-              ]
-            }""");
+                        {
+                          "type": "record",
+                          "name": "SomeType",
+                          "fields": [
+                            {"name": "f", "type": "string"}
+                          ]
+                        }\
+                        """);
 
         // When:
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, schema);
@@ -161,14 +163,15 @@ class AvroReferenceFinderTest {
         final String schema =
                 ensureValidAvro(
                         """
-            {
-              "type": "record",
-              "name": "SomeType",
-              "namespace": "some.namespace",
-              "fields": [
-                {"name": "f", "type": "string"}
-              ]
-            }""");
+                        {
+                          "type": "record",
+                          "name": "SomeType",
+                          "namespace": "some.namespace",
+                          "fields": [
+                            {"name": "f", "type": "string"}
+                          ]
+                        }\
+                        """);
 
         // When:
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, schema);
@@ -184,49 +187,49 @@ class AvroReferenceFinderTest {
         final String a =
                 ensureValidAvro(
                         """
-                {
-                  "type": "record",
-                  "name": "TypeA",
-                  "namespace": "ns.one",
-                  "fields": [
-                    {
-                      "name": "f1",
-                      "type": {
-                        "type": "fixed",
-                        "size": 16,
-                        "name": "WithoutExplicitNamespace"
-                      }
-                    },
-                    {
-                      "name": "f2",
-                      "type": "WithoutExplicitNamespace"
-                    },
-                    {
-                      "name": "f3",
-                      "type": {
-                        "type": "map",
-                        "values": "ns.one.WithoutExplicitNamespace"
-                      }
-                    },
-                    {
-                      "name": "f4",
-                      "type": {
-                        "type": "enum",
-                        "name": "WithExplicitNamespace",
-                        "namespace": "ns.two",
-                        "symbols" : ["SPADES", "HEARTS", "DIAMONDS", "CLUBS"]
-                      }
-                    },
-                    {
-                      "name": "f5",
-                      "type": {
-                        "type": "array",
-                        "items": "ns.two.WithExplicitNamespace"
-                      }
-                    }
-                  ]
-                }
-                """);
+                        {
+                          "type": "record",
+                          "name": "TypeA",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {
+                              "name": "f1",
+                              "type": {
+                                "type": "fixed",
+                                "size": 16,
+                                "name": "WithoutExplicitNamespace"
+                              }
+                            },
+                            {
+                              "name": "f2",
+                              "type": "WithoutExplicitNamespace"
+                            },
+                            {
+                              "name": "f3",
+                              "type": {
+                                "type": "map",
+                                "values": "ns.one.WithoutExplicitNamespace"
+                              }
+                            },
+                            {
+                              "name": "f4",
+                              "type": {
+                                "type": "enum",
+                                "name": "WithExplicitNamespace",
+                                "namespace": "ns.two",
+                                "symbols" : ["SPADES", "HEARTS", "DIAMONDS", "CLUBS"]
+                              }
+                            },
+                            {
+                              "name": "f5",
+                              "type": {
+                                "type": "array",
+                                "items": "ns.two.WithExplicitNamespace"
+                              }
+                            }
+                          ]
+                        }
+                        """);
 
         // When:
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, a);
@@ -243,57 +246,57 @@ class AvroReferenceFinderTest {
         final String c =
                 ensureValidAvro(
                         """
-                {
-                  "type": "enum",
-                  "name": "TypeC",
-                  "namespace": "ns.one",
-                  "symbols" : ["SPADES", "HEARTS", "DIAMONDS", "CLUBS"]
-                }
-                """);
+                        {
+                          "type": "enum",
+                          "name": "TypeC",
+                          "namespace": "ns.one",
+                          "symbols" : ["SPADES", "HEARTS", "DIAMONDS", "CLUBS"]
+                        }
+                        """);
 
         final String b =
                 ensureValidAvro(
                         c,
                         """
-                {
-                  "type": "record",
-                  "name": "TypeB",
-                  "namespace": "ns.one",
-                  "fields": [
-                    {
-                      "name": "f3",
-                      "type": [
-                        "null",
                         {
-                          "type": "array",
-                          "items": "TypeC"
+                          "type": "record",
+                          "name": "TypeB",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {
+                              "name": "f3",
+                              "type": [
+                                "null",
+                                {
+                                  "type": "array",
+                                  "items": "TypeC"
+                                }
+                              ]
+                            }
+                          ]
                         }
-                      ]
-                    }
-                  ]
-                }
-                """);
+                        """);
 
         final String a =
                 ensureValidAvro(
                         c,
                         b,
                         """
-                {
-                  "type": "record",
-                  "name": "TypeA",
-                  "namespace": "ns.one",
-                  "fields": [
-                    {
-                      "name": "f1",
-                      "type": {
-                        "type": "map",
-                        "values": "TypeB"
-                      }
-                    }
-                  ]
-                }
-                """);
+                        {
+                          "type": "record",
+                          "name": "TypeA",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {
+                              "name": "f1",
+                              "type": {
+                                "type": "map",
+                                "values": "TypeB"
+                              }
+                            }
+                          ]
+                        }
+                        """);
 
         when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
         when(schemaLoader.load("ns.one.TypeC")).thenReturn(loadedSchema(c));
@@ -316,66 +319,66 @@ class AvroReferenceFinderTest {
         final String c =
                 ensureValidAvro(
                         """
-                {
-                  "type": "fixed",
-                  "size": 16,
-                  "name": "TypeC",
-                  "namespace": "ns.one"
-                }
-                """);
+                        {
+                          "type": "fixed",
+                          "size": 16,
+                          "name": "TypeC",
+                          "namespace": "ns.one"
+                        }
+                        """);
 
         final String b =
                 ensureValidAvro(
                         c,
                         """
-                {
-                  "type": "record",
-                  "name": "TypeB",
-                  "namespace": "ns.two",
-                  "fields": [
-                    {
-                      "name": "f3",
-                      "type": [
-                        "null",
                         {
-                          "type": "array",
-                          "items": "ns.one.TypeC"
+                          "type": "record",
+                          "name": "TypeB",
+                          "namespace": "ns.two",
+                          "fields": [
+                            {
+                              "name": "f3",
+                              "type": [
+                                "null",
+                                {
+                                  "type": "array",
+                                  "items": "ns.one.TypeC"
+                                }
+                              ]
+                            }
+                          ]
                         }
-                      ]
-                    }
-                  ]
-                }
-                """);
+                        """);
 
         final String a =
                 ensureValidAvro(
                         c,
                         b,
                         """
-                {
-                  "type": "record",
-                  "name": "TypeA",
-                  "namespace": "ns.one",
-                  "fields": [
-                    {
-                      "name": "f1",
-                      "type": {
-                        "type": "record",
-                        "name": "bob",
-                        "fields": [
-                          {
-                            "name": "f2",
-                            "type": {
-                              "type": "map",
-                              "values": "ns.two.TypeB"
+                        {
+                          "type": "record",
+                          "name": "TypeA",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {
+                              "name": "f1",
+                              "type": {
+                                "type": "record",
+                                "name": "bob",
+                                "fields": [
+                                  {
+                                    "name": "f2",
+                                    "type": {
+                                      "type": "map",
+                                      "values": "ns.two.TypeB"
+                                    }
+                                  }
+                                ]
+                              }
                             }
-                          }
-                        ]
-                      }
-                    }
-                  ]
-                }
-                """);
+                          ]
+                        }
+                        """);
 
         when(schemaLoader.load("ns.two.TypeB")).thenReturn(loadedSchema(b));
         when(schemaLoader.load("ns.one.TypeC")).thenReturn(loadedSchema(c));
@@ -397,25 +400,25 @@ class AvroReferenceFinderTest {
         final String b =
                 ensureValidAvro(
                         """
-                {
-                  "type": "fixed",
-                  "size": 16,
-                  "name": "TypeB"
-                }
-                """);
+                        {
+                          "type": "fixed",
+                          "size": 16,
+                          "name": "TypeB"
+                        }
+                        """);
 
         final String a =
                 ensureValidAvro(
                         b,
                         """
-                {
-                  "type": "record",
-                  "name": "TypeA",
-                  "fields": [
-                    {"name": "f1", "type": "TypeB"}
-                  ]
-                }
-                """);
+                        {
+                          "type": "record",
+                          "name": "TypeA",
+                          "fields": [
+                            {"name": "f1", "type": "TypeB"}
+                          ]
+                        }
+                        """);
 
         when(schemaLoader.load("TypeB")).thenReturn(loadedSchema(b));
 
@@ -435,43 +438,43 @@ class AvroReferenceFinderTest {
         final String d =
                 ensureValidAvro(
                         """
-                {
-                  "type": "record",
-                  "name": "TypeD",
-                  "namespace": "ns.one",
-                  "fields": [
-                    {"name": "f5", "type": "string"}
-                  ]
-                }
-                """);
+                        {
+                          "type": "record",
+                          "name": "TypeD",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {"name": "f5", "type": "string"}
+                          ]
+                        }
+                        """);
 
         final String c =
                 ensureValidAvro(
                         d,
                         """
-                {
-                  "type": "record",
-                  "name": "TypeC",
-                  "namespace": "ns.one",
-                  "fields": [
-                    {"name": "f4", "type": "TypeD"}
-                  ]
-                }
-                """);
+                        {
+                          "type": "record",
+                          "name": "TypeC",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {"name": "f4", "type": "TypeD"}
+                          ]
+                        }
+                        """);
 
         final String b =
                 ensureValidAvro(
                         d,
                         """
-                {
-                  "type": "record",
-                  "name": "TypeB",
-                  "namespace": "ns.one",
-                  "fields": [
-                    {"name": "f3", "type": "TypeD"}
-                  ]
-                }
-                """);
+                        {
+                          "type": "record",
+                          "name": "TypeB",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {"name": "f3", "type": "TypeD"}
+                          ]
+                        }
+                        """);
 
         final String a =
                 ensureValidAvro(
@@ -479,16 +482,16 @@ class AvroReferenceFinderTest {
                         c,
                         b,
                         """
-                {
-                  "type": "record",
-                  "name": "TypeA",
-                  "namespace": "ns.one",
-                  "fields": [
-                    {"name": "f1", "type": "TypeB"},
-                    {"name": "f2", "type": "TypeC"}
-                  ]
-                }
-                """);
+                        {
+                          "type": "record",
+                          "name": "TypeA",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {"name": "f1", "type": "TypeB"},
+                            {"name": "f2", "type": "TypeC"}
+                          ]
+                        }
+                        """);
 
         when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
         when(schemaLoader.load("ns.one.TypeC")).thenReturn(loadedSchema(c));
@@ -519,7 +522,8 @@ class AvroReferenceFinderTest {
                           "fields": [
                             {"name": "f2", "type": "string"}
                           ]
-                        }""");
+                        }\
+                        """);
 
         final String a =
                 ensureValidAvro(
@@ -532,7 +536,8 @@ class AvroReferenceFinderTest {
                             {"name": "f1", "type": "TypeB"},
                             {"name": "f2", "type": "TypeB"}
                           ]
-                        }""");
+                        }\
+                        """);
 
         when(schemaLoader.load("TypeB")).thenReturn(loadedSchema(b));
 
@@ -560,7 +565,8 @@ class AvroReferenceFinderTest {
                             {"name": "f1", "type": "string"},
                             {"name": "next", "type": ["null","TypeA"]}
                           ]
-                        }""");
+                        }\
+                        """);
 
         // When:
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, a);
@@ -578,35 +584,38 @@ class AvroReferenceFinderTest {
         //        a <-------|
         final String a =
                 """
-                        {
-                          "type": "record",
-                          "name": "TypeA",
-                          "fields": [
-                            {"name": "f1", "type": "TypeB"}
-                          ]
-                        }""";
+                {
+                  "type": "record",
+                  "name": "TypeA",
+                  "fields": [
+                    {"name": "f1", "type": "TypeB"}
+                  ]
+                }\
+                """;
 
         final String b =
                 """
-                        {
-                          "type": "record",
-                          "name": "TypeB",
-                          "fields": [
-                            {"name": "f2", "type": "TypeC"},
-                            {"name": "f3", "type": "TypeA"}
-                          ]
-                        }""";
+                {
+                  "type": "record",
+                  "name": "TypeB",
+                  "fields": [
+                    {"name": "f2", "type": "TypeC"},
+                    {"name": "f3", "type": "TypeA"}
+                  ]
+                }\
+                """;
 
         final String c =
                 """
-                        {
-                          "type": "record",
-                          "name": "TypeC",
-                          "fields": [
-                            {"name": "f4", "type": "TypeB"},
-                            {"name": "f5", "type": "TypeA"}
-                          ]
-                        }""";
+                {
+                  "type": "record",
+                  "name": "TypeC",
+                  "fields": [
+                    {"name": "f4", "type": "TypeB"},
+                    {"name": "f5", "type": "TypeA"}
+                  ]
+                }\
+                """;
 
         when(schemaLoader.load("TypeB")).thenReturn(loadedSchema(b));
         when(schemaLoader.load("TypeC")).thenReturn(loadedSchema(c));
@@ -627,13 +636,14 @@ class AvroReferenceFinderTest {
         // Given:
         final String a =
                 """
-                        {
-                          "type": "record",
-                          "name": "TypeA",
-                          "fields": [
-                            {"name": "f1", "type": "TypeB"}
-                          ]
-                        }""";
+                {
+                  "type": "record",
+                  "name": "TypeA",
+                  "fields": [
+                    {"name": "f1", "type": "TypeB"}
+                  ]
+                }\
+                """;
 
         final RuntimeException cause = mock();
         when(schemaLoader.load("TypeB")).thenThrow(cause);
@@ -662,7 +672,8 @@ class AvroReferenceFinderTest {
                           "fields": [
                             {"name": "f", "type": "string"}
                           ]
-                        }""");
+                        }\
+                        """);
 
         // When:
         refFinder.findReferences(ROOT_SCHEMA_PATH, schema);
@@ -677,39 +688,39 @@ class AvroReferenceFinderTest {
         final String c =
                 ensureValidAvro(
                         """
-                {
-                  "type": "record",
-                  "name": "TypeC",
-                  "namespace": "ns.one",
-                  "fields": [
-                    {"name": "f4", "type": "string"}
-                  ]
-                }
-                """);
+                        {
+                          "type": "record",
+                          "name": "TypeC",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {"name": "f4", "type": "string"}
+                          ]
+                        }
+                        """);
 
         final String b =
                 ensureValidAvro(
                         """
-                {
-                  "type": "record",
-                  "name": "TypeB",
-                  "namespace": "ns.one",
-                  "fields": [
-                    {"name": "f3", "type": "string"}
-                  ]
-                }
-                """);
+                        {
+                          "type": "record",
+                          "name": "TypeB",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {"name": "f3", "type": "string"}
+                          ]
+                        }
+                        """);
 
         final String a =
                 ensureValidAvro(
                         c,
                         b,
                         """
-                [
-                  "ns.one.TypeB",
-                  "ns.one.TypeC"
-                ]
-                """);
+                        [
+                          "ns.one.TypeB",
+                          "ns.one.TypeC"
+                        ]
+                        """);
 
         when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
         when(schemaLoader.load("ns.one.TypeC")).thenReturn(loadedSchema(c));
@@ -730,25 +741,25 @@ class AvroReferenceFinderTest {
         final String b =
                 ensureValidAvro(
                         """
-                {
-                  "type": "record",
-                  "name": "TypeB",
-                  "namespace": "ns.one",
-                  "fields": [
-                    {"name": "f3", "type": "string"}
-                  ]
-                }
-                """);
+                        {
+                          "type": "record",
+                          "name": "TypeB",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {"name": "f3", "type": "string"}
+                          ]
+                        }
+                        """);
 
         final String a =
                 ensureValidAvro(
                         b,
                         """
-                {
-                  "type": "map",
-                  "values": "ns.one.TypeB"
-                }
-                """);
+                        {
+                          "type": "map",
+                          "values": "ns.one.TypeB"
+                        }
+                        """);
 
         when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
 
@@ -767,25 +778,25 @@ class AvroReferenceFinderTest {
         final String b =
                 ensureValidAvro(
                         """
-                {
-                  "type": "record",
-                  "name": "TypeB",
-                  "namespace": "ns.one",
-                  "fields": [
-                    {"name": "f3", "type": "string"}
-                  ]
-                }
-                """);
+                        {
+                          "type": "record",
+                          "name": "TypeB",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {"name": "f3", "type": "string"}
+                          ]
+                        }
+                        """);
 
         final String a =
                 ensureValidAvro(
                         b,
                         """
-                {
-                  "type": "array",
-                  "items": "ns.one.TypeB"
-                }
-                """);
+                        {
+                          "type": "array",
+                          "items": "ns.one.TypeB"
+                        }
+                        """);
 
         when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
 
@@ -804,11 +815,11 @@ class AvroReferenceFinderTest {
         final String b =
                 ensureValidAvro(
                         """
-                {
-                  "type": "array",
-                  "items": "string"
-                }
-                """);
+                        {
+                          "type": "array",
+                          "items": "string"
+                        }
+                        """);
 
         final String a =
                 """
@@ -845,27 +856,27 @@ class AvroReferenceFinderTest {
         final String b =
                 ensureValidAvro(
                         """
-                {
-                  "type": "record",
-                  "name": "TypeC",
-                  "namespace": "ns.one",
-                  "fields": [
-                    {"name": "f3", "type": "string"}
-                  ]
-                }
-                """);
+                        {
+                          "type": "record",
+                          "name": "TypeC",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {"name": "f3", "type": "string"}
+                          ]
+                        }
+                        """);
 
         final String a =
                 """
-        {
-          "type": "record",
-          "name": "TypeA",
-          "namespace": "ns.one",
-          "fields": [
-            {"name": "f3", "type": "TypeB"}
-          ]
-        }
-        """;
+                {
+                  "type": "record",
+                  "name": "TypeA",
+                  "namespace": "ns.one",
+                  "fields": [
+                    {"name": "f3", "type": "TypeB"}
+                  ]
+                }
+                """;
 
         when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
 
