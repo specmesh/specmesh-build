@@ -139,7 +139,7 @@ final class AvroReferenceFinder {
             final Optional<TypeName> knownTypeName,
             final Map<TypeName, List<DetectedSchema>> visited) {
         final SchemaInfo schema = parseSchema(schemaPath, schemaContent, knownTypeName);
-        visited.put(schema.name, List.of());
+        schema.name.ifPresent(name -> visited.put(name, List.of()));
 
         final List<DetectedSchema> externalRefs =
                 schema.externalReferences().stream()
@@ -165,32 +165,40 @@ final class AvroReferenceFinder {
         final List<DetectedSchema> detected = new ArrayList<>(externalRefs);
         detected.add(
                 new DetectedSchema(
-                        schema.name().fullyQualifiedName(), schema.content(), externalRefs));
+                        schema.name().map(TypeName::fullyQualifiedName).orElse(""),
+                        schema.content(),
+                        externalRefs));
         final List<DetectedSchema> immutable = List.copyOf(detected);
-        visited.put(schema.name, immutable);
+        schema.name.ifPresent(name -> visited.put(name, immutable));
         return immutable;
     }
 
     private SchemaInfo parseSchema(
-            final String schemaPath, final String content, final Optional<TypeName> knownTypeName) {
+            final String schemaPath, final String content, final Optional<TypeName> expectedName) {
         try {
             final JsonNode rootNode = MAPPER.readTree(content);
 
-            final TypeName typeName = namedTypeName(rootNode);
+            final Optional<TypeName> actualName = namedTypeName(rootNode);
 
-            knownTypeName
-                    .filter(known -> !known.equals(typeName))
-                    .ifPresent(
-                            expected -> {
-                                throw new IllegalArgumentException(
-                                        "Expected schema file to contain type '%s', but contained '%s'"
-                                                .formatted(expected, typeName));
-                            });
+            if (expectedName.isPresent()) {
+                if (actualName.isEmpty()) {
+                    throw new IllegalArgumentException(
+                            "Not a named type. Avro only supports named types, e.g. record, fixed,"
+                                    + " enum, in external schema.");
+                }
+
+                if (!expectedName.get().equals(actualName.get())) {
+                    throw new IllegalArgumentException(
+                            "Expected schema file to contain type '%s', but contained '%s'"
+                                    .formatted(expectedName.get(), actualName.get()));
+                }
+            }
 
             final TypeCollector typeCollector = new TypeCollector();
             typeCollector.collect(rootNode);
 
-            return new SchemaInfo(schemaPath, content, typeName, typeCollector.externalReferences);
+            return new SchemaInfo(
+                    schemaPath, content, actualName, typeCollector.externalReferences);
         } catch (final Exception e) {
             throw new InvalidSchemaException(schemaPath, content, e);
         }
@@ -304,8 +312,7 @@ final class AvroReferenceFinder {
         }
     }
 
-    private static TypeName namedTypeName(final JsonNode rootNode) {
-
+    private static Optional<TypeName> namedTypeName(final JsonNode rootNode) {
         final Optional<Schema.Type> namedType =
                 type(rootNode, "")
                         .stdType()
@@ -316,12 +323,12 @@ final class AvroReferenceFinder {
                                                 || type == Schema.Type.FIXED);
 
         if (namedType.isEmpty()) {
-            return new TypeName("", "");
+            return Optional.empty();
         }
 
         final String namespace = textChild("namespace", rootNode).orElse("");
         final String name = textChild("name", rootNode).orElse("");
-        return new TypeName(namespace, name);
+        return Optional.of(new TypeName(namespace, name));
     }
 
     private LoadedSchema loadSchema(final String type) {
@@ -333,12 +340,19 @@ final class AvroReferenceFinder {
     }
 
     private record SchemaInfo(
-            String schemaPath, String content, TypeName name, List<TypeName> externalReferences) {}
+            String schemaPath,
+            String content,
+            Optional<TypeName> name,
+            List<TypeName> externalReferences) {}
 
     private record TypeName(String namespace, String name) {
         TypeName {
             requireNonNull(namespace, "namespace");
             requireNonNull(name, "name");
+
+            if (name.isEmpty()) {
+                throw new IllegalArgumentException("name can not be empty");
+            }
         }
 
         String fullyQualifiedName() {

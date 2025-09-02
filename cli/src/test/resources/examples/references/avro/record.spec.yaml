@@ -13,7 +13,7 @@ servers:
     url: mqtt://test.mosquitto.org
     protocol: mqtt
 channels:
-  _public.entity:
+  _public.record:
     bindings:
       kafka:
         partitions: 3
@@ -21,11 +21,11 @@ channels:
           cleanup.policy: delete
 
     publish:
-      operationId: publishEntity
+      operationId: publishRecord
       message:
         bindings:
           kafka:
             key:
               type: long
         payload:
-          $ref: schema/schema.reference.demo.Entity.avsc
+          $ref: schema/schema.reference.demo.Record.avsc

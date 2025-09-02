@@ -157,7 +157,8 @@ public final class SchemaMutators {
         }
 
         private boolean notOwnedByDomain(final Schema schema) {
-            return !SchemaOwnership.schemaOwnedByDomain(schema, domainId);
+            final boolean named = schema.schema().name() != null;
+            return named && !SchemaOwnership.schemaOwnedByDomain(schema, domainId);
         }
 
         private Schema failIfNotRegistered(final Schema schema) {

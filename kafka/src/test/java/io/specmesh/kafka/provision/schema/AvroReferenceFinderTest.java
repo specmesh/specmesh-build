@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -667,6 +668,220 @@ class AvroReferenceFinderTest {
         refFinder.findReferences(ROOT_SCHEMA_PATH, schema);
 
         // Then: did not throw
+    }
+
+    @Test
+    void shouldSupportTopLevelUnion() {
+        // Given: a -> b
+        //        | -> c
+        final String c =
+                ensureValidAvro(
+                        """
+                {
+                  "type": "record",
+                  "name": "TypeC",
+                  "namespace": "ns.one",
+                  "fields": [
+                    {"name": "f4", "type": "string"}
+                  ]
+                }
+                """);
+
+        final String b =
+                ensureValidAvro(
+                        """
+                {
+                  "type": "record",
+                  "name": "TypeB",
+                  "namespace": "ns.one",
+                  "fields": [
+                    {"name": "f3", "type": "string"}
+                  ]
+                }
+                """);
+
+        final String a =
+                ensureValidAvro(
+                        c,
+                        b,
+                        """
+                [
+                  "ns.one.TypeB",
+                  "ns.one.TypeC"
+                ]
+                """);
+
+        when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
+        when(schemaLoader.load("ns.one.TypeC")).thenReturn(loadedSchema(c));
+
+        // When:
+        final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, a);
+
+        // Then:
+        final DetectedSchema schemaC = new DetectedSchema("ns.one.TypeC", c, List.of());
+        final DetectedSchema schemaB = new DetectedSchema("ns.one.TypeB", b, List.of());
+        final DetectedSchema schemaA = new DetectedSchema("", a, List.of(schemaB, schemaC));
+        assertThat(result, contains(schemaB, schemaC, schemaA));
+    }
+
+    @Test
+    void shouldSupportTopLevelMap() {
+        // Given: a -> b
+        final String b =
+                ensureValidAvro(
+                        """
+                {
+                  "type": "record",
+                  "name": "TypeB",
+                  "namespace": "ns.one",
+                  "fields": [
+                    {"name": "f3", "type": "string"}
+                  ]
+                }
+                """);
+
+        final String a =
+                ensureValidAvro(
+                        b,
+                        """
+                {
+                  "type": "map",
+                  "values": "ns.one.TypeB"
+                }
+                """);
+
+        when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
+
+        // When:
+        final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, a);
+
+        // Then:
+        final DetectedSchema schemaB = new DetectedSchema("ns.one.TypeB", b, List.of());
+        final DetectedSchema schemaA = new DetectedSchema("", a, List.of(schemaB));
+        assertThat(result, contains(schemaB, schemaA));
+    }
+
+    @Test
+    void shouldSupportTopLevelArray() {
+        // Given: a -> b
+        final String b =
+                ensureValidAvro(
+                        """
+                {
+                  "type": "record",
+                  "name": "TypeB",
+                  "namespace": "ns.one",
+                  "fields": [
+                    {"name": "f3", "type": "string"}
+                  ]
+                }
+                """);
+
+        final String a =
+                ensureValidAvro(
+                        b,
+                        """
+                {
+                  "type": "array",
+                  "items": "ns.one.TypeB"
+                }
+                """);
+
+        when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
+
+        // When:
+        final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, a);
+
+        // Then:
+        final DetectedSchema schemaB = new DetectedSchema("ns.one.TypeB", b, List.of());
+        final DetectedSchema schemaA = new DetectedSchema("", a, List.of(schemaB));
+        assertThat(result, contains(schemaB, schemaA));
+    }
+
+    @Test
+    void shouldThrowIfExternalReferencedTypeIsNotNamed() {
+        // Given: a -> b
+        final String b =
+                ensureValidAvro(
+                        """
+                {
+                  "type": "array",
+                  "items": "string"
+                }
+                """);
+
+        final String a =
+                """
+                {
+                  "type": "record",
+                  "name": "TypeA",
+                  "namespace": "ns.one",
+                  "fields": [
+                    {"name": "f3", "type": "TypeB"}
+                  ]
+                }
+                """;
+
+        when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
+
+        // When:
+        final Exception e =
+                assertThrows(
+                        RuntimeException.class,
+                        () -> refFinder.findReferences(ROOT_SCHEMA_PATH, a));
+
+        // Then:
+        assertThat(e.getMessage(), startsWith("Schema content invalid."));
+        assertThat(
+                e.getCause().getMessage(),
+                is(
+                        "Not a named type. Avro only supports named types, e.g. record, fixed,"
+                                + " enum, in external schema."));
+    }
+
+    @Test
+    void shouldThrowIfExternalReferencedTypeHasWrongName() {
+        // Given: a -> b
+        final String b =
+                ensureValidAvro(
+                        """
+                {
+                  "type": "record",
+                  "name": "TypeC",
+                  "namespace": "ns.one",
+                  "fields": [
+                    {"name": "f3", "type": "string"}
+                  ]
+                }
+                """);
+
+        final String a =
+                """
+        {
+          "type": "record",
+          "name": "TypeA",
+          "namespace": "ns.one",
+          "fields": [
+            {"name": "f3", "type": "TypeB"}
+          ]
+        }
+        """;
+
+        when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
+
+        // When:
+        final Exception e =
+                assertThrows(
+                        RuntimeException.class,
+                        () -> refFinder.findReferences(ROOT_SCHEMA_PATH, a));
+
+        // Then:
+        assertThat(e.getMessage(), startsWith("Schema content invalid."));
+        assertThat(
+                e.getCause().getMessage(),
+                is(
+                        "Expected schema file to contain type 'ns.one.TypeB', but contained"
+                                + " 'ns.one.TypeC'"));
     }
 
     private static String ensureValidAvro(final String... schema) {
