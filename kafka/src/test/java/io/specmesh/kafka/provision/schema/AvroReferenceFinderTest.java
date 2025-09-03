@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -893,6 +894,68 @@ class AvroReferenceFinderTest {
                 is(
                         "Expected schema file to contain type 'ns.one.TypeB', but contained"
                                 + " 'ns.one.TypeC'"));
+    }
+
+
+    @Test
+    void shouldNotHandleTypesInNestedObjectsAsTheyDoNotConformToSpeEvenThoughJavaAvroParserAllowsThem() {
+        // According to the Avro spec, the 'a' Avro schema below is invalid
+        // However, the _Java_ parser allows it.
+        // Though this could be a bug: https://issues.apache.org/jira/browse/AVRO-4176
+        // The Python parser does _not_ allow it.
+        // Hence, for now, SpecMesh will be inline with the Avro spec and _not_ detect the double nested custom types
+
+        // Given: a -> b
+        //        | -> b
+        final String c =
+                ensureValidAvro(
+                        """
+                        {
+                          "type": "record",
+                          "name": "TypeC",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {"name": "ff", "type": "string"}
+                          ]
+                        }
+                        """);
+
+        final String b =
+                ensureValidAvro(
+                        """
+                        {
+                          "type": "record",
+                          "name": "TypeB",
+                          "namespace": "ns.one",
+                          "fields": [
+                            {"name": "f3", "type": "string"}
+                          ]
+                        }
+                        """);
+
+        final String a =
+                ensureValidAvro(
+                        c, b,
+                """
+                {
+                  "type": "record",
+                  "name": "TypeA",
+                  "namespace": "ns.one",
+                  "fields": [
+                     { "name": "f1", "type": [ "null", {"type":"ns.one.TypeB"} ], "default": null },
+                     { "name": "f2", "type": { "type": "ns.one.TypeC"} }
+                  ]
+                }
+                """);
+
+        // When:
+        final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, a);
+
+        // Then:
+        final DetectedSchema schemaA = new DetectedSchema("ns.one.TypeA", a, List.of());
+        assertThat(result, contains(schemaA));
+
+        verifyNoInteractions(schemaLoader);
     }
 
     private static String ensureValidAvro(final String... schema) {
