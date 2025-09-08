@@ -29,7 +29,9 @@ public final class SpecMapper {
     public static JsonMapper mapper() {
         return JsonMapper.builder(new YAMLFactory())
                 .addModule(new Jdk8Module())
-                .serializationInclusion(JsonInclude.Include.NON_EMPTY)
+                .defaultPropertyInclusion(
+                        JsonInclude.Value.construct(
+                                JsonInclude.Include.NON_EMPTY, JsonInclude.Include.NON_EMPTY))
                 .build();
     }
 }

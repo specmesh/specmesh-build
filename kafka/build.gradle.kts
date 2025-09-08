@@ -43,7 +43,6 @@ dependencies {
     implementation("org.apache.kafka:kafka-streams:$kafkaVersion")
     implementation("org.apache.kafka:kafka-clients:$kafkaVersion")
     implementation("commons-io:commons-io:2.20.0")
-    implementation("com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
 
     compileOnly("org.projectlombok:lombok:$lombokVersion")
