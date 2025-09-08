@@ -78,7 +78,7 @@ subprojects {
         set("confluentVersion", "7.9.1")
         set("jacksonVersion", "2.20.0")
         set("jacksonAnnotationsVersion", "2.20")
-        set("protobufVersion", "3.25.5")
+        set("protobufVersion", "4.32.0")
         set("medeiaValidatorVersion", "1.1.0")
         set("junitVersion", "5.13.4")
         set("mockitoVersion", "5.19.0")
