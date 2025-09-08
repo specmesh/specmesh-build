@@ -34,8 +34,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
         with:
-          java-version: 17
-          distribution: 'temurin'
+          java-version: 21
+          distribution: temurin
           cache: gradle
       - name: Install Protoc
         run: sudo apt install protobuf-compiler
@@ -83,8 +83,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
         with:
-          java-version: 17
-          distribution: 'temurin'
+          java-version: 21
+          distribution: temurin
           cache: gradle
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
