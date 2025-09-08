@@ -89,7 +89,7 @@ public final class SchemaReaders {
                 return referenceFinder(filePath)
                         .findReferences(filePath.toString(), schemaContent)
                         .stream()
-                        .map(s -> new NamedSchema(s.name(), toAvroSchema(s)))
+                        .map(s -> new NamedSchema(s.typeName(), toAvroSchema(s)))
                         .collect(Collectors.toList());
             } else if (filename.endsWith(".yml")) {
                 return List.of(new NamedSchema("", new JsonSchema(schemaContent)));
@@ -109,14 +109,14 @@ public final class SchemaReaders {
 
             final List<SchemaReference> references =
                     schema.references().stream()
-                            .map(ref -> new SchemaReference(ref.name(), ref.name(), -1))
+                            .map(ref -> new SchemaReference(ref.typeName(), ref.typeName(), -1))
                             .collect(Collectors.toList());
 
             final Map<String, String> resolvedReferences =
                     schema.references().stream()
                             .collect(
                                     toMap(
-                                            DetectedSchema::name,
+                                            DetectedSchema::typeName,
                                             DetectedSchema::content,
                                             (s1, s2) -> s1,
                                             LinkedHashMap::new));
