@@ -69,7 +69,7 @@ class AvroReferenceFinderTest {
         assertThat(
                 e.getMessage(),
                 is(
-                        "Schema content invalid. schemaPath: some/path/to/root-schema.avsc,"
+                        "Schema content invalid. schema file chain: some/path/to/root-schema.avsc,"
                                 + " content: not-json"));
         assertThat(e.getCause(), is(instanceOf(JsonParseException.class)));
     }
@@ -100,8 +100,8 @@ class AvroReferenceFinderTest {
         assertThat(
                 e.getMessage(),
                 is(
-                        "Schema content invalid. schemaPath: some/path/to/nested-schema.avsc,"
-                                + " content: invalid-schema"));
+                        "Schema content invalid. schema file chain: some/path/to/root-schema.avsc"
+                                + " -> some/path/to/nested-schema.avsc, content: invalid-schema"));
         assertThat(e.getCause(), is(instanceOf(JsonParseException.class)));
     }
 
@@ -634,6 +634,17 @@ class AvroReferenceFinderTest {
     @Test
     void shouldThrowIfReferenceCanNotBeResolved() {
         // Given:
+        final String b =
+                """
+                {
+                  "type": "record",
+                  "name": "TypeB",
+                  "fields": [
+                    {"name": "f1", "type": "TypeC"}
+                  ]
+                }\
+                """;
+
         final String a =
                 """
                 {
@@ -645,8 +656,10 @@ class AvroReferenceFinderTest {
                 }\
                 """;
 
+        when(schemaLoader.load("TypeB")).thenReturn(loadedSchema(b));
+
         final RuntimeException cause = mock();
-        when(schemaLoader.load("TypeB")).thenThrow(cause);
+        when(schemaLoader.load("TypeC")).thenThrow(cause);
 
         // When:
         final Exception e =
@@ -655,7 +668,11 @@ class AvroReferenceFinderTest {
                         () -> refFinder.findReferences(ROOT_SCHEMA_PATH, a));
 
         // Then:
-        assertThat(e.getMessage(), is("Failed to load schema for type: TypeB"));
+        assertThat(
+                e.getMessage(),
+                is(
+                        "Failed to load schema for type: TypeC, referenced via schema file chain:"
+                            + " some/path/to/root-schema.avsc -> some/path/to/nested-schema.avsc"));
         assertThat(e.getCause(), is(sameInstance(cause)));
     }
 
