@@ -17,6 +17,7 @@
 package io.specmesh.kafka.provision.schema;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.joining;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -72,11 +73,14 @@ import org.apache.avro.Schema;
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 final class AvroReferenceFinder {
 
-    record DetectedSchema(String name, String content, List<DetectedSchema> references) {
-
-        @SuppressWarnings("ReassignedVariable") // False positive.
+    /**
+     * @param typeName the fully qualified name of the type in the schema file.
+     * @param content the contents of the schema file.
+     * @param references the external references the schema contains.
+     */
+    record DetectedSchema(String typeName, String content, List<DetectedSchema> references) {
         public DetectedSchema {
-            requireNonNull(name, "name");
+            requireNonNull(typeName, "typeName");
             requireNonNull(content, "content");
             references = List.copyOf(requireNonNull(references, "references"));
         }
@@ -129,34 +133,36 @@ final class AvroReferenceFinder {
      *     {@code schema}.
      */
     List<DetectedSchema> findReferences(final String schemaPath, final String schemaContent) {
-        final Map<TypeName, List<DetectedSchema>> visited = new ConcurrentHashMap<>();
-        return findReferences(schemaPath, schemaContent, Optional.empty(), visited);
+        final Route route = new Route(schemaPath);
+        final Map<TypeName, List<DetectedSchema>> visitedTypes = new ConcurrentHashMap<>();
+        return findReferences(route, schemaContent, Optional.empty(), visitedTypes);
     }
 
     private List<DetectedSchema> findReferences(
-            final String schemaPath,
+            final Route route,
             final String schemaContent,
             final Optional<TypeName> knownTypeName,
-            final Map<TypeName, List<DetectedSchema>> visited) {
-        final SchemaInfo schema = parseSchema(schemaPath, schemaContent, knownTypeName);
-        visited.put(schema.name, List.of());
+            final Map<TypeName, List<DetectedSchema>> visitedTypes) {
+        final SchemaInfo schema = parseSchema(route, schemaContent, knownTypeName);
+        schema.name.ifPresent(name -> visitedTypes.put(name, List.of()));
 
         final List<DetectedSchema> externalRefs =
                 schema.externalReferences().stream()
                         .map(
                                 typeRef -> {
-                                    final List<DetectedSchema> existing = visited.get(typeRef);
+                                    final List<DetectedSchema> existing = visitedTypes.get(typeRef);
                                     if (existing != null) {
                                         return existing;
                                     }
 
                                     final LoadedSchema loaded =
-                                            loadSchema(typeRef.fullyQualifiedName());
+                                            loadSchema(typeRef.fullyQualifiedName(), route);
+
                                     return findReferences(
-                                            loaded.path(),
+                                            route.push(loaded.path()),
                                             loaded.content(),
                                             Optional.of(typeRef),
-                                            visited);
+                                            visitedTypes);
                                 })
                         .flatMap(List::stream)
                         .distinct()
@@ -165,34 +171,42 @@ final class AvroReferenceFinder {
         final List<DetectedSchema> detected = new ArrayList<>(externalRefs);
         detected.add(
                 new DetectedSchema(
-                        schema.name().fullyQualifiedName(), schema.content(), externalRefs));
+                        schema.name().map(TypeName::fullyQualifiedName).orElse(""),
+                        schema.content(),
+                        externalRefs));
         final List<DetectedSchema> immutable = List.copyOf(detected);
-        visited.put(schema.name, immutable);
+        schema.name.ifPresent(name -> visitedTypes.put(name, immutable));
         return immutable;
     }
 
     private SchemaInfo parseSchema(
-            final String schemaPath, final String content, final Optional<TypeName> knownTypeName) {
+            final Route route, final String content, final Optional<TypeName> expectedName) {
         try {
             final JsonNode rootNode = MAPPER.readTree(content);
 
-            final TypeName typeName = namedTypeName(rootNode);
+            final Optional<TypeName> actualName = namedTypeName(rootNode);
 
-            knownTypeName
-                    .filter(known -> !known.equals(typeName))
-                    .ifPresent(
-                            expected -> {
-                                throw new IllegalArgumentException(
-                                        "Expected schema file to contain type '%s', but contained '%s'"
-                                                .formatted(expected, typeName));
-                            });
+            if (expectedName.isPresent()) {
+                if (actualName.isEmpty()) {
+                    throw new IllegalArgumentException(
+                            "Not a named type. Avro only supports named types, e.g. record, fixed,"
+                                    + " enum, in external schema.");
+                }
+
+                if (!expectedName.get().equals(actualName.get())) {
+                    throw new IllegalArgumentException(
+                            "Expected schema file to contain type '%s', but contained '%s'"
+                                    .formatted(expectedName.get(), actualName.get()));
+                }
+            }
 
             final TypeCollector typeCollector = new TypeCollector();
             typeCollector.collect(rootNode);
 
-            return new SchemaInfo(schemaPath, content, typeName, typeCollector.externalReferences);
+            return new SchemaInfo(
+                    route.current(), content, actualName, typeCollector.externalReferences);
         } catch (final Exception e) {
-            throw new InvalidSchemaException(schemaPath, content, e);
+            throw new InvalidSchemaException(route, content, e);
         }
     }
 
@@ -304,8 +318,7 @@ final class AvroReferenceFinder {
         }
     }
 
-    private static TypeName namedTypeName(final JsonNode rootNode) {
-
+    private static Optional<TypeName> namedTypeName(final JsonNode rootNode) {
         final Optional<Schema.Type> namedType =
                 type(rootNode, "")
                         .stdType()
@@ -316,29 +329,36 @@ final class AvroReferenceFinder {
                                                 || type == Schema.Type.FIXED);
 
         if (namedType.isEmpty()) {
-            return new TypeName("", "");
+            return Optional.empty();
         }
 
         final String namespace = textChild("namespace", rootNode).orElse("");
         final String name = textChild("name", rootNode).orElse("");
-        return new TypeName(namespace, name);
+        return Optional.of(new TypeName(namespace, name));
     }
 
-    private LoadedSchema loadSchema(final String type) {
+    private LoadedSchema loadSchema(final String type, final Route route) {
         try {
             return Objects.requireNonNull(schemaLoader.load(type), "loader returned null");
         } catch (final Exception e) {
-            throw new SchemaLoadException("Failed to load schema for type: " + type, e);
+            throw new SchemaLoadException(type, route, e);
         }
     }
 
     private record SchemaInfo(
-            String schemaPath, String content, TypeName name, List<TypeName> externalReferences) {}
+            String schemaPath,
+            String content,
+            Optional<TypeName> name,
+            List<TypeName> externalReferences) {}
 
     private record TypeName(String namespace, String name) {
         TypeName {
             requireNonNull(namespace, "namespace");
             requireNonNull(name, "name");
+
+            if (name.isEmpty()) {
+                throw new IllegalArgumentException("name can not be empty");
+            }
         }
 
         String fullyQualifiedName() {
@@ -381,19 +401,43 @@ final class AvroReferenceFinder {
         }
     }
 
+    private record Route(List<String> paths) {
+
+        Route(final String initial) {
+            this(new ArrayList<>(List.of(initial)));
+        }
+
+        Route push(final String schemaPath) {
+            final Route copy = new Route(new ArrayList<>(paths));
+            copy.paths.add(schemaPath);
+            return copy;
+        }
+
+        private String current() {
+            return paths.get(paths.size() - 1);
+        }
+
+        @Override
+        public String toString() {
+            return paths.stream().map(" -> %s"::formatted).collect(joining()).substring(4);
+        }
+    }
+
     private static final class InvalidSchemaException extends RuntimeException {
-        InvalidSchemaException(
-                final String schemaPath, final String content, final Exception cause) {
+        InvalidSchemaException(final Route route, final String content, final Exception cause) {
             super(
-                    "Schema content invalid. schemaPath: %s, content: %s"
-                            .formatted(schemaPath, content),
+                    "Schema content invalid. schema file chain: %s, content: %s"
+                            .formatted(route, content),
                     cause);
         }
     }
 
     private static final class SchemaLoadException extends RuntimeException {
-        SchemaLoadException(final String msg, final Throwable cause) {
-            super(msg, cause);
+        SchemaLoadException(final String type, final Route route, final Throwable cause) {
+            super(
+                    "Failed to load schema for type: %s, referenced via schema file chain: %s"
+                            .formatted(type, route),
+                    cause);
         }
     }
 }
