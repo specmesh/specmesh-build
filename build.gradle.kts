@@ -38,6 +38,9 @@ allprojects {
     tasks.jar {
         onlyIf { sourceSets.main.get().allSource.files.isNotEmpty() }
     }
+
+    // See: https://solidsoft.wordpress.com/2014/11/13/gradle-tricks-display-dependencies-for-all-subprojects-in-multi-project-build/
+    tasks.register<DependencyReportTask>("allDeps", ) {}
 }
 
 subprojects {
@@ -73,13 +76,14 @@ subprojects {
         set("observabilityVersion", "1.1.8")
         set("guavaVersion", "33.4.8-jre")
         set("confluentVersion", "7.9.1")
-        set("jacksonVersion", "2.19.2")
+        set("jacksonVersion", "2.20.0")
+        set("jacksonAnnotationsVersion", "2.20")
         set("protobufVersion", "3.25.5")
         set("medeiaValidatorVersion", "1.1.0")
         set("junitVersion", "5.13.4")
-        set("mockitoVersion", "5.18.0")
+        set("mockitoVersion", "5.19.0")
         set("junitPioneerVersion", "2.3.0")
-        set("spotBugsVersion", "4.9.3")
+        set("spotBugsVersion", "4.9.4")
         set("hamcrestVersion", "1.3")
         set("log4jVersion", "2.25.1")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
         set("classGraphVersion", "4.8.21")
