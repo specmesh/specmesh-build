@@ -25,6 +25,11 @@ plugins {
     id("com.bmuschko.docker-remote-api") version "9.4.0" apply false
 }
 
+
+scmVersion {
+    ignoreUncommittedChanges.set(false)
+}
+
 project.version = scmVersion.version
 project.group = "io.specmesh"
 
