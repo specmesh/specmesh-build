@@ -32,8 +32,6 @@ import io.specmesh.kafka.provision.ProvisioningTask;
 import io.specmesh.kafka.provision.Status;
 import io.specmesh.kafka.provision.schema.SchemaReaders.NamedSchema;
 import io.specmesh.kafka.provision.schema.SchemaReaders.SchemaReader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -118,17 +116,15 @@ public final class SchemaProvisioner {
      */
     private static List<Schema> requiredSchemas(
             final KafkaApiSpec apiSpec, final String baseResourcePath) {
-        final Path basePath = Paths.get(baseResourcePath);
-
         final Set<String> seenSubjects = new HashSet<>();
         return apiSpec.listDomainOwnedTopics().stream()
-                .flatMap(topic -> topicSchemas(apiSpec, basePath, topic.name()))
+                .flatMap(topic -> topicSchemas(apiSpec, baseResourcePath, topic.name()))
                 .filter(e -> seenSubjects.add(e.subject()))
                 .collect(Collectors.toList());
     }
 
     private static Stream<Schema> topicSchemas(
-            final KafkaApiSpec apiSpec, final Path baseResourcePath, final String topicName) {
+            final KafkaApiSpec apiSpec, final String baseResourcePath, final String topicName) {
         return apiSpec.ownedTopicSchemas(topicName)
                 .map(
                         si ->
@@ -162,10 +158,14 @@ public final class SchemaProvisioner {
             final String partName,
             final String schemaRef,
             final SchemaInfo si,
-            final Path baseResourcePath,
+            final String baseResourcePath,
             final String topicName) {
         try {
-            final Path schemaPath = Path.of(baseResourcePath.toString(), schemaRef);
+            final String schemaPath =
+                    baseResourcePath.isEmpty()
+                            ? schemaRef
+                            : "%s/%s".formatted(baseResourcePath, schemaRef);
+
             final List<NamedSchema> schemas =
                     new SchemaReaders.LocalSchemaReader().read(schemaPath);
 

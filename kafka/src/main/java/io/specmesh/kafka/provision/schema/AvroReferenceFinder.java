@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.util.ClassUtil;
+import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -432,7 +433,8 @@ final class AvroReferenceFinder {
         }
     }
 
-    private static final class SchemaLoadException extends RuntimeException {
+    @VisibleForTesting
+    static final class SchemaLoadException extends RuntimeException {
         SchemaLoadException(final String type, final Route route, final Throwable cause) {
             super(
                     "Failed to load schema for type: %s, referenced via schema file chain: %s"
