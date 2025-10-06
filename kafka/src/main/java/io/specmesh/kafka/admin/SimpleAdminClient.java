@@ -35,7 +35,7 @@ import org.apache.kafka.clients.admin.MemberAssignment;
 import org.apache.kafka.clients.admin.MemberDescription;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.ConsumerGroupState;
+import org.apache.kafka.common.GroupState;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.TopicPartitionInfo;
@@ -111,10 +111,10 @@ public class SimpleAdminClient implements SmAdminClient {
                         .filter(
                                 listing ->
                                         !listing.isSimpleConsumerGroup()
-                                                && listing.state().isPresent()
-                                                && listing.state()
+                                                && listing.groupState().isPresent()
+                                                && listing.groupState()
                                                         .get()
-                                                        .equals(ConsumerGroupState.STABLE))
+                                                        .equals(GroupState.STABLE))
                         .map(ConsumerGroupListing::groupId)
                         .collect(Collectors.toList());
 
