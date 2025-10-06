@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "namespace": "other.domain",
+  "name": "Root",
+  "fields": [
+    {"name": "common", "type": "Common"}
+  ]
+}
