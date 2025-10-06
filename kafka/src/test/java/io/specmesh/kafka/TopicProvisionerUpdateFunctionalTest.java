@@ -16,6 +16,7 @@
 
 package io.specmesh.kafka;
 
+import static io.specmesh.kafka.util.AssertEventually.assertThatEventually;
 import static org.apache.kafka.common.acl.AclOperation.ALL;
 import static org.apache.kafka.common.acl.AclOperation.IDEMPOTENT_WRITE;
 import static org.apache.kafka.common.acl.AclPermissionType.ALLOW;
@@ -26,6 +27,7 @@ import static org.apache.kafka.common.resource.ResourceType.CLUSTER;
 import static org.apache.kafka.common.resource.ResourceType.GROUP;
 import static org.apache.kafka.common.resource.ResourceType.TRANSACTIONAL_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
@@ -36,17 +38,18 @@ import io.specmesh.kafka.provision.TopicProvisioner.Topic;
 import io.specmesh.test.TestSpecLoader;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.common.acl.AccessControlEntry;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.config.TopicConfig;
 import org.apache.kafka.common.resource.ResourcePattern;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
@@ -71,7 +74,8 @@ class TopicProvisionerUpdateFunctionalTest {
     private static final KafkaApiSpec API_UPDATE_SPEC =
             TestSpecLoader.loadFromClassPath("provisioner-update-functional-test-api.yaml");
 
-    public static final String USER_SIGNED_UP = "simple.provision_demo._public.user_signed_up";
+    private static final String USER_SIGNED_UP = "simple.provision_demo._public.user_signed_up";
+    private static final String USER_INFO = "simple.provision_demo._protected.user_info";
 
     private enum Domain {
         /** The domain associated with the spec. */
@@ -90,6 +94,8 @@ class TopicProvisionerUpdateFunctionalTest {
 
     private static final String ADMIN_USER = "admin";
 
+    private Admin admin;
+
     @RegisterExtension
     private static final KafkaEnvironment KAFKA_ENV =
             DockerKafkaEnvironment.builder()
@@ -102,95 +108,101 @@ class TopicProvisionerUpdateFunctionalTest {
                     .withKafkaAcls(aclsForOtherDomain(Domain.UNRELATED))
                     .build();
 
+    @BeforeEach
+    void setUp() {
+        admin = KAFKA_ENV.adminClient();
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (admin != null) {
+            admin.close();
+        }
+    }
+
     @Test
     @Order(1)
     void shouldProvisionExistingSpec() {
-        try (Admin adminClient = KAFKA_ENV.adminClient()) {
-            TopicProvisioner.provision(false, false, 1.0, API_SPEC, adminClient);
-        }
+        // When:
+        TopicProvisioner.provision(false, false, 1.0, API_SPEC, admin);
+
+        // Then:
+        assertThat(domainTopics(), is(Set.of(USER_SIGNED_UP, USER_INFO)));
     }
 
     @Test
     @Order(2)
     void shouldDoTopicUpdates() {
-        try (Admin adminClient = KAFKA_ENV.adminClient()) {
+        // DRY RUN Test
+        final var dryRunChangeset =
+                TopicProvisioner.provision(true, false, 1.0, API_UPDATE_SPEC, admin);
 
-            // DRY RUN Test
-            final var dryRunChangeset =
-                    TopicProvisioner.provision(true, false, 1.0, API_UPDATE_SPEC, adminClient);
+        assertThat(
+                dryRunChangeset.stream().map(Topic::name).collect(Collectors.toSet()),
+                is(Set.of(USER_SIGNED_UP)));
 
-            assertThat(
-                    dryRunChangeset.stream().map(Topic::name).collect(Collectors.toSet()),
-                    is(Matchers.hasItem(USER_SIGNED_UP)));
+        final var dryFirstUpdate = dryRunChangeset.iterator().next();
 
-            final var dryFirstUpdate = dryRunChangeset.iterator().next();
+        assertThat(dryFirstUpdate.state(), is(STATE.UPDATE));
 
-            assertThat(dryFirstUpdate.state(), is(STATE.UPDATE));
+        // REAL Test
+        final var changeset = TopicProvisioner.provision(false, false, 1.0, API_UPDATE_SPEC, admin);
 
-            // REAL Test
-            final var changeset =
-                    TopicProvisioner.provision(false, false, 1.0, API_UPDATE_SPEC, adminClient);
+        final var change = changeset.iterator().next();
 
-            final var change = changeset.iterator().next();
-
-            assertThat(change.name(), is(USER_SIGNED_UP));
-            assertThat(change.partitions(), is(99));
-            assertThat(change.messages(), is(Matchers.containsString("partitions")));
-            assertThat(change.config().get(TopicConfig.RETENTION_MS_CONFIG), is("999000"));
-            assertThat(
-                    change.messages(),
-                    is(Matchers.containsString(TopicConfig.RETENTION_MS_CONFIG)));
-        }
+        assertThat(change.name(), is(USER_SIGNED_UP));
+        assertThat(change.partitions(), is(99));
+        assertThat(change.messages(), is(Matchers.containsString("partitions")));
+        assertThat(change.config().get(TopicConfig.RETENTION_MS_CONFIG), is("999000"));
+        assertThat(change.messages(), is(Matchers.containsString(TopicConfig.RETENTION_MS_CONFIG)));
     }
 
     @Test
     @Order(5)
-    void shouldCleanupNonSpecTopicsDryRun()
-            throws ExecutionException, InterruptedException, TimeoutException {
-        try (Admin adminClient = KAFKA_ENV.adminClient()) {
-            adminClient
-                    .createTopics(
-                            List.of(new NewTopic(API_SPEC.id() + ".should.not.be", 1, (short) 1)))
-                    .all()
-                    .get(20, TimeUnit.SECONDS);
+    void shouldCleanupNonSpecTopicsDryRun() throws Exception {
+        admin.createTopics(List.of(new NewTopic(API_SPEC.id() + ".should.not.be", 1, (short) 1)))
+                .all()
+                .get(20, TimeUnit.SECONDS);
 
-            assertThat(topicCount(adminClient), is(3L));
+        assertThatEventually(
+                this::domainTopics,
+                is(Set.of(USER_SIGNED_UP, USER_INFO, "simple.provision_demo.should.not.be")));
 
-            // create the unspecified topic
-            final var unSpecifiedTopics =
-                    TopicProvisioner.provision(true, true, 1.0, API_SPEC, adminClient);
-            // 'should.not.be' topic that should not be
-            assertThat(unSpecifiedTopics, is(hasSize(1)));
-            assertThat(unSpecifiedTopics.iterator().next().state(), is(STATE.DELETE));
-            assertThat(topicCount(adminClient), is(3L));
-        }
+        // create the unspecified topic
+        final var unSpecifiedTopics = TopicProvisioner.provision(true, true, 1.0, API_SPEC, admin);
+        // 'should.not.be' topic that should not be
+        assertThat(unSpecifiedTopics, is(hasSize(1)));
+        assertThat(unSpecifiedTopics.iterator().next().state(), is(STATE.DELETE));
+        assertThat(domainTopics(), hasItem("simple.provision_demo.should.not.be"));
     }
 
     @Test
     @Order(6)
-    void shouldCleanupNonSpecTopicsIRL() throws ExecutionException, InterruptedException {
-        try (Admin adminClient = KAFKA_ENV.adminClient()) {
+    void shouldCleanupNonSpecTopicsIRL() {
+        assertThat(
+                domainTopics(),
+                is(Set.of(USER_SIGNED_UP, USER_INFO, "simple.provision_demo.should.not.be")));
 
-            assertThat(topicCount(adminClient), is(3L));
+        // create the unspecified topic
+        final var unSpecifiedTopics = TopicProvisioner.provision(false, true, 1.0, API_SPEC, admin);
 
-            // create the unspecified topic
-            final var unSpecifiedTopics =
-                    TopicProvisioner.provision(false, true, 1.0, API_SPEC, adminClient);
+        // 'should.not.be' topic that should not be
+        assertThat(unSpecifiedTopics, is(hasSize(1)));
+        assertThat(unSpecifiedTopics.iterator().next().state(), is(STATE.DELETED));
 
-            // 'should.not.be' topic that should not be
-            assertThat(unSpecifiedTopics, is(hasSize(1)));
-            assertThat(unSpecifiedTopics.iterator().next().state(), is(STATE.DELETED));
-
-            // 'should.not.be' topic was removed
-            assertThat(topicCount(adminClient), is(2L));
-        }
+        // 'should.not.be' topic was removed
+        assertThat(domainTopics(), is(Set.of(USER_SIGNED_UP, USER_INFO)));
     }
 
-    private static long topicCount(final Admin adminClient)
-            throws InterruptedException, ExecutionException {
-        return adminClient.listTopics().listings().get().stream()
-                .filter(t -> t.name().startsWith(API_SPEC.id()))
-                .count();
+    private Set<String> domainTopics() {
+        try {
+            return admin.listTopics().listings().get().stream()
+                    .map(TopicListing::name)
+                    .filter(t -> t.startsWith(API_SPEC.id()))
+                    .collect(Collectors.toUnmodifiableSet());
+        } catch (Exception e) {
+            throw new AssertionError("Failed to list domain topics", e);
+        }
     }
 
     private static Set<AclBinding> aclsForOtherDomain(final Domain domain) {

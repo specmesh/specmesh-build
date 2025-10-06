@@ -44,6 +44,10 @@ class DockerImageTest {
 
     @Test
     void shouldShowUsageWhenRunWithoutArgs() {
+        // Given:
+        final StringBuilder logBuilder = new StringBuilder();
+        container.withLogConsumer(frame -> logBuilder.append(frame.getUtf8String()));
+
         // When:
         try {
             container.start();
@@ -52,7 +56,7 @@ class DockerImageTest {
         }
 
         // Then:
-        final String logs = container.getLogs();
+        final String logs = logBuilder.toString();
         assertThat(logs, containsString("Usage"));
         assertThat(logs, containsString("Commands"));
         assertThat(logs, containsString("provision"));
