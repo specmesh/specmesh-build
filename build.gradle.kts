@@ -85,7 +85,7 @@ subprojects {
         set("jacksonAnnotationsVersion", "2.20")
         set("protobufVersion", "3.25.5")
         set("medeiaValidatorVersion", "1.1.0")
-        set("junitVersion", "5.13.4")
+        set("junitVersion", "6.0.0")
         set("mockitoVersion", "5.20.0")
         set("junitPioneerVersion", "2.3.0")
         set("spotBugsVersion", "4.9.6")
