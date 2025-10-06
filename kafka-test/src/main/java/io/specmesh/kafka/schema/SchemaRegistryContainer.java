@@ -27,8 +27,8 @@ import org.testcontainers.utility.DockerImageName;
 /** Test container for the Schema Registry */
 public final class SchemaRegistryContainer extends GenericContainer<SchemaRegistryContainer> {
 
-    private static final DockerImageName DEFAULT_IMAGE_NAME =
-            DockerImageName.parse("confluentinc/cp-schema-registry:7.5.3");
+    public static final DockerImageName DEFAULT_IMAGE_NAME =
+            DockerImageName.parse("confluentinc/cp-schema-registry:7.9.1");
 
     /** Port the SR will listen on. */
     public static final int SCHEMA_REGISTRY_PORT = 8081;

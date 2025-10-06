@@ -346,7 +346,8 @@ public final class DockerKafkaEnvironment
         private static final int DEFAULT_CONTAINER_STARTUP_ATTEMPTS = 3;
         private static final Duration DEFAULT_CONTAINER_STARTUP_TIMEOUT = Duration.ofSeconds(30);
 
-        private static final String DEFAULT_KAFKA_DOCKER_IMAGE = "confluentinc/cp-kafka:7.5.3";
+        private static final DockerImageName DEFAULT_KAFKA_DOCKER_IMAGE =
+                DockerImageName.parse("confluentinc/cp-kafka:7.9.1");
         private static final Map<String, String> DEFAULT_KAFKA_ENV =
                 Map.of(
                         "KAFKA_AUTO_CREATE_TOPICS_ENABLE",
@@ -354,8 +355,8 @@ public final class DockerKafkaEnvironment
                         "KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS",
                         "0");
 
-        private static final String DEFAULT_SCHEMA_REG_IMAGE =
-                "confluentinc/cp-schema-registry:7.5.3";
+        private static final DockerImageName DEFAULT_SCHEMA_REG_IMAGE =
+                SchemaRegistryContainer.DEFAULT_IMAGE_NAME;
 
         private int startUpAttempts = DEFAULT_CONTAINER_STARTUP_ATTEMPTS;
         private Duration startUpTimeout = DEFAULT_CONTAINER_STARTUP_TIMEOUT;
@@ -411,9 +412,21 @@ public final class DockerKafkaEnvironment
          *
          * @param imageName the Docker image name.
          * @return self.
+         * @deprecated since 0.18.2, use {@link #withKafkaImage(DockerImageName)} instead.
          */
+        @Deprecated(since = "0.18.2", forRemoval = true)
         public Builder withKafkaImage(final String imageName) {
-            this.kafkaDockerImage = DockerImageName.parse(imageName);
+            return withKafkaImage(DockerImageName.parse(imageName));
+        }
+
+        /**
+         * Customise the Docker image to use for Kafka.
+         *
+         * @param imageName the Docker image name.
+         * @return self.
+         */
+        public Builder withKafkaImage(final DockerImageName imageName) {
+            this.kafkaDockerImage = requireNonNull(imageName, "imageName");
             return this;
         }
 
@@ -455,10 +468,23 @@ public final class DockerKafkaEnvironment
          *
          * @param imageName the Docker image name.
          * @return self.
+         * @deprecated since 0.18.2, use {@link #withSchemaRegistryImage(DockerImageName)} instead.
          */
         @SuppressWarnings("UnusedReturnValue")
+        @Deprecated(since = "0.18.2", forRemoval = true)
         public Builder withSchemaRegistryImage(final String imageName) {
-            this.srImage = Optional.of(DockerImageName.parse(imageName));
+            return withSchemaRegistryImage(DockerImageName.parse(imageName));
+        }
+
+        /**
+         * Customise the Docker image to use for Schema Registry.
+         *
+         * @param imageName the Docker image name.
+         * @return self.
+         */
+        @SuppressWarnings("UnusedReturnValue")
+        public Builder withSchemaRegistryImage(final DockerImageName imageName) {
+            this.srImage = Optional.of(imageName);
             return this;
         }
 
