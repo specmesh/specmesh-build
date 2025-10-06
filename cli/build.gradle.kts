@@ -22,7 +22,6 @@ plugins {
     id("com.bmuschko.docker-remote-api")
 }
 
-val kafkaVersion : String by extra
 val spotBugsVersion : String by extra
 val jacksonVersion : String by extra
 val lombokVersion : String by extra
