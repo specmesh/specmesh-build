@@ -336,7 +336,7 @@ public final class DockerKafkaEnvironment
         private static final int DEFAULT_CONTAINER_STARTUP_ATTEMPTS = 3;
         private static final Duration DEFAULT_CONTAINER_STARTUP_TIMEOUT = Duration.ofSeconds(30);
 
-        private static final DockerImageName DEFAULT_KAFKA_DOCKER_IMAGE =
+        public static final DockerImageName DEFAULT_KAFKA_DOCKER_IMAGE =
                 DockerImageName.parse("confluentinc/cp-kafka:7.9.1");
         private static final Map<String, String> DEFAULT_KAFKA_ENV =
                 Map.of(
@@ -345,7 +345,7 @@ public final class DockerKafkaEnvironment
                         "KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS",
                         "0");
 
-        private static final DockerImageName DEFAULT_SCHEMA_REG_IMAGE =
+        public static final DockerImageName DEFAULT_SCHEMA_REG_IMAGE =
                 SchemaRegistryContainer.DEFAULT_IMAGE_NAME;
 
         private int startUpAttempts = DEFAULT_CONTAINER_STARTUP_ATTEMPTS;
