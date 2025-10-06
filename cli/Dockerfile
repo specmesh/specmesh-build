@@ -1,5 +1,5 @@
 
-FROM eclipse-temurin:11-jre-focal
+FROM eclipse-temurin:17-jre-focal
 
 ARG APP_NAME
 ARG APP_VERSION

@@ -19,28 +19,42 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build-linux:
     permissions:
       packages: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: gradle/wrapper-validation-action@f9c9c575b8b21b6485636a91ffecd10e558c62f6 # v3.5.0
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: gradle/actions/wrapper-validation@v5
       - name: Fetch version history
         # Do NOT want to fetch all tags if building a specific tag.
         # Doing so could result in code published with wrong version, if newer tags have been pushed
         if: (!startsWith(github.ref, 'refs/tags/'))
         run: git fetch --tag --unshallow
       - name: Set up JDK
-        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
         with:
-          java-version: 17
-          distribution: 'temurin'
+          java-version: 21
+          distribution: temurin
           cache: gradle
       - name: Install Protoc
         run: sudo apt install protobuf-compiler
       - name: Build
         run: ./gradlew build
+      - name: Upload Reports
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: reports-linux-${{ matrix.kafka_version }}
+          path: '**/build/reports/**/*.xml'
+          retention-days: 5
+      - name: Upload Test Results
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: test-results-linux-${{ matrix.kafka_version }}
+          path: '**/build/test-results/**/*.xml'
+          retention-days: 5
       - name: Publish
         if: github.event_name == 'push' || github.event.inputs.publish_artifacts == 'true'
         env:
@@ -53,7 +67,7 @@ jobs:
           ./gradlew cV
           ./gradlew publish closeAndReleaseStagingRepository
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -61,16 +75,50 @@ jobs:
       - name: Push Docker images
         if: startsWith(github.ref, 'refs/tags/')
         run: ./gradlew pushAppImage
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: gradle/actions/wrapper-validation@v5
+      - name: Set up JDK
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
+        with:
+          java-version: 21
+          distribution: temurin
+          cache: gradle
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify protoc
+        shell: bash
+        run: protoc --version
+      - name: Build
+        run: ./gradlew build -PexcludeContainerised
+      - name: Upload reports
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: reports-win
+          path: '**/build/reports/**/*.xml'
+          retention-days: 5
+      - name: Upload Test Results
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: test-results-win
+          path: '**/build/test-results/**/*.xml'
+          retention-days: 5
 
   create-gh-release:
     if: startsWith(github.ref, 'refs/tags/') && !endsWith(github.ref, '-alpha')
-    needs: build
+    needs: [build-linux,build-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v3.0.0
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v3.0.0
       - name: Create GitHut Release
-        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
+        uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836 # v2.3.3
         with:
           generate_release_notes: true

@@ -33,13 +33,39 @@ import org.junit.jupiter.api.Test;
 class SchemaChangeSetCalculatorsTest {
 
     private static final String DOMAIN_ID = "simple.provision_demo";
-    private static final String SCHEMA_BASE = "simple.provision_demo._public.";
 
     private String subject;
 
     @BeforeEach
     void setUp() {
         subject = "subject." + UUID.randomUUID();
+    }
+
+    @Test
+    void shouldDetectSchemasThatNeedCreating() {
+        // Given:
+        final List<Schema> existing = List.of();
+
+        final List<Schema> required =
+                List.of(
+                        Schema.builder()
+                                .type("AVRO")
+                                .subject(subject)
+                                .state(Status.STATE.READ)
+                                .schema(loadSchema(DOMAIN_ID + "._public.user_signed_up-v2.avsc"))
+                                .build());
+
+        final var calculator = SchemaChangeSetCalculators.builder().build(false);
+
+        // When:
+        final Collection<Schema> schemas = calculator.calculate(existing, required, DOMAIN_ID);
+
+        // Then:
+        assertThat(schemas, hasSize(1));
+        final Schema schema = schemas.iterator().next();
+        assertThat(schema.state(), is(Status.STATE.CREATE));
+        assertThat(schema.subject(), is(subject));
+        assertThat(schema.messages(), is("\n Create"));
     }
 
     @Test
@@ -51,7 +77,9 @@ class SchemaChangeSetCalculatorsTest {
                                 .type("AVRO")
                                 .subject(subject)
                                 .state(Status.STATE.READ)
-                                .schema(loadSchema(SCHEMA_BASE + "user_signed_up.avsc").copy(1))
+                                .schema(
+                                        loadSchema(DOMAIN_ID + "._public.user_signed_up.avsc")
+                                                .copy(1))
                                 .build());
 
         final List<Schema> required =
@@ -60,7 +88,7 @@ class SchemaChangeSetCalculatorsTest {
                                 .type("AVRO")
                                 .subject(subject)
                                 .state(Status.STATE.READ)
-                                .schema(loadSchema(SCHEMA_BASE + "user_signed_up-v2.avsc"))
+                                .schema(loadSchema(DOMAIN_ID + "._public.user_signed_up-v2.avsc"))
                                 .build());
 
         final var calculator = SchemaChangeSetCalculators.builder().build(false);
@@ -85,7 +113,9 @@ class SchemaChangeSetCalculatorsTest {
                                 .type("AVRO")
                                 .subject(subject)
                                 .state(Status.STATE.READ)
-                                .schema(loadSchema(SCHEMA_BASE + "user_signed_up.avsc").copy(1))
+                                .schema(
+                                        loadSchema(DOMAIN_ID + "._public.user_signed_up.avsc")
+                                                .copy(1))
                                 .build());
 
         final List<Schema> required =
@@ -94,7 +124,7 @@ class SchemaChangeSetCalculatorsTest {
                                 .type("AVRO")
                                 .subject(subject)
                                 .state(Status.STATE.READ)
-                                .schema(loadSchema(SCHEMA_BASE + "user_signed_up.avsc"))
+                                .schema(loadSchema(DOMAIN_ID + "._public.user_signed_up.avsc"))
                                 .build());
 
         final var calculator = SchemaChangeSetCalculators.builder().build(false);
@@ -131,6 +161,297 @@ class SchemaChangeSetCalculatorsTest {
         assertThat(schema.state(), is(Status.STATE.IGNORED));
         assertThat(schema.subject(), is(subject));
         assertThat(schema.messages(), is("\n ignored as it does not belong to the domain"));
+    }
+
+    @Test
+    void shouldIgnoreExistingSchemasOutsideOfDomain() {
+        // Given:
+        final List<Schema> existing =
+                List.of(
+                        Schema.builder()
+                                .type("AVRO")
+                                .subject(subject)
+                                .state(Status.STATE.READ)
+                                .schema(loadSchema("other.domain.Common.avsc").copy(1))
+                                .build());
+
+        final List<Schema> required =
+                List.of(
+                        Schema.builder()
+                                .type("AVRO")
+                                .subject(subject)
+                                .state(Status.STATE.CREATE)
+                                .schema(loadSchema("other.domain.Common.avsc"))
+                                .build());
+
+        final var calculator = SchemaChangeSetCalculators.builder().build(false);
+
+        // When:
+        final Collection<Schema> schemas = calculator.calculate(existing, required, DOMAIN_ID);
+
+        // Then:
+        assertThat(schemas, hasSize(1));
+        final Schema schema = schemas.iterator().next();
+        assertThat(schema.state(), is(Status.STATE.IGNORED));
+        assertThat(schema.subject(), is(subject));
+        assertThat(schema.messages(), is("\n ignored as it does not belong to the domain"));
+    }
+
+    @Test
+    void shouldDetectMissingTopicSchemaFromOutsideOfDomain() {
+        // Given:
+        final List<Schema> existing = List.of();
+
+        final List<Schema> required =
+                List.of(
+                        Schema.builder()
+                                .type("AVRO")
+                                .subject(subject)
+                                .state(Status.STATE.READ)
+                                .schema(loadSchema("other.domain.Common.avsc"))
+                                .topicSchema(true)
+                                .build());
+
+        final var calculator = SchemaChangeSetCalculators.builder().build(false);
+
+        // When:
+        final Collection<Schema> schemas = calculator.calculate(existing, required, DOMAIN_ID);
+
+        // Then:
+        assertThat(schemas, hasSize(1));
+        final Schema schema = schemas.iterator().next();
+        assertThat(schema.state(), is(Status.STATE.CREATE));
+        assertThat(schema.subject(), is(subject));
+        assertThat(schema.messages(), is("\n Create"));
+    }
+
+    @Test
+    void shouldDetectExistingTopicSchemaFromOutsideOfDomain() {
+        // Given:
+        final List<Schema> existing =
+                List.of(
+                        Schema.builder()
+                                .type("AVRO")
+                                .subject(subject)
+                                .state(Status.STATE.READ)
+                                .schema(loadSchema("other.domain.Common.avsc").copy(1))
+                                .build());
+
+        final List<Schema> required =
+                List.of(
+                        Schema.builder()
+                                .type("AVRO")
+                                .subject(subject)
+                                .state(Status.STATE.CREATE)
+                                .schema(loadSchema("other.domain.Common.avsc"))
+                                .topicSchema(true)
+                                .build());
+
+        final var calculator = SchemaChangeSetCalculators.builder().build(false);
+
+        // When:
+        final Collection<Schema> schemas = calculator.calculate(existing, required, DOMAIN_ID);
+
+        // Then:
+        assertThat(schemas, empty());
+    }
+
+    @Test
+    void shouldDetectChangedTopicSchemaFromOutsideOfDomain() {
+        // Given:
+        final List<Schema> existing =
+                List.of(
+                        Schema.builder()
+                                .type("AVRO")
+                                .subject(subject)
+                                .state(Status.STATE.READ)
+                                .schema(loadSchema("other.domain.Common.avsc").copy(1))
+                                .build());
+
+        final List<Schema> required =
+                List.of(
+                        Schema.builder()
+                                .type("AVRO")
+                                .subject(subject)
+                                .state(Status.STATE.CREATE)
+                                .schema(loadSchema("other.domain.Common-v2.avsc"))
+                                .topicSchema(true)
+                                .build());
+
+        final var calculator = SchemaChangeSetCalculators.builder().build(false);
+
+        // When:
+        final Collection<Schema> schemas = calculator.calculate(existing, required, DOMAIN_ID);
+
+        // Then:
+        assertThat(schemas, hasSize(1));
+        final Schema schema = schemas.iterator().next();
+        assertThat(schema.state(), is(Status.STATE.UPDATE));
+        assertThat(schema.subject(), is(subject));
+        assertThat(schema.messages(), is("\n Update"));
+    }
+
+    @Test
+    void shouldIgnoreSchemasInSubDomain() {
+        // Given:
+        final List<Schema> existing = List.of();
+
+        final List<Schema> required =
+                List.of(
+                        Schema.builder()
+                                .type("AVRO")
+                                .subject(subject)
+                                .state(Status.STATE.CREATE)
+                                .schema(loadSchema(DOMAIN_ID + ".sub._public.SubDomainThing.avsc"))
+                                .build());
+
+        final var calculator = SchemaChangeSetCalculators.builder().build(false);
+
+        // When:
+        final Collection<Schema> schemas = calculator.calculate(existing, required, DOMAIN_ID);
+
+        // Then:
+        assertThat(schemas, hasSize(1));
+        final Schema schema = schemas.iterator().next();
+        assertThat(schema.state(), is(Status.STATE.IGNORED));
+        assertThat(schema.subject(), is(subject));
+        assertThat(schema.messages(), is("\n ignored as it does not belong to the domain"));
+    }
+
+    @Test
+    void shouldIgnoreExistingSchemasInSubDomain() {
+        // Given:
+        final List<Schema> existing =
+                List.of(
+                        Schema.builder()
+                                .type("AVRO")
+                                .subject(subject)
+                                .state(Status.STATE.READ)
+                                .schema(
+                                        loadSchema(DOMAIN_ID + ".sub._public.SubDomainThing.avsc")
+                                                .copy(1))
+                                .build());
+
+        final List<Schema> required =
+                List.of(
+                        Schema.builder()
+                                .type("AVRO")
+                                .subject(subject)
+                                .state(Status.STATE.READ)
+                                .schema(loadSchema(DOMAIN_ID + ".sub._public.SubDomainThing.avsc"))
+                                .build());
+
+        final var calculator = SchemaChangeSetCalculators.builder().build(false);
+
+        // When:
+        final Collection<Schema> schemas = calculator.calculate(existing, required, DOMAIN_ID);
+
+        // Then:
+        assertThat(schemas, hasSize(1));
+        final Schema schema = schemas.iterator().next();
+        assertThat(schema.state(), is(Status.STATE.IGNORED));
+        assertThat(schema.subject(), is(subject));
+        assertThat(schema.messages(), is("\n ignored as it does not belong to the domain"));
+    }
+
+    @Test
+    void shouldDetectMissingTopicSchemaFromSubDomain() {
+        // Given:
+        final List<Schema> existing = List.of();
+
+        final List<Schema> required =
+                List.of(
+                        Schema.builder()
+                                .type("AVRO")
+                                .subject(subject)
+                                .state(Status.STATE.CREATE)
+                                .schema(loadSchema(DOMAIN_ID + ".sub._public.SubDomainThing.avsc"))
+                                .topicSchema(true)
+                                .build());
+
+        final var calculator = SchemaChangeSetCalculators.builder().build(false);
+
+        // When:
+        final Collection<Schema> schemas = calculator.calculate(existing, required, DOMAIN_ID);
+
+        // Then:
+        assertThat(schemas, hasSize(1));
+        final Schema schema = schemas.iterator().next();
+        assertThat(schema.state(), is(Status.STATE.CREATE));
+        assertThat(schema.subject(), is(subject));
+        assertThat(schema.messages(), is("\n Create"));
+    }
+
+    @Test
+    void shouldDetectExistingTopicSchemaFromSubDomain() {
+        // Given:
+        final List<Schema> existing =
+                List.of(
+                        Schema.builder()
+                                .type("AVRO")
+                                .subject(subject)
+                                .state(Status.STATE.READ)
+                                .schema(
+                                        loadSchema(DOMAIN_ID + ".sub._public.SubDomainThing.avsc")
+                                                .copy(1))
+                                .build());
+
+        final List<Schema> required =
+                List.of(
+                        Schema.builder()
+                                .type("AVRO")
+                                .subject(subject)
+                                .state(Status.STATE.READ)
+                                .schema(loadSchema(DOMAIN_ID + ".sub._public.SubDomainThing.avsc"))
+                                .topicSchema(true)
+                                .build());
+
+        final var calculator = SchemaChangeSetCalculators.builder().build(false);
+
+        // When:
+        final Collection<Schema> schemas = calculator.calculate(existing, required, DOMAIN_ID);
+
+        // Then:
+        assertThat(schemas, is(empty()));
+    }
+
+    @Test
+    void shouldDetectChangedTopicSchemaFromSubDomain() {
+        // Given:
+        final List<Schema> existing =
+                List.of(
+                        Schema.builder()
+                                .type("AVRO")
+                                .subject(subject)
+                                .state(Status.STATE.READ)
+                                .schema(
+                                        loadSchema(DOMAIN_ID + ".sub._public.SubDomainThing.avsc")
+                                                .copy(1))
+                                .build());
+
+        final List<Schema> required =
+                List.of(
+                        Schema.builder()
+                                .type("AVRO")
+                                .subject(subject)
+                                .state(Status.STATE.READ)
+                                .schema(
+                                        loadSchema(
+                                                DOMAIN_ID + ".sub._public.SubDomainThing-v2.avsc"))
+                                .topicSchema(true)
+                                .build());
+
+        final var calculator = SchemaChangeSetCalculators.builder().build(false);
+
+        // When:
+        final Collection<Schema> schemas = calculator.calculate(existing, required, DOMAIN_ID);
+
+        // Then:
+        assertThat(schemas, hasSize(1));
+        final Schema schema = schemas.iterator().next();
+        assertThat(schema.state(), is(Status.STATE.UPDATE));
+        assertThat(schema.subject(), is(subject));
+        assertThat(schema.messages(), is("\n Update"));
     }
 
     private static ParsedSchema loadSchema(final String fileName) {

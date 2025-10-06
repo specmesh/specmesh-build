@@ -20,11 +20,12 @@ plugins {
 
 val spotBugsVersion : String by extra
 val jacksonVersion : String by extra
+val jacksonAnnotationsVersion : String by extra
 val lombokVersion : String by extra
 
 dependencies {
     api("com.github.spotbugs:spotbugs-annotations:$spotBugsVersion")
-    api("com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion")
+    api("com.fasterxml.jackson.core:jackson-annotations:$jacksonAnnotationsVersion")
 
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion")

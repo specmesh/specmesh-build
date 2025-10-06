@@ -43,8 +43,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -65,55 +63,97 @@ public final class SchemaReaders {
         private final ClassPathSchemaReader cpReader = new ClassPathSchemaReader();
         private final FileSystemSchemaReader fsReader = new FileSystemSchemaReader();
 
+        /**
+         * @deprecated this version has compatibility issues with Windows, use {@link #read(String)}
+         */
+        @Deprecated
         public List<NamedSchema> read(final Path schemaFile) {
+            return read(schemaFile.toString());
+        }
+
+        public List<NamedSchema> read(final String schemaFile) {
             if (cpReader.has(schemaFile)) {
-                return cpReader.readLocal(schemaFile);
+                return cpReader.read(schemaFile);
             } else {
-                return fsReader.readLocal(schemaFile);
+                return fsReader.read(schemaFile);
             }
         }
     }
 
-    private abstract static class BaseLocalSchemaReader {
+    public interface LocalReader {
+        /**
+         * Read the content of the schema file, extracting named types and loading any unknown types
+         *
+         * @param schemaFile the path to the root schema file, either on the filesystem or on the
+         *     classpath.
+         * @return a list of named schemas, in leaf-first order. The last element in the list will
+         *     be the root schema.
+         */
+        List<NamedSchema> read(String schemaFile);
 
         /**
-         * @param filePath path to schema.
-         * @return ordered list of schema, with schema dependencies earlier in the list. The schema
-         *     loaded from {@code filePath} will have an empty subject
+         * Read the contents of the schema file.
+         *
+         * @param schemaFile the path to the schema file, either on the filesystem or on the
+         *     classpath.
+         * @return the contents.
          */
-        public List<NamedSchema> readLocal(final Path filePath) {
-            final String schemaContent = readSchema(filePath);
-            final String filename =
-                    Optional.ofNullable(filePath.getFileName()).map(Objects::toString).orElse("");
-            if (filename.endsWith(".avsc")) {
-                return referenceFinder(filePath).findReferences(schemaContent).stream()
-                        .map(s -> new NamedSchema(s.subject(), toAvroSchema(s)))
+        String readContent(String schemaFile);
+    }
+
+    private abstract static class BaseLocalSchemaReader implements LocalReader {
+
+        @Override
+        public List<NamedSchema> read(final String schemaFile) {
+            final String schemaContent = readContent(schemaFile);
+            if (schemaFile.endsWith(".avsc")) {
+                return referenceFinder(schemaFile)
+                        .findReferences(schemaFile, schemaContent)
+                        .stream()
+                        .map(s -> new NamedSchema(s.typeName(), toAvroSchema(s)))
                         .collect(Collectors.toList());
-            } else if (filename.endsWith(".yml")) {
+            } else if (schemaFile.endsWith(".yml")) {
                 return List.of(new NamedSchema("", new JsonSchema(schemaContent)));
-            } else if (filename.endsWith(".proto")) {
+            } else if (schemaFile.endsWith(".proto")) {
                 return List.of(new NamedSchema("", new ProtobufSchema(schemaContent)));
             } else {
-                throw new UnsupportedOperationException("Unsupported schema file: " + filePath);
+                throw new UnsupportedOperationException("Unsupported schema file: " + schemaFile);
             }
         }
 
-        protected abstract String readSchema(Path path);
+        /**
+         * @param filePath path to schema.
+         * @return an ordered list of schema, with schema dependencies earlier in the list. The
+         *     schema loaded from {@code filePath} will be the last in the list.
+         */
+        public List<NamedSchema> readLocal(final Path filePath) {
+            return read(filePath.toString());
+        }
 
-        abstract AvroReferenceFinder referenceFinder(Path parentSchema);
+        @Deprecated
+        protected String readSchema(final Path path) {
+            return readContent(path.toString());
+        }
+
+        @Deprecated
+        AvroReferenceFinder referenceFinder(final Path parentSchema) {
+            return referenceFinder(parentSchema.toString());
+        }
+
+        abstract AvroReferenceFinder referenceFinder(String parentSchema);
 
         private static AvroSchema toAvroSchema(final DetectedSchema schema) {
 
             final List<SchemaReference> references =
                     schema.references().stream()
-                            .map(ref -> new SchemaReference(ref.name(), ref.subject(), -1))
+                            .map(ref -> new SchemaReference(ref.typeName(), ref.typeName(), -1))
                             .collect(Collectors.toList());
 
             final Map<String, String> resolvedReferences =
                     schema.references().stream()
                             .collect(
                                     toMap(
-                                            DetectedSchema::subject,
+                                            DetectedSchema::typeName,
                                             DetectedSchema::content,
                                             (s1, s2) -> s1,
                                             LinkedHashMap::new));
@@ -124,48 +164,93 @@ public final class SchemaReaders {
 
     public static final class ClassPathSchemaReader extends BaseLocalSchemaReader {
 
+        private static final char RESOURCE_PATH_SEPARATOR = '/';
+
+        /**
+         * @param schemaFile the file to check for
+         * @return {@code true} if the schema file exists on the classpath.
+         * @deprecated this version has compatibility issues with Windows, use {@link #has(String)}
+         */
+        @Deprecated
         public boolean has(final Path schemaFile) {
-            return getClass().getClassLoader().getResource(schemaFile.toString()) != null;
+            return has(schemaFile.toString());
+        }
+
+        public boolean has(final String schemaFile) {
+            return getClass().getClassLoader().getResource(schemaFile) != null;
+        }
+
+        /**
+         * @deprecated use {@link #read(String)} as this version has issues on Windows.
+         */
+        @Deprecated(since = "0.18.0", forRemoval = true)
+        @Override
+        public List<NamedSchema> readLocal(final Path filePath) {
+            return super.readLocal(filePath);
         }
 
         @Override
-        protected String readSchema(final Path path) {
-            try (InputStream s = getClass().getClassLoader().getResourceAsStream(path.toString())) {
+        public String readContent(final String location) {
+            try (InputStream s = getClass().getClassLoader().getResourceAsStream(location)) {
                 if (s == null) {
-                    throw new RuntimeException(path + " not found");
+                    throw new RuntimeException(location + " not found");
                 }
                 return new String(s.readAllBytes(), StandardCharsets.UTF_8);
             } catch (Exception e) {
                 throw new SchemaProvisioningException(
-                        "Failed to read schema from classpath:" + path, e);
+                        "Failed to read schema from classpath:" + location, e);
             }
         }
 
         @Override
-        AvroReferenceFinder referenceFinder(final Path parentSchema) {
-            final Path schemaDir =
-                    Optional.ofNullable(parentSchema.getParent()).orElse(Path.of(""));
+        AvroReferenceFinder referenceFinder(final String rootSchemaLocation) {
+            final int idx = rootSchemaLocation.lastIndexOf(RESOURCE_PATH_SEPARATOR);
+            final String schemaDir = idx < 0 ? "" : rootSchemaLocation.substring(0, idx + 1);
 
-            return new AvroReferenceFinder(type -> readSchema(schemaDir.resolve(type + ".avsc")));
+            return new AvroReferenceFinder(
+                    type -> {
+                        final String location = "%s%s.avsc".formatted(schemaDir, type);
+                        final String content = readContent(location);
+                        return new AvroReferenceFinder.LoadedSchema(location, content);
+                    });
         }
     }
 
     public static final class FileSystemSchemaReader extends BaseLocalSchemaReader {
 
-        protected String readSchema(final Path path) {
+        public List<NamedSchema> read(final Path path) {
+            return read(path.toAbsolutePath().normalize().toString());
+        }
+
+        public String readContent(final String path) {
+            return readContent(Path.of(path));
+        }
+
+        public String readContent(final Path path) {
             try {
                 return Files.readString(path, StandardCharsets.UTF_8);
             } catch (IOException e) {
                 throw new SchemaProvisioningException(
-                        "Failed to read schema at path:" + path.toAbsolutePath(), e);
+                        "Failed to read schema at path:" + path.toAbsolutePath().normalize(), e);
             }
         }
 
+        @SuppressWarnings("deprecation")
         @Override
         AvroReferenceFinder referenceFinder(final Path parentSchema) {
             final Path schemaDir = parentSchema.toAbsolutePath().getParent();
 
-            return new AvroReferenceFinder(type -> readSchema(schemaDir.resolve(type + ".avsc")));
+            return new AvroReferenceFinder(
+                    type -> {
+                        final Path path = schemaDir.resolve(type + ".avsc");
+                        final String content = readContent(path);
+                        return new AvroReferenceFinder.LoadedSchema(path.toString(), content);
+                    });
+        }
+
+        @Override
+        AvroReferenceFinder referenceFinder(final String parentSchema) {
+            return referenceFinder(Path.of(parentSchema));
         }
     }
 

@@ -46,12 +46,14 @@ import org.apache.kafka.common.acl.AccessControlEntry;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.resource.ResourcePattern;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 @SuppressFBWarnings(
         value = "IC_INIT_CIRCULARITY",
         justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positive")
+@Tag("ContainerisedTest")
 class ExporterFunctionalTest {
 
     private static final String aggregateId = ".london.hammersmith.olympia.bigdatalondon";

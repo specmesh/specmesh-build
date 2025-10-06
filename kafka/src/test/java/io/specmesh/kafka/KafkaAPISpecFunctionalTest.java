@@ -68,6 +68,7 @@ import org.apache.kafka.common.serialization.LongSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.function.Executable;
@@ -76,6 +77,7 @@ import org.junitpioneer.jupiter.cartesian.CartesianTest;
 @SuppressFBWarnings(
         value = {"IC_INIT_CIRCULARITY", "RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"},
         justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positivity")
+@Tag("ContainerisedTest")
 class KafkaAPISpecFunctionalTest {
 
     private static final KafkaApiSpec API_SPEC =
@@ -130,7 +132,7 @@ class KafkaAPISpecFunctionalTest {
     @BeforeAll
     static void setUp() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
-            TopicProvisioner.provision(false, false, API_SPEC, adminClient);
+            TopicProvisioner.provision(false, false, 1.0, API_SPEC, adminClient);
             AclProvisioner.provision(false, false, API_SPEC, API_SPEC.id(), adminClient);
         }
     }

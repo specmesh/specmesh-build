@@ -150,6 +150,7 @@ public class TopicChangeSetCalculators {
                     .collect(Collectors.toList());
         }
     }
+
     /** Returns those topics to create and ignores existing topics */
     public static final class UnspecifiedCalculator implements ChangeSetCalculator {
 
@@ -166,6 +167,7 @@ public class TopicChangeSetCalculators {
             return existingTopics;
         }
     }
+
     /** Main API */
     interface ChangeSetCalculator {
         /**

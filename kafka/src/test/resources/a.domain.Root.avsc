@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "namespace": "a.domain",
+  "name": "Root",
+  "fields": [
+    {"name": "f0", "type": "Thing"}
+  ]
+}

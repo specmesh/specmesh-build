@@ -18,11 +18,16 @@ plugins {
     java
     `maven-publish`
     signing
-    id("com.github.spotbugs") version "6.2.1"
-    id("com.diffplug.spotless") version "7.0.4"
-    id("pl.allegro.tech.build.axion-release") version "1.18.18"
+    id("com.github.spotbugs") version "6.4.2"
+    id("com.diffplug.spotless") version "8.0.0"
+    id("pl.allegro.tech.build.axion-release") version "1.20.1"
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
     id("com.bmuschko.docker-remote-api") version "9.4.0" apply false
+}
+
+
+scmVersion {
+    ignoreUncommittedChanges.set(false)
 }
 
 project.version = scmVersion.version
@@ -38,6 +43,9 @@ allprojects {
     tasks.jar {
         onlyIf { sourceSets.main.get().allSource.files.isNotEmpty() }
     }
+
+    // See: https://solidsoft.wordpress.com/2014/11/13/gradle-tricks-display-dependencies-for-all-subprojects-in-multi-project-build/
+    tasks.register<DependencyReportTask>("allDeps", ) {}
 }
 
 subprojects {
@@ -60,7 +68,7 @@ subprojects {
 
     java {
         toolchain {
-            languageVersion.set(JavaLanguageVersion.of(11))
+            languageVersion.set(JavaLanguageVersion.of(17))
         }
 
         withSourcesJar()
@@ -71,20 +79,21 @@ subprojects {
         set("kafkaVersion", "7.9.1-ce")
         set("openTracingVersion", "0.33.0")
         set("observabilityVersion", "1.1.8")
-        set("guavaVersion", "33.4.8-jre")
+        set("guavaVersion", "33.5.0-jre")
         set("confluentVersion", "7.9.1")
-        set("jacksonVersion", "2.19.1")
+        set("jacksonVersion", "2.20.0")
+        set("jacksonAnnotationsVersion", "2.20")
         set("protobufVersion", "3.25.5")
         set("medeiaValidatorVersion", "1.1.0")
-        set("junitVersion", "5.13.2")
-        set("mockitoVersion", "5.18.0")
+        set("junitVersion", "6.0.0")
+        set("mockitoVersion", "5.20.0")
         set("junitPioneerVersion", "2.3.0")
-        set("spotBugsVersion", "4.9.3")
+        set("spotBugsVersion", "4.9.6")
         set("hamcrestVersion", "1.3")
-        set("log4jVersion", "2.25.0")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
+        set("log4jVersion", "2.25.2")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
         set("classGraphVersion", "4.8.21")
         set("testcontainersVersion", "1.21.3")
-        set("lombokVersion", "1.18.38")
+        set("lombokVersion", "1.18.42")
     }
 
     val junitVersion: String by extra
@@ -115,8 +124,16 @@ subprojects {
         options.compilerArgs.add("-Werror")
     }
 
+    tasks.withType<JavaCompile>().configureEach {
+        options.release = 17
+    }
+
     tasks.test {
-        useJUnitPlatform()
+        useJUnitPlatform() {
+            if (project.hasProperty("excludeContainerised")) {
+                excludeTags("ContainerisedTest")
+            }
+        }
         setForkEvery(1)
         maxParallelForks = 2
         testLogging {
@@ -133,14 +150,14 @@ subprojects {
             (options as StandardJavadocDocletOptions).apply {
                 addBooleanOption("html5", true)
                 // Why -quite? See: https://github.com/gradle/gradle/issues/2354
-                addStringOption("Xwerror", "-quiet")
+                addStringOption("Xdoclint:none", "-quiet")
             }
         }
     }
 
     spotless {
         java {
-            googleJavaFormat("1.15.0").aosp().reflowLongStrings()
+            googleJavaFormat("1.28.0").aosp().reflowLongStrings()
             leadingTabsToSpaces()
             importOrder()
             removeUnusedImports()
@@ -166,17 +183,12 @@ subprojects {
         dependsOn("checkstyle", "spotbugs")
     }
 
+
     spotbugs {
         excludeFilter.set(rootProject.file("config/spotbugs/suppressions.xml"))
 
-        tasks.spotbugsMain {
-            reports.create("html") {
-                required.set(true)
-                setStylesheet("fancy-hist.xsl")
-            }
-        }
-        tasks.spotbugsTest {
-            reports.create("html") {
+        tasks.withType<com.github.spotbugs.snom.SpotBugsTask>().configureEach {
+            reports.maybeCreate("html").apply {
                 required.set(true)
                 setStylesheet("fancy-hist.xsl")
             }
@@ -208,7 +220,7 @@ subprojects {
                 pom {
                     name.set("${project.group}:${artifactId}")
 
-                    description.set("Specmesh ${project.name.capitalize()} library".replace("-", " "))
+                    description.set("Specmesh ${project.name} library".replace("-", " "))
 
                     url.set("https://www.specmesh.io")
 

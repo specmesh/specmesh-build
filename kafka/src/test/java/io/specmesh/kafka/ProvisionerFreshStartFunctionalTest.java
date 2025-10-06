@@ -56,6 +56,7 @@ import org.apache.kafka.common.config.TopicConfig;
 import org.apache.kafka.common.resource.ResourcePattern;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -69,6 +70,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
         value = "IC_INIT_CIRCULARITY",
         justification = "shouldHaveInitializedEnumsCorrectly() proves this is false positive")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@Tag("ContainerisedTest")
 class ProvisionerFreshStartFunctionalTest {
 
     private static final KafkaApiSpec API_SPEC =
@@ -110,7 +112,8 @@ class ProvisionerFreshStartFunctionalTest {
     void shouldDryRunTopicsFromEmptyCluster() {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
-            final var changeset = TopicProvisioner.provision(true, false, API_SPEC, adminClient);
+            final var changeset =
+                    TopicProvisioner.provision(true, false, 1.0, API_SPEC, adminClient);
 
             assertThat(
                     changeset.stream().map(Topic::name).collect(Collectors.toSet()),
@@ -219,7 +222,8 @@ class ProvisionerFreshStartFunctionalTest {
     void shouldProvisionTopicsFromEmptyCluster() throws ExecutionException, InterruptedException {
         try (Admin adminClient = KAFKA_ENV.adminClient()) {
 
-            final var changeSet = TopicProvisioner.provision(false, false, API_SPEC, adminClient);
+            final var changeSet =
+                    TopicProvisioner.provision(false, false, 1.0, API_SPEC, adminClient);
 
             // Verify - changeset
             assertThat(

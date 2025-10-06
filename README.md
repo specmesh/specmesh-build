@@ -141,56 +141,151 @@ channels:
       ]
 ```
 
-## Schema References (AVRO)
+## Shared Schemas
 
-Schema References are supported only by the Confluent Avro Serde. Common/Shared schemas are configured to be shared using the 'subject' as the full Record name (namespace+name). For example: com.example.shared.Currency - as opposed to the topic name (default schema subject). The way in which the schema is registered will follow the conventions defined below. It is configured as an attribute on the owning app.yml specificiation. As follows:
-```yaml
-        bindings:
-          kafka:
-            schemaIdLocation: "header"
-            schemaLookupStrategy: "RecordNameStrategy"
-            key:
-              type: string
-        payload:
-          $ref: "/schema/com.example.shared.Currency.avsc"
+Using shared schemas between different business functions is seen by many as an anti-pattern and can easily lead to schema-dependency-hell.
+
+However, there are a limited number of use-cases where using cross-domain schemas are useful, and therefore the pattern is supported by SpecMesh.
+
+For example, an organisation may need a shared `User` type:
+
+```json
+{
+  "type": "record",
+  "name": "User",
+  "namespace": "acme.sales",
+  "fields" : [
+    {"name":  "id", "type":  "long"},
+    {"name":  "name", "type":  "string"}
+  ]
+}
 ```
 
-More detail is provided below.
+**Note** Currently, only shared Avro schemas are supported.
 
-### **Confluent Schema Registry** conventions
+### Registering shared schema
 
-https://docs.confluent.io/platform/6.2/schema-registry/serdes-develop/index.html#subject-name-strategy
+Util [#453](https://github.com/specmesh/specmesh-build/issues/453) is done, you'll need to register your shared schemas yourself.
 
-**TopicNameStrategy** - Derives subject name from topic name. (This is the default.)
+Shared schemas should registered with a subject name that matches the fully qualified name of the Avro type.
+For example, `acme.sales.User` in for the above example record type.
 
-**RecordNameStrategy** - Derives subject name from record name, and provides a way to group logically related events that may have different data structures under a subject.
+As the subject needs to match the fully qualified name of the Avro type, only _named Avro typed_ can be registered separately i.e. `record`, `enum` and `fixed` types.
 
-**TopicRecordNameStrategy** -	Derives the subject name from topic and record name, as a way to group logically related events that may have different data structures under a subject.
+**WARNING**: add a value to an `enum` or changing a `fixed`'s size are _non-evolvable changes_ that require very careful management.
 
+#### Using a dummy channel to register shared schema
 
-### **APICurio** conventions
+It is possible to register shared schema adding a dummy channel to a spec.  For example:
 
-https://github.com/asyncapi/bindings/blob/master/kafka/README.md
-https://www.apicur.io/registry/docs/apicurio-registry/2.2.x/getting-started/assembly-using-kafka-client-serdes.html#registry-serdes-concepts-strategy_registry
+```yaml
+  _private.shared-schema:
+    publish:
+      operationId: publishUser
+      message:
+        bindings:
+          kafka:
+            key:
+              type: void
+        payload:
+          $ref: schema/acme.sales.Shared.avsc
+```
 
-**RecordIdStrategy** - Avro-specific strategy that uses the full name of the schema.
+The dummy channel's schema, `acme.sales.Shared.avsc` in the example above, should be a `record` schema. Add one, optional, `field` for each shared schema:  
 
-**TopicRecordIdStrategy** - Avro-specific strategy that uses the topic name and the full name of the schema.
+```json
+{
+  "type": "record",
+  "name": "Shared",
+  "namespace": "acme.sales",
+  "fields" : [
+    {"name":  "user", "type": ["null", "acme.sales.User"], "default": null}
+  ]
+}
+```
 
-**TopicIdStrategy** - Default strategy that uses the topic name and key or value suffix.
+**NOTE**: Optional fields are used so that a shared schema can be removed in the future, as an evolvable change.
 
-**SimpleTopicIdStrategy** - Simple strategy that only uses the topic name.
+**WARNING**: Use a `record`, not a `union` for registering the shared schema. 
+Changing the types in a `union` is _not_ an evolvable change...
+
+**NOTE**: Note, this will provision an unnecessary Kafka topic (`acme.sales._private.dummy.user`).
+As such, this is a temporary work around until [#453](https://github.com/specmesh/specmesh-build/issues/453) is done.
+
+### Using shared schema
+
+#### Using shared schema for topic schema
+
+A shared schema can be used as the key or value schema for a channel / topic in a spec simply by referencing the schema file in the spec:
+
+```yaml
+  _public.user:
+    publish:
+      message:
+        bindings:
+          kafka:
+            key: long
+        payload:
+          $ref: /schema/acme.sales.User.avsc
+```
+
+When provisioning such a spec, the `acme.sales.User` type must already be registered. 
+SpecMesh will only register the required `<topic>-key` and `<topic>-value` subjects, e.g. `<domain.id>._public.user-value` for the example above.
+
+#### Using shared schema in references
+
+Shared schema, i.e. schema belonging to a different domain, can be used via schema references. See below for more info. 
+
+## Schema References (AVRO)
+
+SpecMesh supports Avro schema references, both to types defined within the same and different schema files.
+
+When SpecMesh encounters a schema reference to a type not already defined within the current schema file, 
+it will attempt to load the file.
+
+For example:
+
+Consider the following Avro record definition:
+
+```json
+{
+  "type": "record",
+  "name": "ThingA",
+  "namespace": "acme.sales",
+  "fields": [
+    {
+      "name": "a", 
+      "type": {
+        "type": "type",
+        "name": "ThingB",
+        "fields": []
+      }
+    },
+    {"name": "d", "type": "ThingB"},
+    {"name": "c", "type": "ThingC"},
+    {"name": "d", "type": "other.domain.ThingD"}
+  ]
+}
+```
+
+Upon encountering such a schema, SpecMesh will attempt to load schemas for types `acme.sales.ThingC` and `other.domain.ThingD`.
+(`acme.sales.ThingB` is defined within the scope of the schema).
+It will attempt to load the schemas from `acme.sales.ThingC.avsc` and `other.domain.ThingD.avsc` _in the same directory as the current schema_.
+
+If either `ThingC` or `ThingD` reference other external types, those schema files will also be loaded, etc.
+
+**NOTE**: Schema types that belong to other domains must be registered _before_ the spec can be provisioned. 
+See [Shared Schema](#shared-schemas) above for more info.
 
 ### Worked example
 
 See code: kafka/src/test/resources/schema-ref (specs + schemas)
 
-Note - the developers of the _com.example.trading-api.yml_ will be required to download a copy of the Currency avsc for the
-development purposes, their spec is dependent upon the common (Currency) schema being available (published) in the
-environment, otherwise the schema.provisioning process will fail because SchemaRegistry cannot resolve references upon being uploaded.
+Note - the developers of the _com.example.trading-api.yml_ require a copy of the Currency avsc, as it is required when provisioning their spec.
+It is recommended that upstream teams publish a _versioned jar_ that contains their spec and schemas (and optionally generated Java POJOs).
+This allows downstream teams to depend on version artifacts.
 
-
-Source: com.example.trading-api.yml  (spec)
+Source: com.example.trading-api.yml (spec)
 
 ```yaml
   _public.trade:
@@ -242,7 +337,6 @@ Trade.avsc references the _Currency_ .avsc schema (the shared schema type)
     {
       "name": "currency",
       "type": "com.example.shared.Currency",
-      "subject": "com.example.shared.Currency",
       "doc": "Currency is from another 'domain'."
     }
   ]
@@ -250,11 +344,7 @@ Trade.avsc references the _Currency_ .avsc schema (the shared schema type)
 ```
 
 Share schemas are published by the owner. The spec: com.example.shared-api.yml will
-- reference the 'owned' schemas for publishing
-- specify the _schemaLookupStrategy_: "RecordNameStrategy"
 
-**RecordNameStrategy** sets the _schema-subject_ as the full record name: _com.example.shared.Currency_. 
-If not used then the default rules apply above (i.e. topic-name '-' - value) and it cannot be shared
 
 Below: com.example.shared-api.yml (api spec) 
 ```yaml
@@ -286,6 +376,20 @@ channels:
         contentType: "application/octet-stream"
         bindings:
           kafka:
+            key:
+              type: string
+        payload:
+          $ref: "/schema/com.example.shared.Currency.avsc"
+```
+
+# Schema subject naming strategy and location
+
+By default, topic schema are registered using the `TopicNameStrategy` and the schema Id location defaults to `body`.
+However, this can be customised in the kafka bindings in the spec:
+
+```yaml
+        bindings:
+          kafka:
             schemaIdLocation: "header"
             schemaLookupStrategy: "RecordNameStrategy"
             key:
@@ -294,6 +398,60 @@ channels:
           $ref: "/schema/com.example.shared.Currency.avsc"
 ```
 
+### **Confluent Schema Registry** conventions
+
+**TopicNameStrategy** - Derives subject name from topic name. (This is the default.)
+
+**RecordNameStrategy** - Derives subject name from record name. Useful if multiple topics _must_ share the same sequence of evolvable schema versions.
+
+**TopicRecordNameStrategy** -	Derives the subject name from topic and record name.
+
+See confluent docs for more info: https://docs.confluent.io/platform/6.2/schema-registry/serdes-develop/index.html#subject-name-strategy
+
+### **APICurio** conventions
+
+https://github.com/asyncapi/bindings/blob/master/kafka/README.md
+https://www.apicur.io/registry/docs/apicurio-registry/2.2.x/getting-started/assembly-using-kafka-client-serdes.html#registry-serdes-concepts-strategy_registry
+
+**RecordIdStrategy** - Avro-specific strategy that uses the full name of the schema.
+
+**TopicRecordIdStrategy** - Avro-specific strategy that uses the topic name and the full name of the schema.
+
+**TopicIdStrategy** - Default strategy that uses the topic name and key or value suffix.
+
+**SimpleTopicIdStrategy** - Simple strategy that only uses the topic name.
+
+# Scaling Kafka resources in non-production environments
+
+It's not uncommon for non-production environments to have less resources available for running services. 
+If your lower environments have smaller Kafka clusters and data volumes, then you may wish to provision topics with lower retention and less partitions & replicas.
+(This can be particularly relevant when running Kafka within some cloud platforms where partitions are limited or have an associated cost).
+
+Scaling cluster resources can be achieved by creating per-environment specs. However, it is also possible to roll out the same spec and scale resources as explained below.
+
+## Reducing topic partitions
+
+The `--partition-count-factor` command line parameter and `Provisioner.partitionCountFactor()` method can be used to apply a factor to scale _down_ the partition counts of a spec.
+
+For example, if channel/topic has 20 partitions in the spec, provisioning with either `--partition-count-factor 0.1` or `Provisioner.builder().partitionCountFactor(0.1)`
+will provision the topic with `20 x0 0.1`, i.e. 2 partitions.
+
+Note: topics with multiple partitions will _always_ provision with at least 2 partitions. Only topics with a single partition in the spec will have one partition, regardless of the factor applied.
+This is to ensure partitioning related bugs and issues can be detected in all environments.
+
+For example, a dev cluster can set `--partition-count-factor = 0.00001` to ensure all topics have either 1 or 2 topics, other non-prod clusters `--partition-count-factor = 0.1` to save resources and staging and prod would leave the default `--partition-count-factor = 1`.
+
+## Reducing topic replicas
+
+It is recommended that `replicas` is _not_ set in the spec in most cases. Instead, set the cluster-side `default.replication.factor` config as needed. 
+
+For example, a single-node dev cluster can set `default.replication.factor = 1`, other non-prod clusters `default.replication.factor = 3` and staging and prod may require `default.replication.factor = 4`.
+
+## Reducing topic retention
+
+It is recommended that the `retention.ms` topic config is _not_ set in the spec in most cases. Instead, set the cluster-side `log.retention.ms` (or related) config as needed.
+This allows the cluster, as a whole, to control the _default_ log retention. Only topics that require a specific log retention to meet business requirements need have their retention set in the spec,
+overriding the default.
 
 # Developer Notes
 

@@ -1,0 +1,9 @@
+{
+  "type": "record",
+  "name": "Entity",
+  "namespace": "schema.reference.demo",
+  "fields": [
+    {"name": "a", "type": ["null", "ThingA"], "default": null},
+    {"name": "b", "type": ["schema.reference.demo.ThingB", "null"]}
+  ]
+}

@@ -42,15 +42,14 @@ dependencies {
 
     implementation("org.apache.kafka:kafka-streams:$kafkaVersion")
     implementation("org.apache.kafka:kafka-clients:$kafkaVersion")
-    implementation("commons-io:commons-io:2.19.0")
-    implementation("com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion")
+    implementation("commons-io:commons-io:2.20.0")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
 
     compileOnly("org.projectlombok:lombok:$lombokVersion")
     annotationProcessor("org.projectlombok:lombok:$lombokVersion")
     testCompileOnly("org.projectlombok:lombok:$lombokVersion")
     testAnnotationProcessor("org.projectlombok:lombok:$lombokVersion")
-    testRuntimeOnly("commons-codec:commons-codec:1.18.0")
+    testRuntimeOnly("commons-codec:commons-codec:1.19.0")
 
     testImplementation(project(":kafka-test"))
 }

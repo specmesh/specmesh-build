@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "namespace": "simple.provision_demo.sub",
+  "name": "SubDomainThing",
+  "fields": [
+    {"name": "f1", "type": "string"}
+  ]
+}

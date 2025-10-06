@@ -1,0 +1,31 @@
+asyncapi: '2.4.0'
+id: 'urn:schema.reference.demo'
+info:
+  title: Avro Schema Reference Demo
+  version: '1.0.0'
+  description: |
+    Demonstrates how Avro schemas can reference each other, defining subject overrides if needed.
+  license:
+    name: Apache 2.0
+    url: 'https://www.apache.org/licenses/LICENSE-2.0'
+servers:
+  mosquitto:
+    url: mqtt://test.mosquitto.org
+    protocol: mqtt
+channels:
+  _public.union:
+    bindings:
+      kafka:
+        partitions: 3
+        configs:
+          cleanup.policy: delete
+
+    publish:
+      operationId: publishUnion
+      message:
+        bindings:
+          kafka:
+            key:
+              type: long
+        payload:
+          $ref: schema/schema.reference.demo.Union.avsc

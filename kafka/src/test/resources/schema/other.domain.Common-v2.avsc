@@ -1,0 +1,10 @@
+
+{
+  "type": "record",
+  "namespace": "other.domain",
+  "name": "Common",
+  "fields": [
+    {"name": "thing", "type": "string"},
+    {"name": "thing2", "type": "string", "default": ""}
+  ]
+}
