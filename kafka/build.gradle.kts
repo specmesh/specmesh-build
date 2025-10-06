@@ -19,7 +19,6 @@ plugins {
     id("com.github.davidmc24.gradle.plugin.avro") version "1.9.1"
 }
 
-val kafkaVersion : String by extra
 val spotBugsVersion : String by extra
 val jacksonVersion : String by extra
 val lombokVersion : String by extra
@@ -40,8 +39,8 @@ dependencies {
 
     api(project(":parser"))
 
-    implementation("org.apache.kafka:kafka-streams:$kafkaVersion")
-    implementation("org.apache.kafka:kafka-clients:$kafkaVersion")
+    implementation("org.apache.kafka:kafka-streams:$confluentVersion-ce")
+    implementation("org.apache.kafka:kafka-clients:$confluentVersion-ce")
     implementation("commons-io:commons-io:2.20.0")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
 
