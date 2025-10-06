@@ -16,12 +16,9 @@
 
 package io.specmesh.kafka.schema;
 
-import static io.specmesh.kafka.DockerKafkaEnvironment.KAFKA_DOCKER_NETWORK_PORT;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 
 /** Test container for the Schema Registry */
@@ -32,14 +29,6 @@ public final class SchemaRegistryContainer extends GenericContainer<SchemaRegist
 
     /** Port the SR will listen on. */
     public static final int SCHEMA_REGISTRY_PORT = 8081;
-
-    /**
-     * @param version docker image version of schema registry
-     */
-    @Deprecated
-    public SchemaRegistryContainer(final String version) {
-        this(DEFAULT_IMAGE_NAME.withTag(version));
-    }
 
     /**
      * @param dockerImageName docker image version of schema registry
@@ -59,35 +48,6 @@ public final class SchemaRegistryContainer extends GenericContainer<SchemaRegist
         }
 
         return this;
-    }
-
-    /**
-     * Link to Kafka container and its network.
-     *
-     * @param kafka kafka container
-     * @return self.
-     * @deprecated will be removed in future version.
-     */
-    @Deprecated
-    public SchemaRegistryContainer withKafka(final KafkaContainer kafka) {
-        withNetwork(kafka.getNetwork());
-        withEnv(
-                "SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS",
-                "PLAINTEXT://"
-                        + kafka.getNetworkAliases().get(0)
-                        + ":"
-                        + KAFKA_DOCKER_NETWORK_PORT);
-        dependsOn(kafka);
-        return this;
-    }
-
-    /**
-     * @return the URL of the SR
-     * @deprecated use {@link #hostNetworkUrl()}
-     */
-    @Deprecated
-    public String getUrl() {
-        return hostNetworkUrl().toString();
     }
 
     /**

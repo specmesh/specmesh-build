@@ -48,8 +48,8 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.kafka.ConfluentKafkaContainer;
 import org.testcontainers.lifecycle.Startable;
 import org.testcontainers.utility.DockerImageName;
 
@@ -84,7 +84,7 @@ public final class DockerKafkaEnvironment
                 Startable {
 
     /** The port to use when connecting to Kafka from inside the Docker network */
-    public static final int KAFKA_DOCKER_NETWORK_PORT = 9092;
+    public static final int KAFKA_DOCKER_NETWORK_PORT = 9093;
 
     private final int startUpAttempts;
     private final Duration startUpTimeout;
@@ -97,10 +97,12 @@ public final class DockerKafkaEnvironment
     private final Optional<Network> explicitNetwork;
 
     private Network network;
-    private KafkaContainer kafkaBroker;
+    private ConfluentKafkaContainer kafkaBroker;
     private SchemaRegistryContainer schemaRegistry;
     private volatile boolean invokedStatically = false;
     private final AtomicInteger setUpCount = new AtomicInteger(0);
+    private final StringBuilder kafkaLogs = new StringBuilder();
+    private final StringBuilder srLogs = new StringBuilder();
 
     /**
      * @return returns a {@link Builder} instance to allow customisation of the environment.
@@ -245,12 +247,13 @@ public final class DockerKafkaEnvironment
         network = explicitNetwork.orElseGet(Network::newNetwork);
 
         kafkaBroker =
-                new KafkaContainer(kafkaDockerImage)
+                new ConfluentKafkaContainer(kafkaDockerImage)
                         .withNetwork(network)
                         .withNetworkAliases("kafka")
                         .withStartupAttempts(startUpAttempts)
                         .withStartupTimeout(startUpTimeout)
-                        .withEnv(kafkaEnv);
+                        .withEnv(kafkaEnv)
+                        .withLogConsumer(frame -> kafkaLogs.append(frame.getUtf8String()));
 
         final Startable startable =
                 srDockerImage
@@ -266,7 +269,12 @@ public final class DockerKafkaEnvironment
                                                         .withEnv(
                                                                 "SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS",
                                                                 dockerNetworkKafkaBootstrapServers())
-                                                        .withEnv(srEnv))
+                                                        .withEnv(srEnv)
+                                                        .withLogConsumer(
+                                                                frame ->
+                                                                        srLogs.append(
+                                                                                frame
+                                                                                        .getUtf8String())))
                         .map(container -> (Startable) container)
                         .orElse(kafkaBroker);
 
@@ -314,30 +322,12 @@ public final class DockerKafkaEnvironment
         }
     }
 
-    /**
-     * @deprecated use {@link #dockerNetworkKafkaBootstrapServers}
-     * @return docker network bootstrap servers
-     */
-    @Deprecated
-    public String testNetworkKafkaBootstrapServers() {
-        return dockerNetworkKafkaBootstrapServers();
-    }
-
-    /**
-     * @deprecated use {@link #dockerNetworkSchemaRegistryServer}
-     * @return docker network schema registry endpoint
-     */
-    @Deprecated
-    public String testNetworkSchemeRegistryServer() {
-        return dockerNetworkSchemaRegistryServer();
-    }
-
     public String kafkaLogs() {
-        return kafkaBroker == null ? "Kafka Broker not started" : kafkaBroker.getLogs();
+        return kafkaLogs.toString();
     }
 
     public String schemaRegistryLogs() {
-        return schemaRegistry == null ? "Schema Registry not started" : schemaRegistry.getLogs();
+        return srLogs.toString();
     }
 
     /** Builder of {@link DockerKafkaEnvironment}. */
@@ -346,7 +336,7 @@ public final class DockerKafkaEnvironment
         private static final int DEFAULT_CONTAINER_STARTUP_ATTEMPTS = 3;
         private static final Duration DEFAULT_CONTAINER_STARTUP_TIMEOUT = Duration.ofSeconds(30);
 
-        private static final DockerImageName DEFAULT_KAFKA_DOCKER_IMAGE =
+        public static final DockerImageName DEFAULT_KAFKA_DOCKER_IMAGE =
                 DockerImageName.parse("confluentinc/cp-kafka:7.9.1");
         private static final Map<String, String> DEFAULT_KAFKA_ENV =
                 Map.of(
@@ -355,7 +345,7 @@ public final class DockerKafkaEnvironment
                         "KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS",
                         "0");
 
-        private static final DockerImageName DEFAULT_SCHEMA_REG_IMAGE =
+        public static final DockerImageName DEFAULT_SCHEMA_REG_IMAGE =
                 SchemaRegistryContainer.DEFAULT_IMAGE_NAME;
 
         private int startUpAttempts = DEFAULT_CONTAINER_STARTUP_ATTEMPTS;
@@ -600,7 +590,9 @@ public final class DockerKafkaEnvironment
                     adminUser().map(u -> "User:" + u.userName).orElse("User:ANONYMOUS");
             withKafkaEnv("KAFKA_SUPER_USERS", adminUser);
             withKafkaEnv("KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND", "false");
-            withKafkaEnv("KAFKA_AUTHORIZER_CLASS_NAME", "kafka.security.authorizer.AclAuthorizer");
+            withKafkaEnv(
+                    "KAFKA_AUTHORIZER_CLASS_NAME",
+                    "org.apache.kafka.metadata.authorizer.StandardAuthorizer");
         }
 
         private void maybeEnableSasl() {
@@ -613,12 +605,15 @@ public final class DockerKafkaEnvironment
 
             withKafkaEnv(
                     "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP",
-                    "BROKER:SASL_PLAINTEXT,PLAINTEXT:SASL_PLAINTEXT");
+                    "BROKER:SASL_PLAINTEXT,CONTROLLER:SASL_PLAINTEXT,PLAINTEXT:SASL_PLAINTEXT");
             withKafkaEnv("KAFKA_LISTENER_NAME_BROKER_SASL_ENABLED_MECHANISMS", "PLAIN");
             withKafkaEnv("KAFKA_LISTENER_NAME_PLAINTEXT_SASL_ENABLED_MECHANISMS", "PLAIN");
+            withKafkaEnv("KAFKA_LISTENER_NAME_CONTROLLER_SASL_ENABLED_MECHANISMS", "PLAIN");
             withKafkaEnv("KAFKA_LISTENER_NAME_BROKER_PLAIN_SASL_JAAS_CONFIG", jaasConfig);
             withKafkaEnv("KAFKA_LISTENER_NAME_PLAINTEXT_PLAIN_SASL_JAAS_CONFIG", jaasConfig);
+            withKafkaEnv("KAFKA_LISTENER_NAME_CONTROLLER_PLAIN_SASL_JAAS_CONFIG", jaasConfig);
             withKafkaEnv("KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL", "PLAIN");
+            withKafkaEnv("KAFKA_SASL_MECHANISM_CONTROLLER_PROTOCOL", "PLAIN");
 
             Clients.clientSaslAuthProperties(adminUser.get().userName, adminUser.get().password)
                     .forEach(
