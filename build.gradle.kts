@@ -82,7 +82,7 @@ subprojects {
         set("confluentVersion", "8.0.1") // note: update version in DockerKafkaEnvironment when changing this
         set("jacksonVersion", "2.20.0")
         set("jacksonAnnotationsVersion", "2.20")
-        set("protobufVersion", "3.25.5")
+        set("protobufVersion", "4.32.1")
         set("medeiaValidatorVersion", "1.1.0")
         set("junitVersion", "6.0.0")
         set("mockitoVersion", "5.20.0")
