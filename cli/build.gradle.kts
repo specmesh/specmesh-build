@@ -44,7 +44,7 @@ dependencies {
     testImplementation(project(":kafka-test"))
 
     testImplementation("org.testcontainers:testcontainers:$testcontainersVersion")
-    testImplementation("org.testcontainers:kafka:$testcontainersVersion")
+    testImplementation("org.testcontainers:testcontainers-kafka:$testcontainersVersion")
     testRuntimeOnly("commons-codec:commons-codec:1.19.0")
 
     compileOnly("org.projectlombok:lombok:$lombokVersion")
