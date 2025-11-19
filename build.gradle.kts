@@ -87,7 +87,7 @@ subprojects {
         set("junitVersion", "6.0.0")
         set("mockitoVersion", "5.20.0")
         set("junitPioneerVersion", "2.3.0")
-        set("spotBugsVersion", "4.9.6")
+        set("spotBugsVersion", "4.9.8")
         set("hamcrestVersion", "1.3")
         set("log4jVersion", "2.25.2")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
         set("classGraphVersion", "4.8.21")
