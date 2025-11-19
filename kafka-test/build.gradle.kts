@@ -30,7 +30,7 @@ dependencies {
     api(project(":kafka"))
     api("org.junit.jupiter:junit-jupiter-api:$junitVersion")
     api("org.testcontainers:testcontainers:$testcontainersVersion")
-    implementation("org.testcontainers:kafka:$testcontainersVersion")
+    implementation("org.testcontainers:testcontainers-kafka:$testcontainersVersion")
 
     compileOnly("org.projectlombok:lombok:$lombokVersion")
     annotationProcessor("org.projectlombok:lombok:$lombokVersion")
@@ -38,6 +38,6 @@ dependencies {
     testAnnotationProcessor("org.projectlombok:lombok:$lombokVersion")
 
     testImplementation("com.google.protobuf:protobuf-java:$protobufVersion")
-    testImplementation("org.testcontainers:junit-jupiter:$testcontainersVersion")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter:$testcontainersVersion")
     testRuntimeOnly("commons-codec:commons-codec:1.19.0")
 }
