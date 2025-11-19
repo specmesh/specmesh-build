@@ -79,7 +79,7 @@ subprojects {
         set("openTracingVersion", "0.33.0")
         set("observabilityVersion", "1.1.8")
         set("guavaVersion", "33.5.0-jre")
-        set("confluentVersion", "8.0.1") // note: update version in DockerKafkaEnvironment when changing this
+        set("confluentVersion", "8.1.0") // note: update version in DockerKafkaEnvironment when changing this
         set("jacksonVersion", "2.20.1")
         set("jacksonAnnotationsVersion", "2.20")
         set("protobufVersion", "3.25.8")
