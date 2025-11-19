@@ -22,7 +22,7 @@ plugins {
     id("com.diffplug.spotless") version "8.0.0"
     id("pl.allegro.tech.build.axion-release") version "1.21.0"
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
-    id("com.bmuschko.docker-remote-api") version "9.4.0" apply false
+    id("com.bmuschko.docker-remote-api") version "10.0.0" apply false
 }
 
 
