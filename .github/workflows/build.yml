@@ -43,14 +43,14 @@ jobs:
         run: ./gradlew build
       - name: Upload Reports
         if: failure()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: reports-linux-${{ matrix.kafka_version }}
           path: '**/build/reports/**/*.xml'
           retention-days: 5
       - name: Upload Test Results
         if: failure()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: test-results-linux-${{ matrix.kafka_version }}
           path: '**/build/test-results/**/*.xml'
@@ -97,14 +97,14 @@ jobs:
         run: ./gradlew build -PexcludeContainerised
       - name: Upload reports
         if: failure()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: reports-win
           path: '**/build/reports/**/*.xml'
           retention-days: 5
       - name: Upload Test Results
         if: failure()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: test-results-win
           path: '**/build/test-results/**/*.xml'
