@@ -91,7 +91,7 @@ subprojects {
         set("hamcrestVersion", "1.3")
         set("log4jVersion", "2.25.2")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
         set("classGraphVersion", "4.8.21")
-        set("testcontainersVersion", "2.0.2")
+        set("testcontainersVersion", "2.0.3")
         set("lombokVersion", "1.18.42")
     }
 
