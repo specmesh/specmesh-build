@@ -110,12 +110,12 @@ public final class SchemaReaders {
                 return referenceFinder(schemaFile)
                         .findReferences(schemaFile, schemaContent)
                         .stream()
-                        .map(s -> new NamedSchema(s.typeName(), toAvroSchema(s)))
+                        .map(s -> new NamedSchema(s.typeName(), s.location(), toAvroSchema(s)))
                         .collect(Collectors.toList());
             } else if (schemaFile.endsWith(".yml")) {
-                return List.of(new NamedSchema("", new JsonSchema(schemaContent)));
+                return List.of(new NamedSchema("", schemaFile, new JsonSchema(schemaContent)));
             } else if (schemaFile.endsWith(".proto")) {
-                return List.of(new NamedSchema("", new ProtobufSchema(schemaContent)));
+                return List.of(new NamedSchema("", schemaFile, new ProtobufSchema(schemaContent)));
             } else {
                 throw new UnsupportedOperationException("Unsupported schema file: " + schemaFile);
             }
@@ -370,6 +370,7 @@ public final class SchemaReaders {
             justification = "refs passed as param to prevent API pollution")
     @Data
     @Accessors(fluent = true)
+    @Deprecated(since = "0.20.0", forRemoval = true)
     public static class SchemaReferences {
         final List<SchemaReference> references = new ArrayList<>();
         final Map<String, String> resolvedReferences = new LinkedHashMap<>();
@@ -381,11 +382,14 @@ public final class SchemaReaders {
     }
 
     public static final class NamedSchema {
+
         private final String subject;
+        private final String location;
         private final ParsedSchema schema;
 
-        public NamedSchema(final String subject, final ParsedSchema schema) {
+        public NamedSchema(final String subject, final String location, final ParsedSchema schema) {
             this.subject = requireNonNull(subject, "subject");
+            this.location = requireNonNull(location, "location");
             this.schema = requireNonNull(schema, "parsedSchema");
         }
 
@@ -395,6 +399,10 @@ public final class SchemaReaders {
 
         public String subject() {
             return subject;
+        }
+
+        public String location() {
+            return location;
         }
     }
 }
