@@ -53,7 +53,7 @@ class SchemaReadersTest {
                     content,
                     containsString(
                             """
-                            "name": "Common",
+                            "name": "Common"\
                             """));
         }
 
@@ -145,7 +145,7 @@ class SchemaReadersTest {
                     content,
                     containsString(
                             """
-                            "name": "Common",
+                            "name": "Common"\
                             """));
         }
 
