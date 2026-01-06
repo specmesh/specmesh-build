@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.specmesh.kafka.provision.schema.AvroReferenceFinder.SchemaLoadException;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.SchemaProvisioningException;
+import io.specmesh.kafka.provision.schema.SchemaReaders.NamedSchema;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
@@ -52,34 +53,37 @@ class SchemaReadersTest {
                     content,
                     containsString(
                             """
-                            "name": "Common\"\
+                            "name": "Common",
                             """));
         }
 
         @Test
         void shouldLoadedReferencedSchemaFromRootFolderInClassPath() {
             // When:
-            final List<SchemaReaders.NamedSchema> result = reader.read("a.domain.Root.avsc");
+            final List<NamedSchema> result = reader.read("a.domain.Root.avsc");
 
             // Then:
             assertThat(result, hasSize(2));
             assertThat(result.get(0).subject(), is("a.domain.Thing"));
+            assertThat(result.get(0).location(), is("a.domain.Thing.avsc"));
             assertThat(result.get(0).schema().name(), containsString("a.domain.Thing"));
             assertThat(result.get(1).subject(), is("a.domain.Root"));
+            assertThat(result.get(1).location(), is("a.domain.Root.avsc"));
             assertThat(result.get(1).schema().name(), containsString("a.domain.Root"));
         }
 
         @Test
         void shouldLoadedReferencedSchemaFromSubFolderInClassPath() {
             // When:
-            final List<SchemaReaders.NamedSchema> result =
-                    reader.read("schema/other.domain.Root.avsc");
+            final List<NamedSchema> result = reader.read("schema/other.domain.Root.avsc");
 
             // Then:
             assertThat(result, hasSize(2));
             assertThat(result.get(0).subject(), is("other.domain.Common"));
             assertThat(result.get(0).schema().name(), containsString("other.domain.Common"));
+            assertThat(result.get(0).location(), is("schema/other.domain.Common.avsc"));
             assertThat(result.get(1).subject(), is("other.domain.Root"));
+            assertThat(result.get(1).location(), is("schema/other.domain.Root.avsc"));
             assertThat(result.get(1).schema().name(), containsString("other.domain.Root"));
         }
 
@@ -141,35 +145,39 @@ class SchemaReadersTest {
                     content,
                     containsString(
                             """
-                            "name": "Common\"\
+                            "name": "Common",
                             """));
         }
 
         @Test
         void shouldLoadedReferencedSchemaFromRootFolderInClassPath() {
             // When:
-            final List<SchemaReaders.NamedSchema> result =
+            final List<NamedSchema> result =
                     reader.read(resourcesDir.resolve("a.domain.Root.avsc"));
 
             // Then:
             assertThat(result, hasSize(2));
             assertThat(result.get(0).subject(), is("a.domain.Thing"));
+            assertThat(result.get(0).location(), is("a.domain.Thing.avsc"));
             assertThat(result.get(0).schema().name(), containsString("a.domain.Thing"));
             assertThat(result.get(1).subject(), is("a.domain.Root"));
+            assertThat(result.get(1).location(), is("a.domain.Root.avsc"));
             assertThat(result.get(1).schema().name(), containsString("a.domain.Root"));
         }
 
         @Test
         void shouldLoadedReferencedSchemaFromSubFolderInClassPath() {
             // When:
-            final List<SchemaReaders.NamedSchema> result =
+            final List<NamedSchema> result =
                     reader.read(resourcesDir.resolve("schema/other.domain.Root.avsc"));
 
             // Then:
             assertThat(result, hasSize(2));
             assertThat(result.get(0).subject(), is("other.domain.Common"));
+            assertThat(result.get(0).location(), is("schema/other.domain.Common.avsc"));
             assertThat(result.get(0).schema().name(), containsString("other.domain.Common"));
             assertThat(result.get(1).subject(), is("other.domain.Root"));
+            assertThat(result.get(1).location(), is("schema/other.domain.Root.avsc"));
             assertThat(result.get(1).schema().name(), containsString("other.domain.Root"));
         }
 
