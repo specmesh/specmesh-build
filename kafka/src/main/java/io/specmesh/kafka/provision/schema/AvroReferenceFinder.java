@@ -77,12 +77,15 @@ final class AvroReferenceFinder {
     /**
      * @param typeName the fully qualified name of the type in the schema file.
      * @param content the contents of the schema file.
+     * @param location where the schema was loaded from, as returned by the {@link SchemaLoader}.
      * @param references the external references the schema contains.
      */
-    record DetectedSchema(String typeName, String content, List<DetectedSchema> references) {
+    record DetectedSchema(
+            String typeName, String content, String location, List<DetectedSchema> references) {
         public DetectedSchema {
             requireNonNull(typeName, "typeName");
             requireNonNull(content, "content");
+            requireNonNull(location, "location");
             references = List.copyOf(requireNonNull(references, "references"));
         }
     }
@@ -174,6 +177,7 @@ final class AvroReferenceFinder {
                 new DetectedSchema(
                         schema.name().map(TypeName::fullyQualifiedName).orElse(""),
                         schema.content(),
+                        route.current(),
                         externalRefs));
         final List<DetectedSchema> immutable = List.copyOf(detected);
         schema.name.ifPresent(name -> visitedTypes.put(name, immutable));
