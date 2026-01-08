@@ -32,6 +32,7 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.ConsumerGroupDescription;
 import org.apache.kafka.clients.admin.GroupListing;
 import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsSpec;
+import org.apache.kafka.clients.admin.ListGroupsOptions;
 import org.apache.kafka.clients.admin.MemberAssignment;
 import org.apache.kafka.clients.admin.MemberDescription;
 import org.apache.kafka.clients.admin.OffsetSpec;
@@ -105,7 +106,10 @@ public class SimpleAdminClient implements SmAdminClient {
     private List<ConsumerGroupDescription> groupsDescriptions(final String topicPrefix)
             throws InterruptedException, ExecutionException, TimeoutException {
         final Collection<GroupListing> allGroups =
-                adminClient.listGroups().all().get(TIMEOUT, SECONDS);
+                adminClient
+                        .listGroups(ListGroupsOptions.forConsumerGroups())
+                        .all()
+                        .get(TIMEOUT, SECONDS);
 
         final List<String> allGroupIds =
                 allGroups.stream()
