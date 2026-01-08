@@ -16,6 +16,8 @@
 
 package io.specmesh.kafka.admin;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,13 +25,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.ConsumerGroupDescription;
-import org.apache.kafka.clients.admin.ConsumerGroupListing;
+import org.apache.kafka.clients.admin.GroupListing;
 import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsSpec;
 import org.apache.kafka.clients.admin.MemberAssignment;
 import org.apache.kafka.clients.admin.MemberDescription;
@@ -103,8 +104,8 @@ public class SimpleAdminClient implements SmAdminClient {
      */
     private List<ConsumerGroupDescription> groupsDescriptions(final String topicPrefix)
             throws InterruptedException, ExecutionException, TimeoutException {
-        final Collection<ConsumerGroupListing> allGroups =
-                adminClient.listConsumerGroups().all().get(TIMEOUT, TimeUnit.SECONDS);
+        final Collection<GroupListing> allGroups =
+                adminClient.listGroups().all().get(TIMEOUT, SECONDS);
 
         final List<String> allGroupIds =
                 allGroups.stream()
@@ -115,14 +116,11 @@ public class SimpleAdminClient implements SmAdminClient {
                                                 && listing.groupState()
                                                         .get()
                                                         .equals(GroupState.STABLE))
-                        .map(ConsumerGroupListing::groupId)
+                        .map(GroupListing::groupId)
                         .collect(Collectors.toList());
 
         final Map<String, ConsumerGroupDescription> allDescriptions =
-                adminClient
-                        .describeConsumerGroups(allGroupIds)
-                        .all()
-                        .get(TIMEOUT, TimeUnit.SECONDS);
+                adminClient.describeConsumerGroups(allGroupIds).all().get(TIMEOUT, SECONDS);
 
         return allDescriptions.values().stream()
                 .filter(description -> isConsumingFromTopicPrefix(description, topicPrefix))
@@ -141,7 +139,7 @@ public class SimpleAdminClient implements SmAdminClient {
                                         id -> new ListConsumerGroupOffsetsSpec()));
 
         final Map<String, Map<TopicPartition, OffsetAndMetadata>> offsets =
-                adminClient.listConsumerGroupOffsets(specs).all().get(TIMEOUT, TimeUnit.SECONDS);
+                adminClient.listConsumerGroupOffsets(specs).all().get(TIMEOUT, SECONDS);
 
         return offsets.entrySet().stream()
                 .filter(
@@ -192,8 +190,7 @@ public class SimpleAdminClient implements SmAdminClient {
         try {
             final var brokers = brokerIds();
             final var logDirsResult = adminClient.describeLogDirs(brokers);
-            final var logDirsByBroker =
-                    logDirsResult.allDescriptions().get(TIMEOUT, TimeUnit.SECONDS);
+            final var logDirsByBroker = logDirsResult.allDescriptions().get(TIMEOUT, SECONDS);
 
             long totalSize = 0;
 
@@ -244,7 +241,7 @@ public class SimpleAdminClient implements SmAdminClient {
             final var describeTopicsResult =
                     adminClient.describeTopics(Collections.singleton(topic));
             final var topicDescription =
-                    describeTopicsResult.allTopicNames().get(TIMEOUT, TimeUnit.SECONDS).get(topic);
+                    describeTopicsResult.allTopicNames().get(TIMEOUT, SECONDS).get(topic);
 
             // Get the start and end offsets for each partition
             final Map<TopicPartition, OffsetSpec> endOffsetsQuery = new HashMap<>();
