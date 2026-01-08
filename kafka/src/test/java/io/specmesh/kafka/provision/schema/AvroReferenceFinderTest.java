@@ -22,7 +22,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -44,8 +44,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class AvroReferenceFinderTest {
 
-    private static final String ROOT_SCHEMA_PATH = "some/path/to/root-schema.avsc";
-    private static final String NESTED_SCHEMA_PATH = "some/path/to/nested-schema.avsc";
+    private static final String ROOT_SCHEMA_PATH = location("root-schema");
 
     @Mock private AvroReferenceFinder.SchemaLoader schemaLoader;
     private AvroReferenceFinder refFinder;
@@ -89,7 +88,7 @@ class AvroReferenceFinderTest {
                 }\
                 """;
 
-        when(schemaLoader.load(any())).thenReturn(loadedSchema("invalid-schema"));
+        when(schemaLoader.load(any())).thenReturn(loadedSchema("TypeB", "invalid-schema"));
 
         // When:
         final Exception e =
@@ -102,7 +101,7 @@ class AvroReferenceFinderTest {
                 e.getMessage(),
                 is(
                         "Schema content invalid. schema file chain: some/path/to/root-schema.avsc"
-                                + " -> some/path/to/nested-schema.avsc, content: invalid-schema"));
+                                + " -> some/path/to/TypeB.avsc, content: invalid-schema"));
         assertThat(e.getCause(), is(instanceOf(JsonParseException.class)));
     }
 
@@ -115,7 +114,7 @@ class AvroReferenceFinderTest {
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, schema);
 
         // Then:
-        assertThat(result, contains(new DetectedSchema("", schema, List.of())));
+        assertThat(result, contains(detectedRootSchema("", schema)));
     }
 
     @Test
@@ -133,7 +132,7 @@ class AvroReferenceFinderTest {
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, schema);
 
         // Then:
-        assertThat(result, contains(new DetectedSchema("", schema, List.of())));
+        assertThat(result, contains(detectedRootSchema("", schema)));
     }
 
     @Test
@@ -155,7 +154,7 @@ class AvroReferenceFinderTest {
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, schema);
 
         // Then:
-        assertThat(result, contains(new DetectedSchema("SomeType", schema, List.of())));
+        assertThat(result, contains(detectedRootSchema("SomeType", schema)));
     }
 
     @Test
@@ -178,8 +177,7 @@ class AvroReferenceFinderTest {
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, schema);
 
         // Then:
-        assertThat(
-                result, contains(new DetectedSchema("some.namespace.SomeType", schema, List.of())));
+        assertThat(result, contains(detectedRootSchema("some.namespace.SomeType", schema)));
     }
 
     @Test
@@ -236,7 +234,7 @@ class AvroReferenceFinderTest {
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, a);
 
         // Then:
-        final DetectedSchema schemaA = new DetectedSchema("ns.one.TypeA", a, List.of());
+        final DetectedSchema schemaA = detectedRootSchema("ns.one.TypeA", a);
         assertThat(result, contains(schemaA));
     }
 
@@ -299,17 +297,16 @@ class AvroReferenceFinderTest {
                         }
                         """);
 
-        when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
-        when(schemaLoader.load("ns.one.TypeC")).thenReturn(loadedSchema(c));
+        when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema("ns.one.TypeB", b));
+        when(schemaLoader.load("ns.one.TypeC")).thenReturn(loadedSchema("ns.one.TypeC", c));
 
         // When:
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, a);
 
         // Then:
-        final DetectedSchema schemaC = new DetectedSchema("ns.one.TypeC", c, List.of());
-        final DetectedSchema schemaB = new DetectedSchema("ns.one.TypeB", b, List.of(schemaC));
-        final DetectedSchema schemaA =
-                new DetectedSchema("ns.one.TypeA", a, List.of(schemaC, schemaB));
+        final DetectedSchema schemaC = detectedSchema("ns.one.TypeC", c);
+        final DetectedSchema schemaB = detectedSchema("ns.one.TypeB", b, schemaC);
+        final DetectedSchema schemaA = detectedRootSchema("ns.one.TypeA", a, schemaC, schemaB);
         assertThat(result, contains(schemaC, schemaB, schemaA));
     }
 
@@ -381,17 +378,16 @@ class AvroReferenceFinderTest {
                         }
                         """);
 
-        when(schemaLoader.load("ns.two.TypeB")).thenReturn(loadedSchema(b));
-        when(schemaLoader.load("ns.one.TypeC")).thenReturn(loadedSchema(c));
+        when(schemaLoader.load("ns.two.TypeB")).thenReturn(loadedSchema("ns.two.TypeB", b));
+        when(schemaLoader.load("ns.one.TypeC")).thenReturn(loadedSchema("ns.one.TypeC", c));
 
         // When:
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, a);
 
         // Then:
-        final DetectedSchema schemaC = new DetectedSchema("ns.one.TypeC", c, List.of());
-        final DetectedSchema schemaB = new DetectedSchema("ns.two.TypeB", b, List.of(schemaC));
-        final DetectedSchema schemaA =
-                new DetectedSchema("ns.one.TypeA", a, List.of(schemaC, schemaB));
+        final DetectedSchema schemaC = detectedSchema("ns.one.TypeC", c);
+        final DetectedSchema schemaB = detectedSchema("ns.two.TypeB", b, schemaC);
+        final DetectedSchema schemaA = detectedRootSchema("ns.one.TypeA", a, schemaC, schemaB);
         assertThat(result, contains(schemaC, schemaB, schemaA));
     }
 
@@ -421,14 +417,14 @@ class AvroReferenceFinderTest {
                         }
                         """);
 
-        when(schemaLoader.load("TypeB")).thenReturn(loadedSchema(b));
+        when(schemaLoader.load("TypeB")).thenReturn(loadedSchema("TypeB", b));
 
         // When:
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, a);
 
         // Then:
-        final DetectedSchema schemaB = new DetectedSchema("TypeB", b, List.of());
-        final DetectedSchema schemaA = new DetectedSchema("TypeA", a, List.of(schemaB));
+        final DetectedSchema schemaB = detectedSchema("TypeB", b);
+        final DetectedSchema schemaA = detectedRootSchema("TypeA", a, schemaB);
         assertThat(result, contains(schemaB, schemaA));
     }
 
@@ -494,19 +490,19 @@ class AvroReferenceFinderTest {
                         }
                         """);
 
-        when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
-        when(schemaLoader.load("ns.one.TypeC")).thenReturn(loadedSchema(c));
-        when(schemaLoader.load("ns.one.TypeD")).thenReturn(loadedSchema(d));
+        when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema("ns.one.TypeB", b));
+        when(schemaLoader.load("ns.one.TypeC")).thenReturn(loadedSchema("ns.one.TypeC", c));
+        when(schemaLoader.load("ns.one.TypeD")).thenReturn(loadedSchema("ns.one.TypeD", d));
 
         // When:
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, a);
 
         // Then:
-        final DetectedSchema schemaD = new DetectedSchema("ns.one.TypeD", d, List.of());
-        final DetectedSchema schemaC = new DetectedSchema("ns.one.TypeC", c, List.of(schemaD));
-        final DetectedSchema schemaB = new DetectedSchema("ns.one.TypeB", b, List.of(schemaD));
+        final DetectedSchema schemaD = detectedSchema("ns.one.TypeD", d);
+        final DetectedSchema schemaC = detectedSchema("ns.one.TypeC", c, schemaD);
+        final DetectedSchema schemaB = detectedSchema("ns.one.TypeB", b, schemaD);
         final DetectedSchema schemaA =
-                new DetectedSchema("ns.one.TypeA", a, List.of(schemaD, schemaB, schemaC));
+                detectedRootSchema("ns.one.TypeA", a, schemaD, schemaB, schemaC);
         assertThat(result, contains(schemaD, schemaB, schemaC, schemaA));
     }
 
@@ -540,7 +536,7 @@ class AvroReferenceFinderTest {
                         }\
                         """);
 
-        when(schemaLoader.load("TypeB")).thenReturn(loadedSchema(b));
+        when(schemaLoader.load("TypeB")).thenReturn(loadedSchema("TypeB", b));
 
         // When:
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, a);
@@ -548,8 +544,8 @@ class AvroReferenceFinderTest {
         // Then:
         verify(schemaLoader, times(1)).load(any());
 
-        final DetectedSchema schemaB = new DetectedSchema("TypeB", b, List.of());
-        final DetectedSchema schemaA = new DetectedSchema("TypeA", a, List.of(schemaB));
+        final DetectedSchema schemaB = detectedSchema("TypeB", b);
+        final DetectedSchema schemaA = detectedRootSchema("TypeA", a, schemaB);
         assertThat(result, contains(schemaB, schemaA));
     }
 
@@ -573,7 +569,7 @@ class AvroReferenceFinderTest {
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, a);
 
         // Then:
-        final DetectedSchema schemaA = new DetectedSchema("TypeA", a, List.of());
+        final DetectedSchema schemaA = detectedRootSchema("TypeA", a);
         assertThat(result, contains(schemaA));
     }
 
@@ -618,16 +614,16 @@ class AvroReferenceFinderTest {
                 }\
                 """;
 
-        when(schemaLoader.load("TypeB")).thenReturn(loadedSchema(b));
-        when(schemaLoader.load("TypeC")).thenReturn(loadedSchema(c));
+        when(schemaLoader.load("TypeB")).thenReturn(loadedSchema("TypeB", b));
+        when(schemaLoader.load("TypeC")).thenReturn(loadedSchema("TypeC", c));
 
         // When:
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, a);
 
         // Then:
-        final DetectedSchema schemaC = new DetectedSchema("TypeC", c, List.of());
-        final DetectedSchema schemaB = new DetectedSchema("TypeB", b, List.of(schemaC));
-        final DetectedSchema schemaA = new DetectedSchema("TypeA", a, List.of(schemaC, schemaB));
+        final DetectedSchema schemaC = detectedSchema("TypeC", c);
+        final DetectedSchema schemaB = detectedSchema("TypeB", b, schemaC);
+        final DetectedSchema schemaA = detectedRootSchema("TypeA", a, schemaC, schemaB);
         assertThat(result, contains(schemaC, schemaB, schemaA));
         verify(schemaLoader, times(2)).load(any());
     }
@@ -657,7 +653,7 @@ class AvroReferenceFinderTest {
                 }\
                 """;
 
-        when(schemaLoader.load("TypeB")).thenReturn(loadedSchema(b));
+        when(schemaLoader.load("TypeB")).thenReturn(loadedSchema("TypeB", b));
 
         final RuntimeException cause = mock();
         when(schemaLoader.load("TypeC")).thenThrow(cause);
@@ -673,7 +669,7 @@ class AvroReferenceFinderTest {
                 e.getMessage(),
                 is(
                         "Failed to load schema for type: TypeC, referenced via schema file chain:"
-                            + " some/path/to/root-schema.avsc -> some/path/to/nested-schema.avsc"));
+                                + " some/path/to/root-schema.avsc -> some/path/to/TypeB.avsc"));
         assertThat(e.getCause(), is(sameInstance(cause)));
     }
 
@@ -740,16 +736,16 @@ class AvroReferenceFinderTest {
                         ]
                         """);
 
-        when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
-        when(schemaLoader.load("ns.one.TypeC")).thenReturn(loadedSchema(c));
+        when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema("ns.one.TypeB", b));
+        when(schemaLoader.load("ns.one.TypeC")).thenReturn(loadedSchema("ns.one.TypeC", c));
 
         // When:
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, a);
 
         // Then:
-        final DetectedSchema schemaC = new DetectedSchema("ns.one.TypeC", c, List.of());
-        final DetectedSchema schemaB = new DetectedSchema("ns.one.TypeB", b, List.of());
-        final DetectedSchema schemaA = new DetectedSchema("", a, List.of(schemaB, schemaC));
+        final DetectedSchema schemaC = detectedSchema("ns.one.TypeC", c);
+        final DetectedSchema schemaB = detectedSchema("ns.one.TypeB", b);
+        final DetectedSchema schemaA = detectedRootSchema("", a, schemaB, schemaC);
         assertThat(result, contains(schemaB, schemaC, schemaA));
     }
 
@@ -779,14 +775,14 @@ class AvroReferenceFinderTest {
                         }
                         """);
 
-        when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
+        when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema("ns.one.TypeB", b));
 
         // When:
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, a);
 
         // Then:
-        final DetectedSchema schemaB = new DetectedSchema("ns.one.TypeB", b, List.of());
-        final DetectedSchema schemaA = new DetectedSchema("", a, List.of(schemaB));
+        final DetectedSchema schemaB = detectedSchema("ns.one.TypeB", b);
+        final DetectedSchema schemaA = detectedRootSchema("", a, schemaB);
         assertThat(result, contains(schemaB, schemaA));
     }
 
@@ -816,14 +812,14 @@ class AvroReferenceFinderTest {
                         }
                         """);
 
-        when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
+        when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema("ns.one.TypeB", b));
 
         // When:
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, a);
 
         // Then:
-        final DetectedSchema schemaB = new DetectedSchema("ns.one.TypeB", b, List.of());
-        final DetectedSchema schemaA = new DetectedSchema("", a, List.of(schemaB));
+        final DetectedSchema schemaB = detectedSchema("ns.one.TypeB", b);
+        final DetectedSchema schemaA = detectedRootSchema("", a, schemaB);
         assertThat(result, contains(schemaB, schemaA));
     }
 
@@ -851,7 +847,7 @@ class AvroReferenceFinderTest {
                 }
                 """;
 
-        when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
+        when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema("ns.one.TypeB", b));
 
         // When:
         final Exception e =
@@ -896,7 +892,7 @@ class AvroReferenceFinderTest {
                 }
                 """;
 
-        when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema(b));
+        when(schemaLoader.load("ns.one.TypeB")).thenReturn(loadedSchema("ns.one.TypeB", b));
 
         // When:
         final Exception e =
@@ -971,7 +967,7 @@ class AvroReferenceFinderTest {
         final List<DetectedSchema> result = refFinder.findReferences(ROOT_SCHEMA_PATH, a);
 
         // Then:
-        final DetectedSchema schemaA = new DetectedSchema("ns.one.TypeA", a, List.of());
+        final DetectedSchema schemaA = detectedRootSchema("ns.one.TypeA", a);
         assertThat(result, contains(schemaA));
 
         verifyNoInteractions(schemaLoader);
@@ -985,7 +981,21 @@ class AvroReferenceFinderTest {
         return schema[schema.length - 1];
     }
 
-    private static LoadedSchema loadedSchema(final String content) {
-        return new LoadedSchema(NESTED_SCHEMA_PATH, content);
+    private static LoadedSchema loadedSchema(final String typeName, final String content) {
+        return new LoadedSchema(location(typeName), content);
+    }
+
+    private static DetectedSchema detectedSchema(
+            final String typeName, final String content, final DetectedSchema... references) {
+        return new DetectedSchema(typeName, content, location(typeName), List.of(references));
+    }
+
+    private static DetectedSchema detectedRootSchema(
+            final String typeName, final String content, final DetectedSchema... references) {
+        return new DetectedSchema(typeName, content, ROOT_SCHEMA_PATH, List.of(references));
+    }
+
+    private static String location(final String typeName) {
+        return "some/path/to/" + typeName + ".avsc";
     }
 }

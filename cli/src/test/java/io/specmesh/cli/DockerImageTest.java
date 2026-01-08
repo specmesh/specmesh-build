@@ -16,7 +16,7 @@
 
 package io.specmesh.cli;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static io.specmesh.cli.util.AssertEventually.assertThatEventually;
 import static org.hamcrest.Matchers.containsString;
 
 import org.junit.jupiter.api.AfterEach;
@@ -52,14 +52,14 @@ class DockerImageTest {
         try {
             container.start();
         } catch (Exception e) {
-            // Expected to fail as CLI tools exit immediately
+            // Might fail as CLI tools exit immediately
         }
 
         // Then:
-        final String logs = logBuilder.toString();
-        assertThat(logs, containsString("Usage"));
-        assertThat(logs, containsString("Commands"));
-        assertThat(logs, containsString("provision"));
-        assertThat(logs, containsString("--bootstrap-server"));
+        assertThatEventually(logBuilder::toString, containsString("Usage"));
+        assertThatEventually(logBuilder::toString, containsString("Usage"));
+        assertThatEventually(logBuilder::toString, containsString("Commands"));
+        assertThatEventually(logBuilder::toString, containsString("provision"));
+        assertThatEventually(logBuilder::toString, containsString("--bootstrap-server"));
     }
 }
