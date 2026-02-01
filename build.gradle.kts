@@ -81,7 +81,7 @@ subprojects {
         set("guavaVersion", "33.5.0-jre")
         set("confluentVersion", "8.1.1") // note: update version in DockerKafkaEnvironment when changing this
         set("jacksonVersion", "2.20.1")
-        set("jacksonAnnotationsVersion", "2.20")
+        set("jacksonAnnotationsVersion", "2.21")
         set("protobufVersion", "3.25.8")
         set("medeiaValidatorVersion", "1.1.0")
         set("junitVersion", "6.0.1")
