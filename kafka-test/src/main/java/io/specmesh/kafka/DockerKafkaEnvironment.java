@@ -337,7 +337,7 @@ public final class DockerKafkaEnvironment
         private static final Duration DEFAULT_CONTAINER_STARTUP_TIMEOUT = Duration.ofSeconds(30);
 
         public static final DockerImageName DEFAULT_KAFKA_DOCKER_IMAGE =
-                DockerImageName.parse("confluentinc/cp-kafka:7.9.1");
+                DockerImageName.parse("confluentinc/cp-kafka:8.2.0");
         private static final Map<String, String> DEFAULT_KAFKA_ENV =
                 Map.of(
                         "KAFKA_AUTO_CREATE_TOPICS_ENABLE",
