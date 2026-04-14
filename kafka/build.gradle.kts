@@ -35,7 +35,7 @@ dependencies {
     api("io.confluent:kafka-protobuf-serializer:$confluentVersion")
     api("io.confluent:kafka-streams-protobuf-serde:$confluentVersion")
     api("io.confluent:kafka-streams-avro-serde:$confluentVersion")
-    api("com.google.protobuf:protobuf-java:3.25.8")
+    api("com.google.protobuf:protobuf-java:3.25.9")
 
     api(project(":parser"))
 
@@ -48,7 +48,7 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok:$lombokVersion")
     testCompileOnly("org.projectlombok:lombok:$lombokVersion")
     testAnnotationProcessor("org.projectlombok:lombok:$lombokVersion")
-    testRuntimeOnly("commons-codec:commons-codec:1.20.0")
+    testRuntimeOnly("commons-codec:commons-codec:1.21.0")
 
     testImplementation(project(":kafka-test"))
 }

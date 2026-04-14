@@ -397,8 +397,8 @@ public final class SchemaMutators {
             } else {
                 return new CollectiveMutator(
                         new EnsureSharedRegistered(domainId, client),
-                        new UpdateMutator(client),
                         new WriteMutator(client),
+                        new UpdateMutator(client),
                         new IgnoredMutator());
             }
         }

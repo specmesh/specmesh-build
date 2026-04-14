@@ -18,8 +18,8 @@ plugins {
     java
     `maven-publish`
     signing
-    id("com.github.spotbugs") version "6.4.8"
-    id("com.diffplug.spotless") version "8.1.0"
+    id("com.github.spotbugs") version "6.5.0"
+    id("com.diffplug.spotless") version "8.4.0"
     id("pl.allegro.tech.build.axion-release") version "1.21.1"
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
     id("com.bmuschko.docker-remote-api") version "10.0.0" apply false
@@ -80,19 +80,19 @@ subprojects {
         set("observabilityVersion", "1.1.8")
         set("guavaVersion", "33.5.0-jre")
         set("confluentVersion", "8.1.1") // note: update version in DockerKafkaEnvironment when changing this
-        set("jacksonVersion", "2.20.1")
+        set("jacksonVersion", "2.21.2")
         set("jacksonAnnotationsVersion", "2.21")
-        set("protobufVersion", "3.25.8")
+        set("protobufVersion", "3.25.9")
         set("medeiaValidatorVersion", "1.1.0")
         set("junitVersion", "6.0.1")
-        set("mockitoVersion", "5.20.0")
+        set("mockitoVersion", "5.23.0")
         set("junitPioneerVersion", "2.3.0")
         set("spotBugsVersion", "4.9.8")
         set("hamcrestVersion", "1.3")
-        set("log4jVersion", "2.25.2")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
+        set("log4jVersion", "2.25.4")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
         set("classGraphVersion", "4.8.21")
-        set("testcontainersVersion", "2.0.2")
-        set("lombokVersion", "1.18.42")
+        set("testcontainersVersion", "2.0.4")
+        set("lombokVersion", "1.18.44")
     }
 
     val junitVersion: String by extra
