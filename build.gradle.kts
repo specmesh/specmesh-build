@@ -114,6 +114,10 @@ subprojects {
                 useVersion(jacksonAnnotationsVersion)
                 because("Enforce jacksonAnnotationsVersion to fix CVE-2025-52999")
             }
+            if (requested.group == "org.codehaus.plexus" && requested.name == "plexus-utils") {
+                useVersion("3.6.1")
+                because("Enforce plexus-utils 3.6.1 to fix CVE-2025-67030")
+            }
             if (requested.group == "org.apache.avro" && requested.name == "avro") {
                 useVersion("1.12.1")
                 because("Upgrade avro to fix security vulnerabilities (CVE-2024-47561)")
