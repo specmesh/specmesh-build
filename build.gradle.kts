@@ -126,6 +126,10 @@ subprojects {
                 useVersion("1.11.0")
                 because("Upgrade commons-beanutils to fix CVE-2025-48734")
             }
+            if (requested.group == "org.apache.logging.log4j") {
+                useVersion(log4jVersion)
+                because("Upgrade commons-beanutils to fix CVE-2026-34478")
+            }
         }
     }
 
