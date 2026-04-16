@@ -103,6 +103,15 @@ subprojects {
     val hamcrestVersion : String by extra
     val log4jVersion : String by extra
 
+    configurations.all {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "org.apache.avro" && requested.name == "avro") {
+                useVersion("1.12.1")
+                because("Upgrade avro to fix security vulnerabilities (CVE-2024-47561)")
+            }
+        }
+    }
+
     dependencies {
         testImplementation(project(":parser"))
         testImplementation(project(":kafka"))
