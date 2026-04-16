@@ -103,6 +103,15 @@ subprojects {
     val hamcrestVersion : String by extra
     val log4jVersion : String by extra
 
+    configurations.all {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "commons-beanutils" && requested.name == "commons-beanutils") {
+                useVersion("1.11.0")
+                because("Upgrade commons-beanutils to fix CVE-2025-48734")
+            }
+        }
+    }
+
     dependencies {
         testImplementation(project(":parser"))
         testImplementation(project(":kafka"))
