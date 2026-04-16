@@ -118,6 +118,10 @@ subprojects {
                 useVersion("1.12.1")
                 because("Upgrade avro to fix security vulnerabilities (CVE-2024-47561)")
             }
+            if (requested.group == "commons-beanutils" && requested.name == "commons-beanutils") {
+                useVersion("1.11.0")
+                because("Upgrade commons-beanutils to fix CVE-2025-48734")
+            }
         }
     }
 
