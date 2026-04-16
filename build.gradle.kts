@@ -107,18 +107,52 @@ subprojects {
     configurations.all {
         resolutionStrategy.eachDependency {
             if (requested.group.startsWith("com.fasterxml.jackson") && requested.name != "jackson-annotations") {
+                val requestedVersion = requested.version ?: "0"
+                if (requestedVersion >= jacksonVersion) {
+                    throw GradleException(
+                        "${requested.name} $requestedVersion >= $jacksonVersion: remove the CVE-2025-52999 resolution strategy override"
+                    )
+                }
                 useVersion(jacksonVersion)
                 because("Enforce jacksonVersion to fix CVE-2025-52999")
             }
             if (requested.name == "jackson-annotations") {
+                val requestedVersion = requested.version ?: "0"
+                if (requestedVersion >= jacksonAnnotationsVersion) {
+                    throw GradleException(
+                        "jackson-annotations $requestedVersion >= $jacksonAnnotationsVersion: remove the CVE-2025-52999 resolution strategy override"
+                    )
+                }
                 useVersion(jacksonAnnotationsVersion)
                 because("Enforce jacksonAnnotationsVersion to fix CVE-2025-52999")
             }
+            if (requested.group == "org.codehaus.plexus" && requested.name == "plexus-utils") {
+                val requestedVersion = requested.version ?: "0"
+                if (requestedVersion >= "3.6.1") {
+                    throw GradleException(
+                        "plexus-utils $requestedVersion >= 3.6.1: remove the CVE-2025-67030 resolution strategy override"
+                    )
+                }
+                useVersion("3.6.1")
+                because("Enforce plexus-utils 3.6.1 to fix CVE-2025-67030")
+            }
             if (requested.group == "org.apache.avro" && requested.name == "avro") {
+                val requestedVersion = requested.version ?: "0"
+                if (requestedVersion >= "1.12.1") {
+                    throw GradleException(
+                        "avro $requestedVersion >= 1.12.1: remove the CVE-2024-47561 resolution strategy override"
+                    )
+                }
                 useVersion("1.12.1")
                 because("Upgrade avro to fix security vulnerabilities (CVE-2024-47561)")
             }
             if (requested.group == "commons-beanutils" && requested.name == "commons-beanutils") {
+                val requestedVersion = requested.version ?: "0"
+                if (requestedVersion >= "1.11.0") {
+                    throw GradleException(
+                        "commons-beanutils $requestedVersion >= 1.11.0: remove the CVE-2025-48734 resolution strategy override"
+                    )
+                }
                 useVersion("1.11.0")
                 because("Upgrade commons-beanutils to fix CVE-2025-48734")
             }
