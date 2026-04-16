@@ -107,10 +107,22 @@ subprojects {
     configurations.all {
         resolutionStrategy.eachDependency {
             if (requested.group.startsWith("com.fasterxml.jackson") && requested.name != "jackson-annotations") {
+                val requestedVersion = requested.version ?: "0"
+                if (requestedVersion >= jacksonVersion) {
+                    throw GradleException(
+                        "${requested.name} $requestedVersion >= $jacksonVersion: remove the CVE-2025-52999 resolution strategy override"
+                    )
+                }
                 useVersion(jacksonVersion)
                 because("Enforce jacksonVersion to fix CVE-2025-52999")
             }
             if (requested.name == "jackson-annotations") {
+                val requestedVersion = requested.version ?: "0"
+                if (requestedVersion >= jacksonAnnotationsVersion) {
+                    throw GradleException(
+                        "jackson-annotations $requestedVersion >= $jacksonAnnotationsVersion: remove the CVE-2025-52999 resolution strategy override"
+                    )
+                }
                 useVersion(jacksonAnnotationsVersion)
                 because("Enforce jacksonAnnotationsVersion to fix CVE-2025-52999")
             }
