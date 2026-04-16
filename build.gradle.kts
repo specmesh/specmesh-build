@@ -97,6 +97,7 @@ subprojects {
 
     val junitVersion: String by extra
     val jacksonVersion: String by extra
+    val jacksonAnnotationsVersion: String by extra
     val mockitoVersion: String by extra
     val junitPioneerVersion: String by extra
     val guavaVersion : String by extra
@@ -105,6 +106,14 @@ subprojects {
 
     configurations.all {
         resolutionStrategy.eachDependency {
+            if (requested.group.startsWith("com.fasterxml.jackson") && requested.name != "jackson-annotations") {
+                useVersion(jacksonVersion)
+                because("Enforce jacksonVersion to fix CVE-2025-52999")
+            }
+            if (requested.name == "jackson-annotations") {
+                useVersion(jacksonAnnotationsVersion)
+                because("Enforce jacksonAnnotationsVersion to fix CVE-2025-52999")
+            }
             if (requested.group == "org.apache.avro" && requested.name == "avro") {
                 useVersion("1.12.1")
                 because("Upgrade avro to fix security vulnerabilities (CVE-2024-47561)")
