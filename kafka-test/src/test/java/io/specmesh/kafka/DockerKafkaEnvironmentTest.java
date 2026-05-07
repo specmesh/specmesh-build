@@ -16,6 +16,10 @@
 
 package io.specmesh.kafka;
 
+import static io.specmesh.kafka.DockerKafkaEnvironment.DEFAULT_CONFLUENT_PLATFORM_VERSION;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.time.Duration;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Tag;
@@ -26,6 +30,11 @@ class DockerKafkaEnvironmentTest {
 
     private static final int STARTUP_ATTEMPTS = 1;
     private static final Duration STARTUP_DURATION = Duration.ofSeconds(15);
+
+    @Test
+    void shouldAlignConfluentDockerAndGradleDependencyVersions() {
+        assertThat(DEFAULT_CONFLUENT_PLATFORM_VERSION, is(System.getProperty("confluentVersion")));
+    }
 
     @Test
     void shouldWorkWithoutSasl() {

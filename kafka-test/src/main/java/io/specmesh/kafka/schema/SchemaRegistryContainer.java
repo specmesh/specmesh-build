@@ -16,6 +16,8 @@
 
 package io.specmesh.kafka.schema;
 
+import static io.specmesh.kafka.DockerKafkaEnvironment.DEFAULT_CONFLUENT_PLATFORM_VERSION;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import org.testcontainers.containers.GenericContainer;
@@ -25,7 +27,8 @@ import org.testcontainers.utility.DockerImageName;
 public final class SchemaRegistryContainer extends GenericContainer<SchemaRegistryContainer> {
 
     public static final DockerImageName DEFAULT_IMAGE_NAME =
-            DockerImageName.parse("confluentinc/cp-schema-registry:7.9.1");
+            DockerImageName.parse(
+                    "confluentinc/cp-schema-registry:" + DEFAULT_CONFLUENT_PLATFORM_VERSION);
 
     /** Port the SR will listen on. */
     public static final int SCHEMA_REGISTRY_PORT = 8081;

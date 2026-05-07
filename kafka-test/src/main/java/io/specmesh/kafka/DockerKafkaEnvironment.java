@@ -86,6 +86,9 @@ public final class DockerKafkaEnvironment
     /** The port to use when connecting to Kafka from inside the Docker network */
     public static final int KAFKA_DOCKER_NETWORK_PORT = 9093;
 
+    /** Default version of Kafka and Schema Registry containers to use. */
+    public static final String DEFAULT_CONFLUENT_PLATFORM_VERSION = "8.2.0";
+
     private final int startUpAttempts;
     private final Duration startUpTimeout;
     private final DockerImageName kafkaDockerImage;
@@ -337,7 +340,8 @@ public final class DockerKafkaEnvironment
         private static final Duration DEFAULT_CONTAINER_STARTUP_TIMEOUT = Duration.ofSeconds(30);
 
         public static final DockerImageName DEFAULT_KAFKA_DOCKER_IMAGE =
-                DockerImageName.parse("confluentinc/cp-kafka:8.2.0");
+                DockerImageName.parse(
+                        "confluentinc/cp-kafka:" + DEFAULT_CONFLUENT_PLATFORM_VERSION);
         private static final Map<String, String> DEFAULT_KAFKA_ENV =
                 Map.of(
                         "KAFKA_AUTO_CREATE_TOPICS_ENABLE",

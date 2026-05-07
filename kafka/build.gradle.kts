@@ -39,8 +39,8 @@ dependencies {
 
     api(project(":parser"))
 
-    implementation("org.apache.kafka:kafka-streams:$confluentVersion-ce")
-    implementation("org.apache.kafka:kafka-clients:$confluentVersion-ce")
+    implementation("org.apache.kafka:kafka-streams:$confluentVersion-ccs")
+    implementation("org.apache.kafka:kafka-clients:$confluentVersion-ccs")
     implementation("commons-io:commons-io:2.21.0")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
 

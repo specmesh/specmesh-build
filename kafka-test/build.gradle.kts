@@ -24,6 +24,7 @@ val testcontainersVersion : String by extra
 val lombokVersion : String by extra
 val junitVersion : String by extra
 val protobufVersion : String by extra
+val confluentVersion : String by extra
 
 dependencies {
     api(project(":parser"))
@@ -40,4 +41,8 @@ dependencies {
     testImplementation("com.google.protobuf:protobuf-java:$protobufVersion")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter:$testcontainersVersion")
     testRuntimeOnly("commons-codec:commons-codec:1.21.0")
+}
+
+tasks.test {
+    systemProperty("confluentVersion", confluentVersion)
 }
