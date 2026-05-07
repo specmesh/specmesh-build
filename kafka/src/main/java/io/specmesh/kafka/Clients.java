@@ -19,9 +19,12 @@ package io.specmesh.kafka;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.MessageLiteOrBuilder;
+import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientConfig;
+import io.confluent.kafka.schemaregistry.json.JsonSchemaProvider;
+import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
@@ -35,6 +38,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -309,7 +313,13 @@ public final class Clients {
                     SchemaRegistryClientConfig.USER_INFO_CONFIG, srApiKey + ":" + srApiSecret);
         }
         return new CachedSchemaRegistryClient(
-                requireNonNull(schemaRegistryUrl, "schemaRegistryUrl"), 5, properties);
+                List.of(requireNonNull(schemaRegistryUrl, "schemaRegistryUrl")),
+                5,
+                List.of(
+                        new AvroSchemaProvider(),
+                        new JsonSchemaProvider(),
+                        new ProtobufSchemaProvider()),
+                properties);
     }
 
     /**
