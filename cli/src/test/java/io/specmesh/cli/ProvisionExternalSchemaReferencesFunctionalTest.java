@@ -76,7 +76,7 @@ class ProvisionExternalSchemaReferencesFunctionalTest {
 
     @BeforeEach
     void setUp() {
-        domainId = "some.domain." + UUID.randomUUID().toString().toLowerCase().replace("-", "_");
+        domainId = "some.domain.d" + UUID.randomUUID().toString().toLowerCase().replace("-", "_");
     }
 
     @Order(1)
