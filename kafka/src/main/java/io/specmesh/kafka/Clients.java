@@ -354,7 +354,9 @@ public final class Clients {
 
         private final Map<String, ?> properties;
 
-        @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "No finalizer attack vector")
+        @SuppressFBWarnings(
+                value = "CT_CONSTRUCTOR_THROW",
+                justification = "No finalizer attack vector")
         private ClientProperties(final Map<String, ?> properties) {
             this.properties = Map.copyOf(requireNonNull(properties, "properties"));
         }
