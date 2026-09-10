@@ -16,7 +16,7 @@
 
 plugins {
     `java-library`
-    id("com.google.protobuf") version "0.9.6"
+    id("com.google.protobuf") version "0.10.0"
     id("com.github.davidmc24.gradle.plugin.avro") version "1.9.1"
 }
 
