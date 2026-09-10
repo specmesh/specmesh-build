@@ -80,7 +80,7 @@ subprojects {
         set("observabilityVersion", "1.1.8")
         set("guavaVersion", "33.7.1-jre")
         set("confluentVersion", "8.2.0")
-        set("jacksonVersion", "2.21.2")
+        set("jacksonVersion", "2.22.2")
         set("jacksonAnnotationsVersion", "2.22")
         set("protobufVersion", "3.25.9")
         set("medeiaValidatorVersion", "1.1.0")
