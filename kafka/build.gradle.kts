@@ -41,7 +41,7 @@ dependencies {
 
     implementation("org.apache.kafka:kafka-streams:$confluentVersion-ccs")
     implementation("org.apache.kafka:kafka-clients:$confluentVersion-ccs")
-    implementation("commons-io:commons-io:2.21.0")
+    implementation("commons-io:commons-io:2.22.0")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
 
     compileOnly("org.projectlombok:lombok:$lombokVersion")
