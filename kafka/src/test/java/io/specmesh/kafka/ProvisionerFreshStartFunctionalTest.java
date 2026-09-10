@@ -16,6 +16,7 @@
 
 package io.specmesh.kafka;
 
+import static io.specmesh.kafka.util.AssertEventually.assertThatEventually;
 import static java.util.stream.Collectors.toList;
 import static org.apache.kafka.common.acl.AclOperation.ALL;
 import static org.apache.kafka.common.acl.AclOperation.IDEMPOTENT_WRITE;
@@ -308,12 +309,9 @@ class ProvisionerFreshStartFunctionalTest {
                             .collect(toList()),
                     is(empty()));
 
-            final var bindings = adminClient.describeAcls(AclBindingFilter.ANY).values().get();
-
             final var provisionDemoBindings =
-                    bindings.stream()
-                            .filter(binding -> binding.toString().contains("provision_demo"))
-                            .collect(toList());
+                    assertThatEventually(
+                            () -> provisionDemoBindings(adminClient), hasSize(changeset.size()));
 
             final long topicCount = 9L;
             assertThat(
@@ -344,6 +342,16 @@ class ProvisionerFreshStartFunctionalTest {
             assertThat(
                     changeset.size(),
                     is((int) (topicCount + transactionIdCount + groupCount + clusterCount)));
+        }
+    }
+
+    private static List<AclBinding> provisionDemoBindings(final Admin adminClient) {
+        try {
+            return adminClient.describeAcls(AclBindingFilter.ANY).values().get().stream()
+                    .filter(binding -> binding.toString().contains("provision_demo"))
+                    .collect(toList());
+        } catch (final Exception e) {
+            throw new AssertionError("Failed to describe ACLs", e);
         }
     }
 
