@@ -641,7 +641,7 @@ public final class DockerKafkaEnvironment
         }
     }
 
-    private static class Credentials {
+    private static final class Credentials {
         final String userName;
         final String password;
 

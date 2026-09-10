@@ -19,6 +19,7 @@ package io.specmesh.kafka;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.MessageLiteOrBuilder;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
@@ -353,6 +354,7 @@ public final class Clients {
 
         private final Map<String, ?> properties;
 
+        @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "No finalizer attack vector")
         private ClientProperties(final Map<String, ?> properties) {
             this.properties = Map.copyOf(requireNonNull(properties, "properties"));
         }
