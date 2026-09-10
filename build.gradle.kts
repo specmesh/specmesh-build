@@ -78,7 +78,7 @@ subprojects {
     extra.apply {
         set("openTracingVersion", "0.33.0")
         set("observabilityVersion", "1.1.8")
-        set("guavaVersion", "33.5.0-jre")
+        set("guavaVersion", "33.7.1-jre")
         set("confluentVersion", "8.2.0")
         set("jacksonVersion", "2.21.2")
         set("jacksonAnnotationsVersion", "2.21")
