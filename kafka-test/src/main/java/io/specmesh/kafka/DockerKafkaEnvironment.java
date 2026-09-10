@@ -87,7 +87,7 @@ public final class DockerKafkaEnvironment
     public static final int KAFKA_DOCKER_NETWORK_PORT = 9093;
 
     /** Default version of Kafka and Schema Registry containers to use. */
-    public static final String DEFAULT_CONFLUENT_PLATFORM_VERSION = "8.2.0";
+    public static final String DEFAULT_CONFLUENT_PLATFORM_VERSION = "8.3.1";
 
     private final int startUpAttempts;
     private final Duration startUpTimeout;
