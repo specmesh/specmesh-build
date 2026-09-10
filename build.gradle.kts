@@ -20,7 +20,7 @@ plugins {
     signing
     id("com.github.spotbugs") version "6.5.0"
     id("com.diffplug.spotless") version "8.10.2"
-    id("pl.allegro.tech.build.axion-release") version "1.21.1"
+    id("pl.allegro.tech.build.axion-release") version "1.21.3"
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
     id("com.bmuschko.docker-remote-api") version "10.0.0" apply false
 }
