@@ -76,21 +76,17 @@ subprojects {
     }
 
     extra.apply {
-        set("openTracingVersion", "0.33.0")
-        set("observabilityVersion", "1.1.8")
         set("guavaVersion", "33.7.1-jre")
-        set("confluentVersion", "8.2.0")
+        set("confluentVersion", "8.3.1")
         set("jacksonVersion", "2.22.2")
         set("jacksonAnnotationsVersion", "2.22")
         set("protobufVersion", "3.25.9")
-        set("medeiaValidatorVersion", "1.1.0")
         set("junitVersion", "6.1.3")
         set("mockitoVersion", "5.23.0")
         set("junitPioneerVersion", "2.3.0")
         set("spotBugsVersion", "4.10.4")
         set("hamcrestVersion", "1.3")
         set("log4jVersion", "2.26.1")           // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
-        set("classGraphVersion", "4.8.21")
         set("testcontainersVersion", "2.0.5")
         set("lombokVersion", "1.18.48")
     }
@@ -129,6 +125,18 @@ subprojects {
             if (requested.group == "org.apache.logging.log4j") {
                 useVersion(log4jVersion)
                 because("Upgrade commons-beanutils to fix CVE-2026-34478")
+            }
+            if (requested.group == "org.apache.httpcomponents.core5") {
+                useVersion("5.4.3")
+                because("Upgrade commons-beanutils to fix CVE-2026-54399")
+            }
+            if (requested.group == "com.squareup.wire" && requested.name == "wire-runtime-jvm") {
+                useVersion("6.3.0")
+                because("Upgrade commons-beanutils to fix CVE-2026-45799")
+            }
+            if (requested.group == "at.yawk.lz4" && requested.name == "lz4-java") {
+                useVersion("1.11.1")
+                because("Upgrade commons-beanutils to fix CVE-2026-59949")
             }
         }
     }

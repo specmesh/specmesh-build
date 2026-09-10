@@ -23,6 +23,7 @@ val spotBugsVersion : String by extra
 val jacksonVersion : String by extra
 val lombokVersion : String by extra
 val confluentVersion : String by extra
+val protobufVersion : String by extra
 
 
 dependencies {
@@ -35,7 +36,7 @@ dependencies {
     api("io.confluent:kafka-protobuf-serializer:$confluentVersion")
     api("io.confluent:kafka-streams-protobuf-serde:$confluentVersion")
     api("io.confluent:kafka-streams-avro-serde:$confluentVersion")
-    api("com.google.protobuf:protobuf-java:3.25.9")
+    api("com.google.protobuf:protobuf-java:$protobufVersion")
 
     api(project(":parser"))
 
