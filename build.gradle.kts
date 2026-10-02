@@ -82,7 +82,7 @@ subprojects {
         set("jacksonAnnotationsVersion", "2.22")
         set("protobufVersion", "3.25.9")
         set("junitVersion", "6.1.3")
-        set("mockitoVersion", "5.23.0")
+        set("mockitoVersion", "5.24.0")
         set("junitPioneerVersion", "2.3.0")
         set("spotBugsVersion", "4.10.4")
         set("hamcrestVersion", "1.3")
