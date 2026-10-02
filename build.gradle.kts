@@ -78,7 +78,7 @@ subprojects {
     extra.apply {
         set("guavaVersion", "33.7.1-jre")
         set("confluentVersion", "8.3.1")
-        set("jacksonVersion", "2.22.2")
+        set("jacksonVersion", "2.22.3")
         set("jacksonAnnotationsVersion", "2.22")
         set("protobufVersion", "3.25.9")
         set("junitVersion", "6.1.3")
