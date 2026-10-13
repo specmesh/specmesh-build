@@ -18,9 +18,9 @@ plugins {
     java
     `maven-publish`
     signing
-    id("com.github.spotbugs") version "6.5.11"
-    id("com.diffplug.spotless") version "8.10.2"
-    id("pl.allegro.tech.build.axion-release") version "1.21.3"
+    id("com.github.spotbugs") version "6.5.12"
+    id("com.diffplug.spotless") version "8.10.3"
+    id("pl.allegro.tech.build.axion-release") version "1.21.4"
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
     id("com.bmuschko.docker-remote-api") version "10.0.0" apply false
 }
@@ -78,11 +78,11 @@ subprojects {
     extra.apply {
         set("guavaVersion", "33.7.1-jre")
         set("confluentVersion", "8.3.1")
-        set("jacksonVersion", "2.22.2")
+        set("jacksonVersion", "2.22.3")
         set("jacksonAnnotationsVersion", "2.22")
         set("protobufVersion", "3.25.9")
         set("junitVersion", "6.1.3")
-        set("mockitoVersion", "5.23.0")
+        set("mockitoVersion", "5.24.0")
         set("junitPioneerVersion", "2.3.0")
         set("spotBugsVersion", "4.10.4")
         set("hamcrestVersion", "1.3")
