@@ -93,53 +93,11 @@ subprojects {
 
     val junitVersion: String by extra
     val jacksonVersion: String by extra
-    val jacksonAnnotationsVersion: String by extra
     val mockitoVersion: String by extra
     val junitPioneerVersion: String by extra
     val guavaVersion : String by extra
     val hamcrestVersion : String by extra
     val log4jVersion : String by extra
-
-    configurations.all {
-        resolutionStrategy.eachDependency {
-            if (requested.group.startsWith("com.fasterxml.jackson") && requested.name != "jackson-annotations") {
-                useVersion(jacksonVersion)
-                because("Enforce jacksonVersion to fix CVE-2025-52999")
-            }
-            if (requested.name == "jackson-annotations") {
-                useVersion(jacksonAnnotationsVersion)
-                because("Enforce jacksonAnnotationsVersion to fix CVE-2025-52999")
-            }
-            if (requested.group == "org.codehaus.plexus" && requested.name == "plexus-utils") {
-                useVersion("3.6.1")
-                because("Enforce plexus-utils 3.6.1 to fix CVE-2025-67030")
-            }
-            if (requested.group == "org.apache.avro" && requested.name == "avro") {
-                useVersion("1.12.1")
-                because("Upgrade avro to fix security vulnerabilities (CVE-2024-47561)")
-            }
-            if (requested.group == "commons-beanutils" && requested.name == "commons-beanutils") {
-                useVersion("1.11.0")
-                because("Upgrade commons-beanutils to fix CVE-2025-48734")
-            }
-            if (requested.group == "org.apache.logging.log4j") {
-                useVersion(log4jVersion)
-                because("Upgrade commons-beanutils to fix CVE-2026-34478")
-            }
-            if (requested.group == "org.apache.httpcomponents.core5") {
-                useVersion("5.4.3")
-                because("Upgrade commons-beanutils to fix CVE-2026-54399")
-            }
-            if (requested.group == "com.squareup.wire" && requested.name == "wire-runtime-jvm") {
-                useVersion("6.3.0")
-                because("Upgrade commons-beanutils to fix CVE-2026-45799")
-            }
-            if (requested.group == "at.yawk.lz4" && requested.name == "lz4-java") {
-                useVersion("1.11.1")
-                because("Upgrade commons-beanutils to fix CVE-2026-59949")
-            }
-        }
-    }
 
     dependencies {
         testImplementation(project(":parser"))
@@ -154,6 +112,30 @@ subprojects {
         testImplementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
         testImplementation("org.apache.logging.log4j:log4j-slf4j2-impl:$log4jVersion")
         testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
+
+        constraints {
+            add("implementation", "at.yawk.lz4:lz4-java:1.11.4") {
+                because("Fix LZ4 decompression and native library extraction vulnerabilities")
+            }
+            add("implementation", "com.squareup.wire:wire-schema-jvm:6.4.5") {
+                because("Keep Wire schema and runtime above the decoder vulnerability fixes")
+            }
+            add("implementation", "com.squareup.wire:wire-runtime:6.4.5") {
+                because("Fix Wire decoder length overflow vulnerabilities")
+            }
+            add("implementation", "com.squareup.wire:wire-runtime-jvm:6.4.5") {
+                because("Fix Wire decoder length overflow vulnerabilities")
+            }
+            add("implementation", "org.apache.httpcomponents.client5:httpclient5:5.6.3") {
+                because("Fix the connection leak on content-encoding errors")
+            }
+            add("implementation", "org.apache.httpcomponents.core5:httpcore5:5.4.3") {
+                because("Fix CVE-2026-54399")
+            }
+            add("implementation", "org.apache.httpcomponents.core5:httpcore5-h2:5.4.3") {
+                because("Keep HttpCore modules aligned above the security fix")
+            }
+        }
     }
 
     tasks.compileJava {
