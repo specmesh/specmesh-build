@@ -130,13 +130,17 @@ subprojects {
                 useVersion("5.4.3")
                 because("Upgrade commons-beanutils to fix CVE-2026-54399")
             }
-            if (requested.group == "com.squareup.wire" && requested.name == "wire-runtime-jvm") {
-                useVersion("6.3.0")
-                because("Upgrade commons-beanutils to fix CVE-2026-45799")
+            if (requested.group == "org.apache.httpcomponents.client5" && requested.name == "httpclient5") {
+                useVersion("5.6.3")
+                because("Fix the connection leak on content-encoding errors")
+            }
+            if (requested.group == "com.squareup.wire") {
+                useVersion("6.4.5")
+                because("Align Wire modules and fix decoder length overflow vulnerabilities")
             }
             if (requested.group == "at.yawk.lz4" && requested.name == "lz4-java") {
-                useVersion("1.11.1")
-                because("Upgrade commons-beanutils to fix CVE-2026-59949")
+                useVersion("1.11.4")
+                because("Fix LZ4 decompression and native library extraction vulnerabilities")
             }
         }
     }
