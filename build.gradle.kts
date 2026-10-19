@@ -40,6 +40,56 @@ allprojects {
     apply(plugin = "com.diffplug.spotless")
     apply(plugin = "com.github.spotbugs")
 
+    dependencies {
+        constraints {
+            add("implementation", "at.yawk.lz4:lz4-java:1.11.4") {
+                because("Fix LZ4 decompression and native library extraction vulnerabilities")
+            }
+            add("implementation", "com.squareup.wire:wire-schema-jvm:6.4.5") {
+                because("Keep Wire schema and runtime above the decoder vulnerability fixes")
+            }
+            add("implementation", "com.squareup.wire:wire-runtime:6.4.5") {
+                because("Fix Wire decoder length overflow vulnerabilities")
+            }
+            add("implementation", "com.squareup.wire:wire-runtime-jvm:6.4.5") {
+                because("Fix Wire decoder length overflow vulnerabilities")
+            }
+            add("implementation", "org.apache.httpcomponents.client5:httpclient5:5.6.3") {
+                because("Fix the connection leak on content-encoding errors")
+            }
+            add("implementation", "org.apache.httpcomponents.core5:httpcore5:5.4.3") {
+                because("Fix CVE-2026-54399")
+            }
+            add("implementation", "org.apache.httpcomponents.core5:httpcore5-h2:5.4.3") {
+                because("Keep HttpCore modules aligned above the security fix")
+            }
+            add("checkstyle", "commons-beanutils:commons-beanutils:1.11.0") {
+                because("Fix CVE-2025-48734 in the Checkstyle toolchain")
+            }
+            add("checkstyle", "org.codehaus.plexus:plexus-utils:3.6.1") {
+                because("Fix CVE-2025-67030 in the Checkstyle toolchain")
+            }
+            add("checkstyle", "org.apache.httpcomponents.client5:httpclient5:5.6.3") {
+                because("Fix the connection leak in the Checkstyle toolchain")
+            }
+            add("checkstyle", "org.apache.httpcomponents.core5:httpcore5:5.4.3") {
+                because("Fix CVE-2026-54399 in the Checkstyle toolchain")
+            }
+            add("checkstyle", "org.apache.httpcomponents.core5:httpcore5-h2:5.4.3") {
+                because("Keep Checkstyle's HttpCore modules above the security fix")
+            }
+        }
+    }
+
+    pluginManager.withPlugin("java-library") {
+        dependencies.constraints.add("api", "com.fasterxml.jackson.core:jackson-core:2.22.3") {
+            because("Keep consumer compile classpaths above the Jackson security fixes")
+        }
+        dependencies.constraints.add("api", "com.fasterxml.jackson.core:jackson-databind:2.22.3") {
+            because("Keep consumer compile classpaths above the Jackson security fixes")
+        }
+    }
+
     tasks.jar {
         onlyIf { sourceSets.main.get().allSource.files.isNotEmpty() }
     }
@@ -99,6 +149,19 @@ subprojects {
     val hamcrestVersion : String by extra
     val log4jVersion : String by extra
 
+    buildscript {
+        dependencies {
+            add("classpath", "com.fasterxml.jackson.core:jackson-core:2.22.3") {
+                because("Fix Jackson vulnerabilities in the Avro Gradle plugin")
+            }
+
+            add("classpath", "com.fasterxml.jackson.core:jackson-databind:2.22.3") {
+                because("Fix Jackson vulnerabilities in the Avro Gradle plugin")
+            }
+
+        }
+    }
+
     dependencies {
         testImplementation(project(":parser"))
         testImplementation(project(":kafka"))
@@ -112,30 +175,6 @@ subprojects {
         testImplementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
         testImplementation("org.apache.logging.log4j:log4j-slf4j2-impl:$log4jVersion")
         testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
-
-        constraints {
-            add("implementation", "at.yawk.lz4:lz4-java:1.11.4") {
-                because("Fix LZ4 decompression and native library extraction vulnerabilities")
-            }
-            add("implementation", "com.squareup.wire:wire-schema-jvm:6.4.5") {
-                because("Keep Wire schema and runtime above the decoder vulnerability fixes")
-            }
-            add("implementation", "com.squareup.wire:wire-runtime:6.4.5") {
-                because("Fix Wire decoder length overflow vulnerabilities")
-            }
-            add("implementation", "com.squareup.wire:wire-runtime-jvm:6.4.5") {
-                because("Fix Wire decoder length overflow vulnerabilities")
-            }
-            add("implementation", "org.apache.httpcomponents.client5:httpclient5:5.6.3") {
-                because("Fix the connection leak on content-encoding errors")
-            }
-            add("implementation", "org.apache.httpcomponents.core5:httpcore5:5.4.3") {
-                because("Fix CVE-2026-54399")
-            }
-            add("implementation", "org.apache.httpcomponents.core5:httpcore5-h2:5.4.3") {
-                because("Keep HttpCore modules aligned above the security fix")
-            }
-        }
     }
 
     tasks.compileJava {
