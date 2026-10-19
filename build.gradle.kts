@@ -19,7 +19,7 @@ plugins {
     `maven-publish`
     signing
     id("com.github.spotbugs") version "6.5.12"
-    id("com.diffplug.spotless") version "8.10.3"
+    id("com.diffplug.spotless") version "8.10.4"
     id("pl.allegro.tech.build.axion-release") version "1.21.4"
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
     id("com.bmuschko.docker-remote-api") version "10.0.0" apply false
@@ -39,6 +39,56 @@ allprojects {
     apply(plugin = "checkstyle")
     apply(plugin = "com.diffplug.spotless")
     apply(plugin = "com.github.spotbugs")
+
+    dependencies {
+        constraints {
+            add("implementation", "at.yawk.lz4:lz4-java:1.11.4") {
+                because("Fix LZ4 decompression and native library extraction vulnerabilities")
+            }
+            add("implementation", "com.squareup.wire:wire-schema-jvm:6.4.5") {
+                because("Keep Wire schema and runtime above the decoder vulnerability fixes")
+            }
+            add("implementation", "com.squareup.wire:wire-runtime:6.4.5") {
+                because("Fix Wire decoder length overflow vulnerabilities")
+            }
+            add("implementation", "com.squareup.wire:wire-runtime-jvm:6.4.5") {
+                because("Fix Wire decoder length overflow vulnerabilities")
+            }
+            add("implementation", "org.apache.httpcomponents.client5:httpclient5:5.6.3") {
+                because("Fix the connection leak on content-encoding errors")
+            }
+            add("implementation", "org.apache.httpcomponents.core5:httpcore5:5.4.3") {
+                because("Fix CVE-2026-54399")
+            }
+            add("implementation", "org.apache.httpcomponents.core5:httpcore5-h2:5.4.3") {
+                because("Keep HttpCore modules aligned above the security fix")
+            }
+            add("checkstyle", "commons-beanutils:commons-beanutils:1.11.0") {
+                because("Fix CVE-2025-48734 in the Checkstyle toolchain")
+            }
+            add("checkstyle", "org.codehaus.plexus:plexus-utils:3.6.1") {
+                because("Fix CVE-2025-67030 in the Checkstyle toolchain")
+            }
+            add("checkstyle", "org.apache.httpcomponents.client5:httpclient5:5.6.3") {
+                because("Fix the connection leak in the Checkstyle toolchain")
+            }
+            add("checkstyle", "org.apache.httpcomponents.core5:httpcore5:5.4.3") {
+                because("Fix CVE-2026-54399 in the Checkstyle toolchain")
+            }
+            add("checkstyle", "org.apache.httpcomponents.core5:httpcore5-h2:5.4.3") {
+                because("Keep Checkstyle's HttpCore modules above the security fix")
+            }
+        }
+    }
+
+    pluginManager.withPlugin("java-library") {
+        dependencies.constraints.add("api", "com.fasterxml.jackson.core:jackson-core:2.22.3") {
+            because("Keep consumer compile classpaths above the Jackson security fixes")
+        }
+        dependencies.constraints.add("api", "com.fasterxml.jackson.core:jackson-databind:2.22.3") {
+            because("Keep consumer compile classpaths above the Jackson security fixes")
+        }
+    }
 
     tasks.jar {
         onlyIf { sourceSets.main.get().allSource.files.isNotEmpty() }
@@ -76,7 +126,7 @@ subprojects {
     }
 
     extra.apply {
-        set("guavaVersion", "33.7.1-jre")
+        set("guavaVersion", "33.7.2-jre")
         set("confluentVersion", "8.3.1")
         set("jacksonVersion", "2.22.3")
         set("jacksonAnnotationsVersion", "2.22")
@@ -93,51 +143,22 @@ subprojects {
 
     val junitVersion: String by extra
     val jacksonVersion: String by extra
-    val jacksonAnnotationsVersion: String by extra
     val mockitoVersion: String by extra
     val junitPioneerVersion: String by extra
     val guavaVersion : String by extra
     val hamcrestVersion : String by extra
     val log4jVersion : String by extra
 
-    configurations.all {
-        resolutionStrategy.eachDependency {
-            if (requested.group.startsWith("com.fasterxml.jackson") && requested.name != "jackson-annotations") {
-                useVersion(jacksonVersion)
-                because("Enforce jacksonVersion to fix CVE-2025-52999")
+    buildscript {
+        dependencies {
+            add("classpath", "com.fasterxml.jackson.core:jackson-core:2.22.3") {
+                because("Fix Jackson vulnerabilities in the Avro Gradle plugin")
             }
-            if (requested.name == "jackson-annotations") {
-                useVersion(jacksonAnnotationsVersion)
-                because("Enforce jacksonAnnotationsVersion to fix CVE-2025-52999")
+
+            add("classpath", "com.fasterxml.jackson.core:jackson-databind:2.22.3") {
+                because("Fix Jackson vulnerabilities in the Avro Gradle plugin")
             }
-            if (requested.group == "org.codehaus.plexus" && requested.name == "plexus-utils") {
-                useVersion("3.6.1")
-                because("Enforce plexus-utils 3.6.1 to fix CVE-2025-67030")
-            }
-            if (requested.group == "org.apache.avro" && requested.name == "avro") {
-                useVersion("1.12.1")
-                because("Upgrade avro to fix security vulnerabilities (CVE-2024-47561)")
-            }
-            if (requested.group == "commons-beanutils" && requested.name == "commons-beanutils") {
-                useVersion("1.11.0")
-                because("Upgrade commons-beanutils to fix CVE-2025-48734")
-            }
-            if (requested.group == "org.apache.logging.log4j") {
-                useVersion(log4jVersion)
-                because("Upgrade commons-beanutils to fix CVE-2026-34478")
-            }
-            if (requested.group == "org.apache.httpcomponents.core5") {
-                useVersion("5.4.3")
-                because("Upgrade commons-beanutils to fix CVE-2026-54399")
-            }
-            if (requested.group == "com.squareup.wire" && requested.name == "wire-runtime-jvm") {
-                useVersion("6.3.0")
-                because("Upgrade commons-beanutils to fix CVE-2026-45799")
-            }
-            if (requested.group == "at.yawk.lz4" && requested.name == "lz4-java") {
-                useVersion("1.11.1")
-                because("Upgrade commons-beanutils to fix CVE-2026-59949")
-            }
+
         }
     }
 
