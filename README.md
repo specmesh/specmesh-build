@@ -398,6 +398,15 @@ However, this can be customised in the kafka bindings in the spec:
           $ref: "/schema/com.example.shared.Currency.avsc"
 ```
 
+### Changing key schemas
+
+Kafka uses the serialized key bytes to choose a partition. If the schema Id is stored in the payload, i.e. `schemaIdLocation` 
+is `payload` (the default), the schema Id is part of those bytes. Any change to a key schema, even one that only changes documentation,
+results in a new schema Id and so records with the same key can be routed to a different partition.
+
+Provisioning, including `--dry-run`, will therefore **fail** if a key schema has changed and its `schemaIdLocation` is `payload`.
+Store the schema Id in a header (`schemaIdLocation: "header"`) if you need to evolve a key schema.
+
 ### **Confluent Schema Registry** conventions
 
 **TopicNameStrategy** - Derives subject name from topic name. (This is the default.)

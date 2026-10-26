@@ -454,6 +454,45 @@ class SchemaChangeSetCalculatorsTest {
         assertThat(schema.messages(), is("\n Update"));
     }
 
+    @Test
+    void shouldDetectWhenOnlyDocumentationOfKeySchemaHasChanged() {
+        // Given:
+        final var existing = existingKeySchema();
+        final var required = requiredKeySchema();
+        final var calculator = SchemaChangeSetCalculators.builder().build(false);
+
+        // When:
+        final Collection<Schema> schemas = calculator.calculate(existing, required, DOMAIN_ID);
+
+        // Then:
+        assertThat(schemas, hasSize(1));
+        assertThat(schemas.iterator().next().state(), is(Status.STATE.UPDATE));
+    }
+
+    private List<Schema> existingKeySchema() {
+        return List.of(
+                Schema.builder()
+                        .type("AVRO")
+                        .subject(subject)
+                        .state(Status.STATE.READ)
+                        .topicSchema(true)
+                        .schema(loadSchema(DOMAIN_ID + "._public.user_signed_up.key.avsc").copy(1))
+                        .build());
+    }
+
+    private List<Schema> requiredKeySchema() {
+        return List.of(
+                Schema.builder()
+                        .type("AVRO")
+                        .subject(subject)
+                        .state(Status.STATE.READ)
+                        .topicSchema(true)
+                        .schema(
+                                loadSchema(
+                                        DOMAIN_ID + "._public.user_signed_up.key-v2-doc-only.avsc"))
+                        .build());
+    }
+
     private static ParsedSchema loadSchema(final String fileName) {
         return new SchemaReaders.FileSystemSchemaReader()
                 .readLocal(Path.of("./src/test/resources/schema/" + fileName))

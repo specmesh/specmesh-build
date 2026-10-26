@@ -46,6 +46,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Tests execution DryRuns and UPDATES where the provisioner-functional-test-api.yml is already
@@ -66,6 +68,9 @@ class SchemaProvisionerFunctionalTest {
 
     private static final KafkaApiSpec API_INCOMPATiBLE_SPEC =
             TestSpecLoader.loadFromClassPath("provisioner-incompatible-functional-test-api.yaml");
+
+    private static final KafkaApiSpec API_KEY_CHANGE_SPEC =
+            TestSpecLoader.loadFromClassPath("provisioner-key-change-functional-test-api.yaml");
 
     private SchemaRegistryClient srClient;
 
@@ -257,6 +262,30 @@ class SchemaProvisionerFunctionalTest {
 
         testDryRun(subject);
         testCleanUnSpecSchemas();
+    }
+
+    @ParameterizedTest(name = "dryRun={0}")
+    @ValueSource(booleans = {true, false})
+    @Order(6)
+    void shouldFailToPublishChangedKeySchemaWhenSchemaIdIsInPayload(final boolean dryRun)
+            throws Exception {
+        final String keySubject = "simple.provision_demo._public.user_signed_up-key";
+        final int versionsBefore = srClient.getAllVersions(keySubject).size();
+
+        final Collection<Schema> changeset =
+                SchemaProvisioner.provision(
+                        dryRun, false, API_KEY_CHANGE_SPEC, "./src/test/resources", srClient);
+
+        assertThat(changeset, hasSize(1));
+        final Schema schema = changeset.iterator().next();
+        assertThat(schema.subject(), is(keySubject));
+        assertThat(schema.state(), is(STATE.FAILED));
+        assertThat(schema.exception().getMessage(), containsString("schemaIdLocation"));
+
+        assertThat(
+                "Key schema should not be updated",
+                srClient.getAllVersions(keySubject),
+                hasSize(versionsBefore));
     }
 
     private void testCleanUnSpecSchemas() throws Exception {

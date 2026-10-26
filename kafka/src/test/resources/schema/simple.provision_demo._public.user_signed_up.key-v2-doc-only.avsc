@@ -1,0 +1,9 @@
+{
+  "type": "record",
+  "namespace": "simple.provision_demo",
+  "name": "UserSignedUpKey",
+  "doc": "Only the documentation differs",
+  "fields": [
+    {"name": "id", "type": "int", "doc": "The user id"}
+  ]
+}
