@@ -98,7 +98,8 @@ public final class SchemaMutators {
                             schema ->
                                     !schema.state().equals(STATE.UPDATE)
                                             && !schema.state().equals(STATE.CREATE)
-                                            && !schema.state().equals(STATE.IGNORED))
+                                            && !schema.state().equals(STATE.IGNORED)
+                                            && !schema.state().equals(STATE.FAILED))
                     .peek(
                             schema -> {
                                 try {
@@ -286,6 +287,17 @@ public final class SchemaMutators {
         }
     }
 
+    /** Passes through schemas that failed before mutation, so they appear in the output */
+    public static final class FailedMutator implements SchemaMutator {
+
+        @Override
+        public List<Schema> mutate(final Collection<Schema> schemas) {
+            return schemas.stream()
+                    .filter(schema -> schema.state().equals(STATE.FAILED))
+                    .collect(Collectors.toList());
+        }
+    }
+
     /** Passes through ignored schemas so they appear in the output */
     public static final class IgnoredMutator implements SchemaMutator {
 
@@ -395,7 +407,9 @@ public final class SchemaMutators {
             } else if (dryRun) {
                 return new NoopSchemaMutator();
             } else {
+                // FailedMutator must run first: later mutators mark schemas FAILED and return them.
                 return new CollectiveMutator(
+                        new FailedMutator(),
                         new EnsureSharedRegistered(domainId, client),
                         new WriteMutator(client),
                         new UpdateMutator(client),

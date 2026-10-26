@@ -134,7 +134,7 @@ public final class SchemaProvisioner {
                                                         .map(
                                                                 keySchema ->
                                                                         partSchemas(
-                                                                                "key",
+                                                                                Part.KEY,
                                                                                 keySchema,
                                                                                 si,
                                                                                 baseResourcePath,
@@ -144,7 +144,7 @@ public final class SchemaProvisioner {
                                                         .map(
                                                                 valueSchema ->
                                                                         partSchemas(
-                                                                                "value",
+                                                                                Part.VALUE,
                                                                                 valueSchema,
                                                                                 si,
                                                                                 baseResourcePath,
@@ -155,7 +155,7 @@ public final class SchemaProvisioner {
     }
 
     private static Stream<Schema> partSchemas(
-            final String partName,
+            final Part part,
             final String schemaRef,
             final SchemaInfo si,
             final String baseResourcePath,
@@ -177,8 +177,7 @@ public final class SchemaProvisioner {
                                 final boolean isTopicSchema = ns.equals(topicSchema);
                                 final String subject =
                                         isTopicSchema
-                                                ? resolveSubjectName(
-                                                        topicName, schema, si, partName)
+                                                ? resolveSubjectName(topicName, schema, si, part)
                                                 : ns.subject();
 
                                 return Schema.builder()
@@ -187,6 +186,11 @@ public final class SchemaProvisioner {
                                         .subject(subject)
                                         .state(CREATE)
                                         .topicSchema(isTopicSchema)
+                                        .part(isTopicSchema ? Optional.of(part) : Optional.empty())
+                                        .schemaIdLocation(
+                                                isTopicSchema
+                                                        ? si.schemaIdLocation()
+                                                        : Optional.empty())
                                         .build();
                             });
         } catch (ProvisioningException ex) {
@@ -221,7 +225,7 @@ public final class SchemaProvisioner {
             final String topicName,
             final ParsedSchema schema,
             final SchemaInfo schemaInfo,
-            final String partName) {
+            final Part part) {
         final String lookup = schemaInfo.schemaLookupStrategy().orElse("");
 
         if (lookup.equalsIgnoreCase("SimpleTopicIdStrategy")) {
@@ -246,7 +250,7 @@ public final class SchemaProvisioner {
 
             return topicName + "-" + ((AvroSchema) schema).rawSchema().getFullName();
         }
-        return topicName + "-" + partName;
+        return topicName + "-" + part.label();
     }
 
     private static boolean isAvro(final ParsedSchema schema) {
@@ -261,6 +265,25 @@ public final class SchemaProvisioner {
      */
     private static SchemaReader reader(final SchemaRegistryClient schemaRegistryClient) {
         return SchemaReaders.builder().schemaRegistryClient(schemaRegistryClient).build();
+    }
+
+    /** The part of a Kafka record that a topic schema describes. */
+    public enum Part {
+        KEY("key"),
+        VALUE("value");
+
+        private final String label;
+
+        Part(final String label) {
+            this.label = label;
+        }
+
+        /**
+         * @return the label used in subject names.
+         */
+        public String label() {
+            return label;
+        }
     }
 
     /** Schema provisioning status */
@@ -278,6 +301,8 @@ public final class SchemaProvisioner {
         private Exception exception;
         @Builder.Default private String messages = "";
         @Builder.Default private boolean topicSchema = false;
+        @Builder.Default private Optional<Part> part = Optional.empty();
+        @Builder.Default private Optional<String> schemaIdLocation = Optional.empty();
 
         private ParsedSchema schema;
 

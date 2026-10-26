@@ -40,11 +40,15 @@ final class SchemaChangeSetCalculators {
     static final class Collective implements ChangeSetCalculator {
 
         private final IgnorePreprocessor preprocessor;
+        private final SchemaChangePolicy policy;
         private final List<ChangeSetCalculator> calculatorStream;
 
         private Collective(
-                final IgnorePreprocessor preprocessor, final ChangeSetCalculator... writers) {
+                final IgnorePreprocessor preprocessor,
+                final SchemaChangePolicy policy,
+                final ChangeSetCalculator... writers) {
             this.preprocessor = requireNonNull(preprocessor, "preprocessor");
+            this.policy = requireNonNull(policy, "policy");
             this.calculatorStream = List.of(writers);
         }
 
@@ -57,6 +61,7 @@ final class SchemaChangeSetCalculators {
             return calculatorStream.stream()
                     .map(calculator -> calculator.calculate(existing, preprocessed, domainId))
                     .flatMap(Collection::stream)
+                    .map(policy::enforce)
                     .toList();
         }
     }
@@ -241,6 +246,7 @@ final class SchemaChangeSetCalculators {
             } else {
                 return new Collective(
                         new IgnorePreprocessor(),
+                        new SchemaChangePolicy(),
                         new IgnoreCalculator(),
                         new UpdateCalculator(),
                         new CreateCalculator());
