@@ -407,6 +407,14 @@ results in a new schema Id and so records with the same key can be routed to a d
 Provisioning, including `--dry-run`, will therefore **fail** if a key schema has changed and its `schemaIdLocation` is `payload`.
 Store the schema Id in a header (`schemaIdLocation: "header"`) if you need to evolve a key schema.
 
+When provisioning creates a key subject whose `schemaIdLocation` is `payload`, it also sets the subject's Schema Registry
+[mode](https://docs.confluent.io/platform/current/schema-registry/develop/api.html#mode) to `READONLY`. Key subjects that
+already exist are not changed. A `READONLY` key subject cannot be changed later, even by switching to `schemaIdLocation: "header"`,
+as that change would also change the key bytes. Use a new topic instead.
+
+This requires the Schema Registry to allow mode changes (`mode.mutability=true`, the default in recent versions) and the
+provisioning principal to have permission to change subject modes. Otherwise, provisioning of the key subject fails.
+
 ### **Confluent Schema Registry** conventions
 
 **TopicNameStrategy** - Derives subject name from topic name. (This is the default.)
