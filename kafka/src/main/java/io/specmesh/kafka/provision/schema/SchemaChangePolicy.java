@@ -38,7 +38,7 @@ final class SchemaChangePolicy {
      * @return the same schema, marked as failed if the change is not safe to apply.
      */
     Schema enforce(final Schema schema) {
-        if (!isChangedKeySchema(schema) || !schemaIdInPayload(schema)) {
+        if (schema.state() != Status.STATE.UPDATE || !isKeyWithSchemaIdInPayload(schema)) {
             return schema;
         }
 
@@ -52,13 +52,13 @@ final class SchemaChangePolicy {
                                 + " in a header or use a new topic."));
     }
 
-    private static boolean isChangedKeySchema(final Schema schema) {
-        return schema.state() == Status.STATE.UPDATE
-                && schema.topicSchema()
-                && schema.part().equals(Optional.of(Part.KEY));
-    }
-
-    private static boolean schemaIdInPayload(final Schema schema) {
-        return !schema.schemaIdLocation().orElse("payload").equalsIgnoreCase("header");
+    /**
+     * @param schema the schema
+     * @return true if the schema is a topic key schema with its schema id in the payload.
+     */
+    static boolean isKeyWithSchemaIdInPayload(final Schema schema) {
+        return schema.topicSchema()
+                && schema.part().equals(Optional.of(Part.KEY))
+                && !schema.schemaIdLocation().orElse("payload").equalsIgnoreCase("header");
     }
 }

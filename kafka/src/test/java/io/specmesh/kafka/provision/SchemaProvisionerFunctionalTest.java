@@ -72,6 +72,8 @@ class SchemaProvisionerFunctionalTest {
     private static final KafkaApiSpec API_KEY_CHANGE_SPEC =
             TestSpecLoader.loadFromClassPath("provisioner-key-change-functional-test-api.yaml");
 
+    private static final String KEY_SUBJECT = "simple.provision_demo._public.user_signed_up-key";
+
     private SchemaRegistryClient srClient;
 
     private enum Domain {
@@ -135,6 +137,8 @@ class SchemaProvisionerFunctionalTest {
         assertThat(
                 srClient.getAllSubjectsByPrefix(API_SPEC.id()),
                 hasSize(srClient.getAllSubjects().size()));
+
+        assertThat(srClient.getMode(KEY_SUBJECT), is("READONLY"));
     }
 
     @Test
@@ -269,7 +273,7 @@ class SchemaProvisionerFunctionalTest {
     @Order(6)
     void shouldFailToPublishChangedKeySchemaWhenSchemaIdIsInPayload(final boolean dryRun)
             throws Exception {
-        final String keySubject = "simple.provision_demo._public.user_signed_up-key";
+        final String keySubject = KEY_SUBJECT;
         final int versionsBefore = srClient.getAllVersions(keySubject).size();
 
         final Collection<Schema> changeset =

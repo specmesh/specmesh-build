@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 public final class SchemaMutators {
 
     public static final String DEFAULT_EVOLUTION = "FULL_TRANSITIVE";
+    private static final String READONLY = "READONLY";
 
     /** defensive */
     private SchemaMutators() {}
@@ -283,7 +284,32 @@ public final class SchemaMutators {
                                                     e));
                                 }
                             })
+                    .map(this::setReadOnlyIfKeyWithSchemaIdInPayload)
                     .collect(Collectors.toList());
+        }
+
+        private Schema setReadOnlyIfKeyWithSchemaIdInPayload(final Schema schema) {
+            if (schema.state() != CREATED
+                    || !SchemaChangePolicy.isKeyWithSchemaIdInPayload(schema)) {
+                return schema;
+            }
+
+            try {
+                client.setMode(READONLY, schema.subject());
+                schema.messages(schema.messages() + ", mode set to: " + READONLY);
+            } catch (IOException | RestClientException e) {
+                schema.exception(
+                        new ProvisioningException(
+                                "Key schema registered, but failed to set subject mode to "
+                                        + READONLY
+                                        + " for subject: "
+                                        + schema.subject()
+                                        + ". Ensure the Schema Registry allows mode changes"
+                                        + " (mode.mutability=true) and the principal can change"
+                                        + " subject modes.",
+                                e));
+            }
+            return schema;
         }
     }
 

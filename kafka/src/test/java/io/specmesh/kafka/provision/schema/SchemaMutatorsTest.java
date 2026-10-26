@@ -18,16 +18,20 @@ package io.specmesh.kafka.provision.schema;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 
 import io.confluent.kafka.schemaregistry.ParsedSchema;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
+import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
 import io.specmesh.kafka.DockerKafkaEnvironment;
 import io.specmesh.kafka.KafkaEnvironment;
 import io.specmesh.kafka.provision.Status;
+import io.specmesh.kafka.provision.schema.SchemaProvisioner.Part;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -80,6 +84,59 @@ class SchemaMutatorsTest {
         assertThat(
                 schema.exception().getMessage(),
                 containsString("READER_FIELD_MISSING_DEFAULT_VALUE"));
+    }
+
+    @Test
+    void shouldSetCreatedKeySubjectToReadOnlyWhenSchemaIdIsInPayload() throws Exception {
+        // When:
+        final SchemaProvisioner.Schema schema = create(Part.KEY, Optional.of("payload"));
+
+        // Then:
+        assertThat(schema.state(), is(Status.STATE.CREATED));
+        assertThat(schema.messages(), containsString("mode set to: READONLY"));
+        assertThat(client.getMode(subject), is("READONLY"));
+    }
+
+    @Test
+    void shouldNotSetCreatedValueSubjectToReadOnly() throws Exception {
+        // When:
+        create(Part.VALUE, Optional.of("payload"));
+
+        // Then:
+        assertThat(subjectMode(), is(not("READONLY")));
+    }
+
+    private String subjectMode() throws Exception {
+        try {
+            return client.getMode(subject);
+        } catch (RestClientException e) {
+            if (e.getStatus() == 404) {
+                return "not set";
+            }
+            throw e;
+        }
+    }
+
+    private SchemaProvisioner.Schema create(
+            final Part part, final Optional<String> schemaIdLocation) {
+        final var required =
+                List.of(
+                        SchemaProvisioner.Schema.builder()
+                                .type("AVRO")
+                                .subject(subject)
+                                .state(Status.STATE.CREATE)
+                                .topicSchema(true)
+                                .part(Optional.of(part))
+                                .schemaIdLocation(schemaIdLocation)
+                                .schema(loadSchema(SCHEMA_BASE + "user_signed_up.avsc"))
+                                .build());
+
+        return SchemaMutators.builder()
+                .schemaRegistryClient(client)
+                .build("simple.provision_demo")
+                .mutate(required)
+                .iterator()
+                .next();
     }
 
     private static ParsedSchema loadSchema(final String fileName) {
