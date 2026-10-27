@@ -19,11 +19,9 @@ package io.specmesh.kafka.provision.schema;
 import static io.specmesh.kafka.provision.schema.SubjectMode.READONLY;
 import static java.util.Objects.requireNonNull;
 
-import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
-import io.specmesh.kafka.provision.ProvisioningException;
 import io.specmesh.kafka.provision.Status.STATE;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
-import java.io.IOException;
+import io.specmesh.kafka.provision.schema.SubjectModes.SubjectModeException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -110,16 +108,8 @@ final class SubjectModeReconciler {
                 schema.addMessage("Subject mode set to: " + READONLY);
             }
             return true;
-        } catch (IOException | RestClientException | IllegalArgumentException e) {
-            schema.exception(
-                    new ProvisioningException(
-                            "Failed to set subject mode to "
-                                    + READONLY
-                                    + " for key subject: "
-                                    + schema.subject()
-                                    + ". "
-                                    + SubjectModes.MODE_CHANGE_HINT,
-                            e));
+        } catch (SubjectModeException e) {
+            schema.exception(e);
             return true;
         }
     }

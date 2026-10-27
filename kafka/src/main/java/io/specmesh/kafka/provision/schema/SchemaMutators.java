@@ -28,6 +28,7 @@ import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientExcept
 import io.specmesh.kafka.provision.ProvisioningException;
 import io.specmesh.kafka.provision.Status.STATE;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
+import io.specmesh.kafka.provision.schema.SubjectModes.SubjectModeException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -139,16 +140,8 @@ public final class SchemaMutators {
                     modes.remove(schema.subject());
                     schema.addMessage("Subject mode " + READONLY + " removed");
                 }
-            } catch (IOException | RestClientException | IllegalArgumentException e) {
-                schema.exception(
-                        new ProvisioningException(
-                                "Failed to remove "
-                                        + READONLY
-                                        + " mode from subject: "
-                                        + schema.subject()
-                                        + ". "
-                                        + SubjectModes.MODE_CHANGE_HINT,
-                                e));
+            } catch (SubjectModeException e) {
+                schema.exception(e);
             }
         }
     }

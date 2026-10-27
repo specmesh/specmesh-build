@@ -17,14 +17,18 @@
 package io.specmesh.kafka.provision.schema;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
+import io.specmesh.kafka.provision.schema.SubjectModes.SubjectModeException;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,26 +75,31 @@ class SubjectModesTest {
     }
 
     @Test
-    void shouldRethrowOtherRegistryErrors() throws Exception {
+    void shouldWrapRegistryErrorWhenGettingMode() throws Exception {
         // Given:
         final RestClientException error = new RestClientException("forbidden", 403, 40301);
         when(client.getMode(SUBJECT)).thenThrow(error);
 
         // When:
-        final RestClientException thrown =
-                assertThrows(RestClientException.class, () -> modes.get(SUBJECT));
+        final SubjectModeException thrown =
+                assertThrows(SubjectModeException.class, () -> modes.get(SUBJECT));
 
         // Then:
-        assertThat(thrown, is(sameInstance(error)));
+        assertThat(thrown.getMessage(), is("Failed to get mode for subject: " + SUBJECT));
+        assertThat(thrown.getCause(), is(sameInstance(error)));
     }
 
     @Test
-    void shouldRejectUnknownMode() throws Exception {
+    void shouldWrapUnknownMode() throws Exception {
         // Given:
         when(client.getMode(SUBJECT)).thenReturn("SOMETHING_NEW");
 
-        // When / Then:
-        assertThrows(IllegalArgumentException.class, () -> modes.get(SUBJECT));
+        // When:
+        final SubjectModeException thrown =
+                assertThrows(SubjectModeException.class, () -> modes.get(SUBJECT));
+
+        // Then:
+        assertThat(thrown.getMessage(), is("Unknown mode 'SOMETHING_NEW' for subject: " + SUBJECT));
     }
 
     @Test
@@ -100,5 +109,50 @@ class SubjectModesTest {
 
         // Then:
         verify(client).setMode("READONLY", SUBJECT);
+    }
+
+    @Test
+    void shouldWrapRegistryErrorWhenSettingMode() throws Exception {
+        // Given:
+        final RestClientException error = new RestClientException("forbidden", 403, 40301);
+        when(client.setMode("READONLY", SUBJECT)).thenThrow(error);
+
+        // When:
+        final SubjectModeException thrown =
+                assertThrows(
+                        SubjectModeException.class, () -> modes.set(SUBJECT, SubjectMode.READONLY));
+
+        // Then:
+        assertThat(
+                thrown.getMessage(),
+                startsWith("Failed to set mode READONLY for subject: " + SUBJECT));
+        assertThat(thrown.getMessage(), containsString("mode.mutability"));
+        assertThat(thrown.getCause(), is(sameInstance(error)));
+    }
+
+    @Test
+    void shouldRemoveSubjectMode() throws Exception {
+        // When:
+        modes.remove(SUBJECT);
+
+        // Then:
+        verify(client).deleteMode(SUBJECT);
+    }
+
+    @Test
+    void shouldWrapRegistryErrorWhenRemovingMode() throws Exception {
+        // Given:
+        final RestClientException error = new RestClientException("forbidden", 403, 40301);
+        doThrow(error).when(client).deleteMode(SUBJECT);
+
+        // When:
+        final SubjectModeException thrown =
+                assertThrows(SubjectModeException.class, () -> modes.remove(SUBJECT));
+
+        // Then:
+        assertThat(
+                thrown.getMessage(), startsWith("Failed to remove mode for subject: " + SUBJECT));
+        assertThat(thrown.getMessage(), containsString("mode.mutability"));
+        assertThat(thrown.getCause(), is(sameInstance(error)));
     }
 }
