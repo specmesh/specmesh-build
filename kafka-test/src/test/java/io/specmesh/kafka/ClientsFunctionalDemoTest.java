@@ -62,6 +62,7 @@ import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.acl.AccessControlEntry;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.errors.TopicAuthorizationException;
@@ -401,7 +402,10 @@ class ClientsFunctionalDemoTest {
     private static <K, V> Consumer<K, V> subscribe(
             final String topicName, final Consumer<K, V> consumer) {
         consumer.subscribe(List.of(topicName));
-        consumer.poll(Duration.ofMillis(250));
+        while (consumer.assignment().isEmpty()) {
+            consumer.poll(Duration.ofMillis(100));
+        }
+        consumer.assignment().forEach(consumer::position);
         return consumer;
     }
 
