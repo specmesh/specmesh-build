@@ -20,6 +20,7 @@ import static io.specmesh.kafka.provision.Status.STATE.CREATED;
 import static io.specmesh.kafka.provision.Status.STATE.DELETE;
 import static io.specmesh.kafka.provision.Status.STATE.DELETED;
 import static io.specmesh.kafka.provision.Status.STATE.UPDATED;
+import static io.specmesh.kafka.provision.schema.SubjectMode.READONLY;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
@@ -31,6 +32,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -38,7 +40,6 @@ import java.util.stream.Stream;
 public final class SchemaMutators {
 
     public static final String DEFAULT_EVOLUTION = "FULL_TRANSITIVE";
-    private static final String READONLY = "READONLY";
 
     /** defensive */
     private SchemaMutators() {}
@@ -77,6 +78,7 @@ public final class SchemaMutators {
 
         private final boolean dryRun;
         private final SchemaRegistryClient srClient;
+        private final SubjectModes modes;
 
         @SuppressFBWarnings(
                 value = "EI_EXPOSE_REP2",
@@ -84,6 +86,7 @@ public final class SchemaMutators {
         public CleanUnspecifiedMutator(final boolean dryRun, final SchemaRegistryClient srClient) {
             this.dryRun = dryRun;
             this.srClient = srClient;
+            this.modes = new SubjectModes(srClient);
         }
 
         /**
@@ -101,29 +104,52 @@ public final class SchemaMutators {
                                             && !schema.state().equals(STATE.CREATE)
                                             && !schema.state().equals(STATE.IGNORED)
                                             && !schema.state().equals(STATE.FAILED))
-                    .peek(
-                            schema -> {
-                                try {
-                                    schema.state(DELETE);
-                                    if (!dryRun) {
-                                        final var schemaIds =
-                                                srClient.deleteSubject(schema.subject());
-
-                                        schema.state(DELETED);
-                                        schema.messages(
-                                                "Subject:"
-                                                        + schema.subject()
-                                                        + " DELETED ids: "
-                                                        + schemaIds);
-                                    }
-                                } catch (IOException | RestClientException e) {
-                                    schema.exception(
-                                            new ProvisioningException(
-                                                    "Failed to update schema:" + schema.subject(),
-                                                    e));
-                                }
-                            })
+                    .peek(this::delete)
                     .collect(Collectors.toList());
+        }
+
+        private void delete(final Schema schema) {
+            schema.state(DELETE);
+            removeReadOnlyMode(schema);
+            if (dryRun || schema.state() == STATE.FAILED) {
+                return;
+            }
+
+            try {
+                final var schemaIds = srClient.deleteSubject(schema.subject());
+                schema.state(DELETED);
+                schema.addMessage("Subject: " + schema.subject() + " DELETED ids: " + schemaIds);
+            } catch (IOException | RestClientException e) {
+                schema.exception(
+                        new ProvisioningException(
+                                "Failed to delete subject: " + schema.subject(), e));
+            }
+        }
+
+        /** The Schema Registry rejects deletes of a {@code READONLY} subject. */
+        private void removeReadOnlyMode(final Schema schema) {
+            try {
+                if (!modes.get(schema.subject()).equals(Optional.of(READONLY))) {
+                    return;
+                }
+
+                if (dryRun) {
+                    schema.addMessage("Subject mode " + READONLY + " would be removed");
+                } else {
+                    modes.remove(schema.subject());
+                    schema.addMessage("Subject mode " + READONLY + " removed");
+                }
+            } catch (IOException | RestClientException | IllegalArgumentException e) {
+                schema.exception(
+                        new ProvisioningException(
+                                "Failed to remove "
+                                        + READONLY
+                                        + " mode from subject: "
+                                        + schema.subject()
+                                        + ". "
+                                        + SubjectModes.MODE_CHANGE_HINT,
+                                e));
+            }
         }
     }
 
@@ -284,32 +310,7 @@ public final class SchemaMutators {
                                                     e));
                                 }
                             })
-                    .map(this::setReadOnlyIfKeyWithSchemaIdInPayload)
                     .collect(Collectors.toList());
-        }
-
-        private Schema setReadOnlyIfKeyWithSchemaIdInPayload(final Schema schema) {
-            if (schema.state() != CREATED
-                    || !SchemaChangePolicy.isKeyWithSchemaIdInPayload(schema)) {
-                return schema;
-            }
-
-            try {
-                client.setMode(READONLY, schema.subject());
-                schema.messages(schema.messages() + ", mode set to: " + READONLY);
-            } catch (IOException | RestClientException e) {
-                schema.exception(
-                        new ProvisioningException(
-                                "Key schema registered, but failed to set subject mode to "
-                                        + READONLY
-                                        + " for subject: "
-                                        + schema.subject()
-                                        + ". Ensure the Schema Registry allows mode changes"
-                                        + " (mode.mutability=true) and the principal can change"
-                                        + " subject modes.",
-                                e));
-            }
-            return schema;
         }
     }
 

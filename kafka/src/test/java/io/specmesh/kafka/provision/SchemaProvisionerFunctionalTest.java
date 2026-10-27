@@ -20,6 +20,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -290,6 +291,66 @@ class SchemaProvisionerFunctionalTest {
                 "Key schema should not be updated",
                 srClient.getAllVersions(keySubject),
                 hasSize(versionsBefore));
+    }
+
+    @Test
+    @Order(7)
+    void shouldRemoveUnspecdReadOnlySchemas() throws Exception {
+        // Given:
+        final var subject = "simple.provision_demo._public.NOT_user_signed_up-key";
+        srClient.register(subject, new AvroSchema("\"string\""));
+        srClient.setMode("READONLY", subject);
+
+        // When:
+        final var dryRun =
+                SchemaProvisioner.provision(
+                        true, true, API_UPDATE_SPEC, "./src/test/resources", srClient);
+
+        // Then:
+        assertThat(dryRun, hasSize(1));
+        assertThat(dryRun.get(0).state(), is(STATE.DELETE));
+        assertThat(
+                dryRun.get(0).messages(), containsString("Subject mode READONLY would be removed"));
+        assertThat(srClient.getMode(subject), is("READONLY"));
+
+        // When:
+        final var cleaned =
+                SchemaProvisioner.provision(
+                        false, true, API_UPDATE_SPEC, "./src/test/resources", srClient);
+
+        // Then:
+        assertThat(cleaned, hasSize(1));
+        assertThat(cleaned.get(0).state(), is(STATE.DELETED));
+        assertThat(cleaned.get(0).messages(), containsString("Subject mode READONLY removed"));
+        assertThat(srClient.getAllSubjectsByPrefix(API_SPEC.id()), not(hasItem(subject)));
+    }
+
+    @Test
+    @Order(8)
+    void shouldMakeKeySubjectReadOnlyAgainAfterManualChange() throws Exception {
+        // Given:
+        srClient.setMode("READWRITE", KEY_SUBJECT);
+
+        // When:
+        final var dryRun =
+                SchemaProvisioner.provision(
+                        true, false, API_UPDATE_SPEC, "./src/test/resources", srClient);
+
+        // Then:
+        assertThat(dryRun, hasSize(1));
+        assertThat(dryRun.get(0).subject(), is(KEY_SUBJECT));
+        assertThat(dryRun.get(0).state(), is(STATE.UPDATE));
+        assertThat(srClient.getMode(KEY_SUBJECT), is("READWRITE"));
+
+        // When:
+        final var readOnlyAgain =
+                SchemaProvisioner.provision(
+                        false, false, API_UPDATE_SPEC, "./src/test/resources", srClient);
+
+        // Then:
+        assertThat(readOnlyAgain, hasSize(1));
+        assertThat(readOnlyAgain.get(0).state(), is(STATE.UPDATED));
+        assertThat(srClient.getMode(KEY_SUBJECT), is("READONLY"));
     }
 
     private void testCleanUnSpecSchemas() throws Exception {

@@ -18,9 +18,7 @@ package io.specmesh.kafka.provision.schema;
 
 import io.specmesh.kafka.provision.ProvisioningException;
 import io.specmesh.kafka.provision.Status;
-import io.specmesh.kafka.provision.schema.SchemaProvisioner.Part;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
-import java.util.Optional;
 
 /**
  * Fails calculated schema changes that are not safe to apply.
@@ -38,7 +36,7 @@ final class SchemaChangePolicy {
      * @return the same schema, marked as failed if the change is not safe to apply.
      */
     Schema enforce(final Schema schema) {
-        if (schema.state() != Status.STATE.UPDATE || !isKeyWithSchemaIdInPayload(schema)) {
+        if (schema.state() != Status.STATE.UPDATE || !schema.isKeyWithSchemaIdInPayload()) {
             return schema;
         }
 
@@ -50,15 +48,5 @@ final class SchemaChangePolicy {
                                 + " changes the schema id embedded in the key bytes, which changes"
                                 + " the partition records are routed to. Either store the schema id"
                                 + " in a header or use a new topic."));
-    }
-
-    /**
-     * @param schema the schema
-     * @return true if the schema is a topic key schema with its schema id in the payload.
-     */
-    static boolean isKeyWithSchemaIdInPayload(final Schema schema) {
-        return schema.topicSchema()
-                && schema.part().equals(Optional.of(Part.KEY))
-                && !schema.schemaIdLocation().orElse("payload").equalsIgnoreCase("header");
     }
 }

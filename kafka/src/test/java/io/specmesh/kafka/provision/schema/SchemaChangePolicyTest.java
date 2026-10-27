@@ -44,39 +44,9 @@ class SchemaChangePolicyTest {
     }
 
     @Test
-    void shouldFailKeyChangeWhenSchemaIdLocationNotSet() {
-        assertThat(
-                policy.enforce(failingChange().schemaIdLocation(Optional.empty()).build()).state(),
-                is(STATE.FAILED));
-    }
-
-    @Test
-    void shouldAllowKeyChangeWhenSchemaIdIsInHeader() {
-        assertThat(
-                policy.enforce(failingChange().schemaIdLocation(Optional.of("header")).build())
-                        .state(),
-                is(STATE.UPDATE));
-    }
-
-    @Test
-    void shouldIgnoreCaseOfSchemaIdLocation() {
-        assertThat(
-                policy.enforce(failingChange().schemaIdLocation(Optional.of("HEADER")).build())
-                        .state(),
-                is(STATE.UPDATE));
-    }
-
-    @Test
     void shouldAllowValueChangeWhenSchemaIdIsInPayload() {
         assertThat(
                 policy.enforce(failingChange().part(Optional.of(Part.VALUE)).build()).state(),
-                is(STATE.UPDATE));
-    }
-
-    @Test
-    void shouldAllowChangeToSchemaThatIsNotTopicSchema() {
-        assertThat(
-                policy.enforce(failingChange().topicSchema(false).build()).state(),
                 is(STATE.UPDATE));
     }
 

@@ -82,7 +82,13 @@ public final class SchemaProvisioner {
 
         final Collection<Schema> schemas =
                 calculator(cleanUnspecified).calculate(existing, required, apiSpec.id());
-        return mutator(dryRun, cleanUnspecified, apiSpec.id(), client).mutate(schemas);
+        final List<Schema> mutated =
+                mutator(dryRun, cleanUnspecified, apiSpec.id(), client).mutate(schemas);
+        if (cleanUnspecified) {
+            return mutated;
+        }
+        return new SubjectModeReconciler(dryRun, new SubjectModes(client))
+                .reconcile(required, mutated);
     }
 
     private static SchemaMutators.SchemaMutator mutator(
@@ -315,6 +321,24 @@ public final class SchemaProvisioner {
             this.exception = new ExceptionWrapper(exception);
             this.state = FAILED;
             return this;
+        }
+
+        /**
+         * @param message the message to append, on a new line
+         * @return this schema
+         */
+        public Schema addMessage(final String message) {
+            this.messages = messages + "\n" + message;
+            return this;
+        }
+
+        /**
+         * @return true if this is a topic key schema whose schema id is stored in the payload.
+         */
+        public boolean isKeyWithSchemaIdInPayload() {
+            return topicSchema
+                    && part.equals(Optional.of(Part.KEY))
+                    && !schemaIdLocation.orElse("payload").equalsIgnoreCase("header");
         }
     }
 
