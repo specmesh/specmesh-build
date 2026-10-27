@@ -398,6 +398,27 @@ However, this can be customised in the kafka bindings in the spec:
           $ref: "/schema/com.example.shared.Currency.avsc"
 ```
 
+### Changing key schemas
+
+Kafka uses the serialized key bytes to choose a partition. If the schema Id is stored in the payload, i.e. `schemaIdLocation` 
+is `payload` (the default), the schema Id is part of those bytes. Any change to a key schema, even one that only changes documentation,
+results in a new schema Id and so records with the same key can be routed to a different partition.
+
+Provisioning, including `--dry-run`, will therefore **fail** if a key schema has changed and its `schemaIdLocation` is `payload`.
+Store the schema Id in a header (`schemaIdLocation: "header"`) if you need to evolve a key schema.
+
+Provisioning also sets the Schema Registry [mode](https://docs.confluent.io/platform/current/schema-registry/develop/api.html#mode)
+of every key subject in the spec whose `schemaIdLocation` is `payload` to `READONLY`. Each run does this, including for key
+subjects that already exist, so a subject that was made writable by hand is made read-only again. A subject in `READONLY_OVERRIDE`
+mode is already read-only and is left alone. A `READONLY` key subject cannot be changed later, even by switching to `schemaIdLocation: "header"`,
+as that change would also change the key bytes. Use a new topic instead.
+
+This requires the Schema Registry to allow mode changes (`mode.mutability=true`, the default in recent versions) and the
+provisioning principal to have permission to change subject modes. Otherwise, provisioning of the key subject fails.
+
+Cleaning unspecified schemas (`--clean-unspecified`) removes the `READONLY` mode from a subject before deleting it, as the
+Schema Registry rejects deletes of a `READONLY` subject. This needs the same permission.
+
 ### **Confluent Schema Registry** conventions
 
 **TopicNameStrategy** - Derives subject name from topic name. (This is the default.)

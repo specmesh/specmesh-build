@@ -18,6 +18,7 @@ package io.specmesh.kafka.provision.schema;
 
 import static io.specmesh.kafka.provision.Status.STATE.CREATE;
 import static io.specmesh.kafka.provision.Status.STATE.FAILED;
+import static java.util.Objects.requireNonNull;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
@@ -82,7 +83,13 @@ public final class SchemaProvisioner {
 
         final Collection<Schema> schemas =
                 calculator(cleanUnspecified).calculate(existing, required, apiSpec.id());
-        return mutator(dryRun, cleanUnspecified, apiSpec.id(), client).mutate(schemas);
+        final List<Schema> mutated =
+                mutator(dryRun, cleanUnspecified, apiSpec.id(), client).mutate(schemas);
+        if (cleanUnspecified) {
+            return mutated;
+        }
+        return new SubjectModeReconciler(dryRun, new SubjectModes(client))
+                .reconcile(required, mutated);
     }
 
     private static SchemaMutators.SchemaMutator mutator(
@@ -134,7 +141,7 @@ public final class SchemaProvisioner {
                                                         .map(
                                                                 keySchema ->
                                                                         partSchemas(
-                                                                                "key",
+                                                                                Part.KEY,
                                                                                 keySchema,
                                                                                 si,
                                                                                 baseResourcePath,
@@ -144,7 +151,7 @@ public final class SchemaProvisioner {
                                                         .map(
                                                                 valueSchema ->
                                                                         partSchemas(
-                                                                                "value",
+                                                                                Part.VALUE,
                                                                                 valueSchema,
                                                                                 si,
                                                                                 baseResourcePath,
@@ -155,7 +162,7 @@ public final class SchemaProvisioner {
     }
 
     private static Stream<Schema> partSchemas(
-            final String partName,
+            final Part part,
             final String schemaRef,
             final SchemaInfo si,
             final String baseResourcePath,
@@ -177,8 +184,7 @@ public final class SchemaProvisioner {
                                 final boolean isTopicSchema = ns.equals(topicSchema);
                                 final String subject =
                                         isTopicSchema
-                                                ? resolveSubjectName(
-                                                        topicName, schema, si, partName)
+                                                ? resolveSubjectName(topicName, schema, si, part)
                                                 : ns.subject();
 
                                 return Schema.builder()
@@ -187,6 +193,11 @@ public final class SchemaProvisioner {
                                         .subject(subject)
                                         .state(CREATE)
                                         .topicSchema(isTopicSchema)
+                                        .part(isTopicSchema ? Optional.of(part) : Optional.empty())
+                                        .schemaIdLocation(
+                                                isTopicSchema
+                                                        ? si.schemaIdLocation()
+                                                        : Optional.empty())
                                         .build();
                             });
         } catch (ProvisioningException ex) {
@@ -221,7 +232,7 @@ public final class SchemaProvisioner {
             final String topicName,
             final ParsedSchema schema,
             final SchemaInfo schemaInfo,
-            final String partName) {
+            final Part part) {
         final String lookup = schemaInfo.schemaLookupStrategy().orElse("");
 
         if (lookup.equalsIgnoreCase("SimpleTopicIdStrategy")) {
@@ -246,7 +257,7 @@ public final class SchemaProvisioner {
 
             return topicName + "-" + ((AvroSchema) schema).rawSchema().getFullName();
         }
-        return topicName + "-" + partName;
+        return topicName + "-" + part.label();
     }
 
     private static boolean isAvro(final ParsedSchema schema) {
@@ -261,6 +272,21 @@ public final class SchemaProvisioner {
      */
     private static SchemaReader reader(final SchemaRegistryClient schemaRegistryClient) {
         return SchemaReaders.builder().schemaRegistryClient(schemaRegistryClient).build();
+    }
+
+    public enum Part {
+        KEY("key"),
+        VALUE("value");
+
+        private final String label;
+
+        Part(final String label) {
+            this.label = requireNonNull(label, "label");
+        }
+
+        public String label() {
+            return label;
+        }
     }
 
     /** Schema provisioning status */
@@ -278,6 +304,8 @@ public final class SchemaProvisioner {
         private Exception exception;
         @Builder.Default private String messages = "";
         @Builder.Default private boolean topicSchema = false;
+        @Builder.Default private Optional<Part> part = Optional.empty();
+        @Builder.Default private Optional<String> schemaIdLocation = Optional.empty();
 
         private ParsedSchema schema;
 
@@ -290,6 +318,24 @@ public final class SchemaProvisioner {
             this.exception = new ExceptionWrapper(exception);
             this.state = FAILED;
             return this;
+        }
+
+        /**
+         * @param message the message to append, on a new line
+         * @return this schema
+         */
+        public Schema addMessage(final String message) {
+            this.messages = messages + "\n" + message;
+            return this;
+        }
+
+        /**
+         * @return true if this is a topic key schema whose schema id is stored in the payload.
+         */
+        public boolean isKeyWithSchemaIdInPayload() {
+            return topicSchema
+                    && part.equals(Optional.of(Part.KEY))
+                    && !schemaIdLocation.orElse("payload").equalsIgnoreCase("header");
         }
     }
 

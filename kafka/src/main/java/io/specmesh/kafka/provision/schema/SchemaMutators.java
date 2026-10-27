@@ -20,6 +20,7 @@ import static io.specmesh.kafka.provision.Status.STATE.CREATED;
 import static io.specmesh.kafka.provision.Status.STATE.DELETE;
 import static io.specmesh.kafka.provision.Status.STATE.DELETED;
 import static io.specmesh.kafka.provision.Status.STATE.UPDATED;
+import static io.specmesh.kafka.provision.schema.SubjectMode.READONLY;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
@@ -27,10 +28,12 @@ import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientExcept
 import io.specmesh.kafka.provision.ProvisioningException;
 import io.specmesh.kafka.provision.Status.STATE;
 import io.specmesh.kafka.provision.schema.SchemaProvisioner.Schema;
+import io.specmesh.kafka.provision.schema.SubjectModes.SubjectModeException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -76,6 +79,7 @@ public final class SchemaMutators {
 
         private final boolean dryRun;
         private final SchemaRegistryClient srClient;
+        private final SubjectModes modes;
 
         @SuppressFBWarnings(
                 value = "EI_EXPOSE_REP2",
@@ -83,6 +87,7 @@ public final class SchemaMutators {
         public CleanUnspecifiedMutator(final boolean dryRun, final SchemaRegistryClient srClient) {
             this.dryRun = dryRun;
             this.srClient = srClient;
+            this.modes = new SubjectModes(srClient);
         }
 
         /**
@@ -98,30 +103,46 @@ public final class SchemaMutators {
                             schema ->
                                     !schema.state().equals(STATE.UPDATE)
                                             && !schema.state().equals(STATE.CREATE)
-                                            && !schema.state().equals(STATE.IGNORED))
-                    .peek(
-                            schema -> {
-                                try {
-                                    schema.state(DELETE);
-                                    if (!dryRun) {
-                                        final var schemaIds =
-                                                srClient.deleteSubject(schema.subject());
-
-                                        schema.state(DELETED);
-                                        schema.messages(
-                                                "Subject:"
-                                                        + schema.subject()
-                                                        + " DELETED ids: "
-                                                        + schemaIds);
-                                    }
-                                } catch (IOException | RestClientException e) {
-                                    schema.exception(
-                                            new ProvisioningException(
-                                                    "Failed to update schema:" + schema.subject(),
-                                                    e));
-                                }
-                            })
+                                            && !schema.state().equals(STATE.IGNORED)
+                                            && !schema.state().equals(STATE.FAILED))
+                    .peek(this::delete)
                     .collect(Collectors.toList());
+        }
+
+        private void delete(final Schema schema) {
+            schema.state(DELETE);
+            removeReadOnlyMode(schema);
+            if (dryRun || schema.state() == STATE.FAILED) {
+                return;
+            }
+
+            try {
+                final var schemaIds = srClient.deleteSubject(schema.subject());
+                schema.state(DELETED);
+                schema.addMessage("Subject: " + schema.subject() + " DELETED ids: " + schemaIds);
+            } catch (IOException | RestClientException e) {
+                schema.exception(
+                        new ProvisioningException(
+                                "Failed to delete subject: " + schema.subject(), e));
+            }
+        }
+
+        /** The Schema Registry rejects deletes of a {@code READONLY} subject. */
+        private void removeReadOnlyMode(final Schema schema) {
+            try {
+                if (!modes.get(schema.subject()).equals(Optional.of(READONLY))) {
+                    return;
+                }
+
+                if (dryRun) {
+                    schema.addMessage("Subject mode " + READONLY + " would be removed");
+                } else {
+                    modes.remove(schema.subject());
+                    schema.addMessage("Subject mode " + READONLY + " removed");
+                }
+            } catch (SubjectModeException e) {
+                schema.exception(e);
+            }
         }
     }
 
@@ -286,6 +307,17 @@ public final class SchemaMutators {
         }
     }
 
+    /** Passes through schemas that failed before mutation, so they appear in the output */
+    public static final class FailedMutator implements SchemaMutator {
+
+        @Override
+        public List<Schema> mutate(final Collection<Schema> schemas) {
+            return schemas.stream()
+                    .filter(schema -> schema.state().equals(STATE.FAILED))
+                    .collect(Collectors.toList());
+        }
+    }
+
     /** Passes through ignored schemas so they appear in the output */
     public static final class IgnoredMutator implements SchemaMutator {
 
@@ -396,6 +428,7 @@ public final class SchemaMutators {
                 return new NoopSchemaMutator();
             } else {
                 return new CollectiveMutator(
+                        new FailedMutator(),
                         new EnsureSharedRegistered(domainId, client),
                         new WriteMutator(client),
                         new UpdateMutator(client),
