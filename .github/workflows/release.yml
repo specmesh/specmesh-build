@@ -33,7 +33,7 @@ jobs:
           distribution: temurin
           cache: gradle
       - name: Install Protoc
-        run: sudo apt install protobuf-compiler
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
       - name: Ensure build is green
         run: ./gradlew build
       - name: Release
