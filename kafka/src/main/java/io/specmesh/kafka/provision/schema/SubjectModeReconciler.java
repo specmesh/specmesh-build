@@ -109,6 +109,7 @@ final class SubjectModeReconciler {
                 modes.set(schema.subject(), READONLY);
                 schema.addMessage("Subject mode set to: " + READONLY);
             }
+            return true;
         } catch (IOException | RestClientException | IllegalArgumentException e) {
             schema.exception(
                     new ProvisioningException(
@@ -119,7 +120,7 @@ final class SubjectModeReconciler {
                                     + ". "
                                     + SubjectModes.MODE_CHANGE_HINT,
                             e));
+            return true;
         }
-        return true;
     }
 }

@@ -18,6 +18,7 @@ package io.specmesh.kafka.provision.schema;
 
 import static io.specmesh.kafka.provision.Status.STATE.CREATE;
 import static io.specmesh.kafka.provision.Status.STATE.FAILED;
+import static java.util.Objects.requireNonNull;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
@@ -273,7 +274,6 @@ public final class SchemaProvisioner {
         return SchemaReaders.builder().schemaRegistryClient(schemaRegistryClient).build();
     }
 
-    /** The part of a Kafka record that a topic schema describes. */
     public enum Part {
         KEY("key"),
         VALUE("value");
@@ -281,12 +281,9 @@ public final class SchemaProvisioner {
         private final String label;
 
         Part(final String label) {
-            this.label = label;
+            this.label = requireNonNull(label, "label");
         }
 
-        /**
-         * @return the label used in subject names.
-         */
         public String label() {
             return label;
         }

@@ -434,7 +434,6 @@ public final class SchemaMutators {
             } else if (dryRun) {
                 return new NoopSchemaMutator();
             } else {
-                // FailedMutator must run first: later mutators mark schemas FAILED and return them.
                 return new CollectiveMutator(
                         new FailedMutator(),
                         new EnsureSharedRegistered(domainId, client),
