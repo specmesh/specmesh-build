@@ -45,13 +45,13 @@ allprojects {
             add("implementation", "at.yawk.lz4:lz4-java:1.11.4") {
                 because("Fix LZ4 decompression and native library extraction vulnerabilities")
             }
-            add("implementation", "com.squareup.wire:wire-schema-jvm:6.4.5") {
+            add("implementation", "com.squareup.wire:wire-schema-jvm:7.1.2") {
                 because("Keep Wire schema and runtime above the decoder vulnerability fixes")
             }
-            add("implementation", "com.squareup.wire:wire-runtime:6.4.5") {
+            add("implementation", "com.squareup.wire:wire-runtime:7.1.2") {
                 because("Fix Wire decoder length overflow vulnerabilities")
             }
-            add("implementation", "com.squareup.wire:wire-runtime-jvm:6.4.5") {
+            add("implementation", "com.squareup.wire:wire-runtime-jvm:7.1.2") {
                 because("Fix Wire decoder length overflow vulnerabilities")
             }
             add("implementation", "org.apache.httpcomponents.client5:httpclient5:5.6.3") {
