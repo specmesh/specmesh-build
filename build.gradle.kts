@@ -54,7 +54,7 @@ allprojects {
             add("implementation", "com.squareup.wire:wire-runtime-jvm:7.1.2") {
                 because("Fix Wire decoder length overflow vulnerabilities")
             }
-            add("implementation", "org.apache.httpcomponents.client5:httpclient5:5.6.3") {
+            add("implementation", "org.apache.httpcomponents.client5:httpclient5:5.6.5") {
                 because("Fix the connection leak on content-encoding errors")
             }
             add("implementation", "org.apache.httpcomponents.core5:httpcore5:5.4.4") {
@@ -69,7 +69,7 @@ allprojects {
             add("checkstyle", "org.codehaus.plexus:plexus-utils:4.1.0") {
                 because("Fix CVE-2025-67030 in the Checkstyle toolchain")
             }
-            add("checkstyle", "org.apache.httpcomponents.client5:httpclient5:5.6.3") {
+            add("checkstyle", "org.apache.httpcomponents.client5:httpclient5:5.6.5") {
                 because("Fix the connection leak in the Checkstyle toolchain")
             }
             add("checkstyle", "org.apache.httpcomponents.core5:httpcore5:5.4.4") {
