@@ -82,10 +82,10 @@ allprojects {
     }
 
     pluginManager.withPlugin("java-library") {
-        dependencies.constraints.add("api", "com.fasterxml.jackson.core:jackson-core:2.22.3") {
+        dependencies.constraints.add("api", "com.fasterxml.jackson.core:jackson-core:2.22.4") {
             because("Keep consumer compile classpaths above the Jackson security fixes")
         }
-        dependencies.constraints.add("api", "com.fasterxml.jackson.core:jackson-databind:2.22.3") {
+        dependencies.constraints.add("api", "com.fasterxml.jackson.core:jackson-databind:2.22.4") {
             because("Keep consumer compile classpaths above the Jackson security fixes")
         }
     }
@@ -151,11 +151,11 @@ subprojects {
 
     buildscript {
         dependencies {
-            add("classpath", "com.fasterxml.jackson.core:jackson-core:2.22.3") {
+            add("classpath", "com.fasterxml.jackson.core:jackson-core:2.22.4") {
                 because("Fix Jackson vulnerabilities in the Avro Gradle plugin")
             }
 
-            add("classpath", "com.fasterxml.jackson.core:jackson-databind:2.22.3") {
+            add("classpath", "com.fasterxml.jackson.core:jackson-databind:2.22.4") {
                 because("Fix Jackson vulnerabilities in the Avro Gradle plugin")
             }
 
