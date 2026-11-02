@@ -57,10 +57,10 @@ allprojects {
             add("implementation", "org.apache.httpcomponents.client5:httpclient5:5.6.3") {
                 because("Fix the connection leak on content-encoding errors")
             }
-            add("implementation", "org.apache.httpcomponents.core5:httpcore5:5.4.3") {
+            add("implementation", "org.apache.httpcomponents.core5:httpcore5:5.4.4") {
                 because("Fix CVE-2026-54399")
             }
-            add("implementation", "org.apache.httpcomponents.core5:httpcore5-h2:5.4.3") {
+            add("implementation", "org.apache.httpcomponents.core5:httpcore5-h2:5.4.4") {
                 because("Keep HttpCore modules aligned above the security fix")
             }
             add("checkstyle", "commons-beanutils:commons-beanutils:1.11.0") {
@@ -72,10 +72,10 @@ allprojects {
             add("checkstyle", "org.apache.httpcomponents.client5:httpclient5:5.6.3") {
                 because("Fix the connection leak in the Checkstyle toolchain")
             }
-            add("checkstyle", "org.apache.httpcomponents.core5:httpcore5:5.4.3") {
+            add("checkstyle", "org.apache.httpcomponents.core5:httpcore5:5.4.4") {
                 because("Fix CVE-2026-54399 in the Checkstyle toolchain")
             }
-            add("checkstyle", "org.apache.httpcomponents.core5:httpcore5-h2:5.4.3") {
+            add("checkstyle", "org.apache.httpcomponents.core5:httpcore5-h2:5.4.4") {
                 because("Keep Checkstyle's HttpCore modules above the security fix")
             }
         }
