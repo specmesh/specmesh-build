@@ -42,7 +42,7 @@ allprojects {
 
     dependencies {
         constraints {
-            add("implementation", "at.yawk.lz4:lz4-java:1.11.4") {
+            add("implementation", "at.yawk.lz4:lz4-java:1.12.1") {
                 because("Fix LZ4 decompression and native library extraction vulnerabilities")
             }
             add("implementation", "com.squareup.wire:wire-schema-jvm:7.1.2") {
