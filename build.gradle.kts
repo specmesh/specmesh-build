@@ -66,7 +66,7 @@ allprojects {
             add("checkstyle", "commons-beanutils:commons-beanutils:1.11.0") {
                 because("Fix CVE-2025-48734 in the Checkstyle toolchain")
             }
-            add("checkstyle", "org.codehaus.plexus:plexus-utils:3.6.1") {
+            add("checkstyle", "org.codehaus.plexus:plexus-utils:4.1.0") {
                 because("Fix CVE-2025-67030 in the Checkstyle toolchain")
             }
             add("checkstyle", "org.apache.httpcomponents.client5:httpclient5:5.6.3") {
